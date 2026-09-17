@@ -154,6 +154,9 @@ Two conventions worth copying verbatim:
 Nothing is run from the host. Every target `docker compose exec`s into the right container, so
 `../bin/console`, `bin/phpunit` and `vendor/bin/*` are never invoked directly.
 
+The one exception is the front ends: they are Node applications, not PHP, and their dev
+servers run on the host. They still go through `make`, so the entry point stays the same.
+
 **Target names are kebab-case, one name per action, no aliases and no synonyms.** A target that
 exists under two spellings is how `reset_db` and `reset-db` ended up meaning two different things
 in the source codebase — one of them wrong. The canonical set:
@@ -163,6 +166,7 @@ in the source codebase — one of them wrong. The canonical set:
 | `make setup` | one-off: local files + `git config core.hooksPath .git-hooks/` |
 | `make build` | full rebuild, all containers up, migrations on the dev DB |
 | `make start` | `build` + `reset-db` + `load-fixtures` + the projection-building command |
+| `make start-website` / `make start-admin` | start a front end's dev server and open it |
 | `make stop` | stop the containers |
 | `make reset-db` / `make reset-test-db` | drop + create + migrate the dev / test DB |
 | `make load-fixtures` | `doctrine:fixtures:load` on the dev DB |
@@ -301,6 +305,7 @@ classes.
 unauthenticated sign-up — as opposed to `Create…`, which an authenticated actor performs),
 `Update…`, `Delete…`, `Activate…`, `Deactivate…`, `Refresh…` (re-pull from a third party, or renew a short-lived artefact of our own, such as a
 session),
+`Complete…` / `Reopen…` (close and unclose something the person ticks off),
 `Import…` (ingest a file/feed), `Build…` (derive and persist a projection), `Process…` (consume an
 event), `Fetch…` (call a third party and persist the result).
 
@@ -660,6 +665,10 @@ Rules:
 - Not `readonly` — the mapper writes into them.
 - `#[Map(source: 'a.b.c')]` flattens associations; `#[Map(transform: […])]` formats scalars.
   Both keep the mapping declarative and next to the field it produces.
+- **A dotted `source` only works on a non-nullable association.** The property accessor
+  cannot walk through a null and raises a 500 rather than leaving the field null, so a
+  nullable association is assigned in the OutputFactory instead. `#[Map(if: false)]` marks
+  every field the factory fills in, which documents at a glance what the mapper does not own.
 - Dates are **strings** in outputs, formatted by the single shared `DateDataTransformer`, so the
   whole API uses one date format: **ISO 8601 with offset**, `Y-m-d\TH:i:sP`
   (`"2026-09-17T14:32:05+02:00"`). No endpoint invents its own.
@@ -933,6 +942,10 @@ Rules:
   with `@return XDataOutput[]`), a scalar, or `void`.
 - Canonical body order: **load → validate → mutate → persist → build the output**. Validate as
   early as the data it needs allows.
+- **After persisting a child, add it to its parent's collection.** Doctrine writes the foreign
+  key from the owning side, but the parent already in the identity map keeps the collection it
+  was hydrated with — so anything reading the parent later in the same request sees stale
+  state, a derived status included.
 - A use case **never injects `ObjectMapperInterface`**. Outputs come from an OutputFactory (§6.9).
 - Missing data model → `DataModelNotFoundException`, constructed with the **data model class name**
   (`new DataModelNotFoundException(AccountDataModel::class)`).

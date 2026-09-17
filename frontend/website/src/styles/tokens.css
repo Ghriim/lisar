@@ -1,0 +1,49 @@
+/*
+ * The System.
+ *
+ * One palette, declared once. Everything else in the app reads these: a colour that is not here
+ * does not exist. The look is a holographic status window — deep navy, a single electric cyan
+ * that carries every interactive affordance, and light that seems to come from behind the glass.
+ */
+:root {
+    /* Surfaces, from the void to the frontmost panel. */
+    --void: #03060f;
+    --bg: #050b1c;
+    --bg-raised: #0a1630;
+    --panel: rgba(12, 28, 60, 0.72);
+    --panel-solid: #0c1c3c;
+    --panel-hover: rgba(18, 42, 88, 0.82);
+
+    /* The System speaks in cyan. */
+    --accent: #4dd2ff;
+    --accent-soft: rgba(77, 210, 255, 0.16);
+    --accent-line: rgba(77, 210, 255, 0.42);
+    --accent-glow: rgba(77, 210, 255, 0.28);
+
+    /* Text, from the message itself down to the fine print. */
+    --text: #e4f1ff;
+    --text-dim: #8fb0d8;
+    --text-faint: #5b799f;
+
+    /* The three things the System ever needs to say. */
+    --success: #38f0a8;
+    --warning: #ffc046;
+    --danger: #ff5470;
+
+    --radius: 2px;
+    --border: 1px solid var(--accent-line);
+
+    --shadow-panel:
+        0 0 0 1px rgba(77, 210, 255, 0.08),
+        0 18px 48px -24px rgba(0, 0, 0, 0.9),
+        inset 0 1px 0 rgba(77, 210, 255, 0.12);
+    --shadow-glow: 0 0 24px -6px var(--accent-glow);
+
+    --font-body:
+        'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    /* System messages are monospaced: it is a machine talking. */
+    --font-system:
+        ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+    --step: 8px;
+}

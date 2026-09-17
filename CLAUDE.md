@@ -16,15 +16,20 @@ validators qui accumulent les violations, `final readonly` par défaut, comparai
 
 Sa §13 est la checklist pour ajouter une feature, sa §15 la liste des anti-patterns.
 
+Pour le front, lire `docs/dev/frontend-conventions.md` : libellés de boutons, actions de
+formulaire, modales, et le fait que rien n'est présélectionné par défaut.
+
 ## Commandes
 
-Rien ne se lance depuis l'hôte : tout passe par `make`, qui entre dans le bon conteneur.
+Tout passe par `make`. Côté back, rien ne se lance depuis l'hôte : chaque cible entre dans le
+bon conteneur.
 
 | Cible | Fait |
 | --- | --- |
 | `make setup` | installe les hooks git (`.git-hooks/`) |
 | `make build` | rebuild complet, conteneurs up, migrations sur la base de dev |
 | `make start` | `build` + `reset-db` + `load-fixtures` |
+| `make start-website` / `make start-admin` | lance le serveur de dev du front et l'ouvre |
 | `make stop` | arrête les conteneurs |
 | `make reset-db` / `make reset-test-db` | drop + create + migrate (dev / test) |
 | `make load-fixtures` | charge les fixtures Doctrine sur la base de dev |
@@ -34,5 +39,4 @@ Rien ne se lance depuis l'hôte : tout passe par `make`, qui entre dans le bon c
 | `make pre-commit` | `cs-fix` + `stan` + `test-unit`, la séquence du hook |
 | `make db-connect` | shell MySQL sur la base de dev |
 
-Les fronts sont indépendants : `frontend/website` et `frontend/admin`, chacun avec
-`npm install` puis `npm run dev`.
+Les deux fronts sont des applications Node : elles tournent sur l'hôte, pas dans un conteneur.

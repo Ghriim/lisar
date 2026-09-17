@@ -120,11 +120,29 @@ Free-form text, several per task, **private to each account**. No shared referen
 - manage users (see `user-account.md`)
 - **an administrator never sees a user's tasks**
 
-## 7. Open questions
+## 7. Settled along the way
+
+- **A tag is a row on the account, not a word on the task.** The account keeps its tags even
+  when no task carries them any more, which is what lets the front ends offer the ones
+  already in use and makes filtering on a tag a join rather than a text search. Labels are
+  trimmed and de-duplicated; two different cases are two different tags.
+- **Editing a task replaces it whole.** Whatever the caller leaves out is cleared, and the
+  default priority is not silently put back: clearing a priority is something a person means.
+- **Default sort, in full**: category first (a task without one sorts last), then priority
+  weight (again, without one sorts last), then the newest first. Ties had to break somewhere.
+- **The list is not paginated.** A personal todo list is small, and a page of a list sorted by
+  category then priority tells you nothing useful.
+- **A due date is a calendar day**, `YYYY-MM-DD`, with no time of day anywhere in the API.
+- **Someone else's task, subtask or personal category is answered as not found**, never as
+  forbidden: its very existence is none of this account's business.
+- **An administrator is a user too.** They have their own todo list like anyone else; the
+  back-office role only adds what §6 describes.
+
+## 8. Open questions
 
 - the exact set of filters and sorts offered on the website — to be settled through use
 - is a manual order (drag and drop) expected?
 - the completed-tasks view: how far back does it go, and can a done task be reopened?
 - which timezone is "overdue" computed against? The profile does not store one today
   (see `user-account.md`)
-- what happens to an account's tags once no task carries them any more?
+- should a tag the account no longer uses be offered for deletion, or quietly kept?

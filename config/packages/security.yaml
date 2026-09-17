@@ -5,6 +5,11 @@ security:
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
+    # An administrator is an account like any other, plus the back-office. Without this an
+    # admin cannot use the app they administer.
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_USER]
+
     providers:
         app_users:
             id: App\Infrastructure\Security\UserProvider

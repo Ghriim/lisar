@@ -51,7 +51,7 @@ final class AdminUserController extends AbstractController
 
     #[Route('/api/admin/users/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
-    #[OA\Response(response: Response::HTTP_OK, content: new OA\JsonContent(ref: new Model(type: UserDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_OK, description: 'The account.', content: new OA\JsonContent(ref: new Model(type: UserDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such account.')]
     // Not getUser(): AbstractController already has that name, with another meaning.
     public function getUserAccount(int $id, GetUserUseCase $useCase): JsonResponse
@@ -78,7 +78,7 @@ final class AdminUserController extends AbstractController
 
     #[Route('/api/admin/users/{id}/activate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
-    #[OA\Response(response: Response::HTTP_OK, content: new OA\JsonContent(ref: new Model(type: UserDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_OK, description: 'The account, reactivated.', content: new OA\JsonContent(ref: new Model(type: UserDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such account.')]
     public function activateUser(int $id, ActivateUserUseCase $useCase): JsonResponse
     {

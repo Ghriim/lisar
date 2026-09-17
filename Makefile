@@ -4,6 +4,8 @@
 
 DOCKER_COMPOSE = UID=$(shell id -u) GID=$(shell id -g) docker compose
 
+FRONTEND_DIR = frontend
+
 # -T: make runs without a TTY, and `docker compose exec` fails if it tries to allocate one.
 EXEC       = $(DOCKER_COMPOSE) exec -T -u app
 APP        = $(EXEC) app
@@ -31,7 +33,7 @@ ifeq ($(coverage),true)
 endif
 
 .DEFAULT_GOAL := help
-.PHONY: help setup build start stop reset-db reset-test-db load-fixtures cs-fix stan test test-unit test-integration pre-commit db-connect shell
+.PHONY: help setup build start start-website start-admin stop reset-db reset-test-db load-fixtures cs-fix stan test test-unit test-integration pre-commit db-connect shell
 
 help: ## List the available targets
 	@grep -E '^[a-z-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -47,6 +49,14 @@ build: ## Full rebuild, all containers up, migrations on the dev database
 	$(MAKE) migrate
 
 start: build reset-db load-fixtures ## build + reset-db + load-fixtures
+
+# The two front ends are Node apps, not PHP: they run on the host, and Vite opens the browser
+# itself once the dev server is actually listening.
+start-website: ## Start the website dev server and open it
+	@cd $(FRONTEND_DIR)/website && { [ -d node_modules ] || npm install; } && npm run dev -- --open
+
+start-admin: ## Start the admin dev server and open it
+	@cd $(FRONTEND_DIR)/admin && { [ -d node_modules ] || npm install; } && npm run dev -- --open
 
 stop: ## Stop the containers
 	$(DOCKER_COMPOSE) down

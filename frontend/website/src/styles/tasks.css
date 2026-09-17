@@ -1,0 +1,294 @@
+/* The quest log: the list, its rows, and the shapes that carry a task's state. */
+
+.app-shell {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: calc(var(--step) * 5) calc(var(--step) * 2) calc(var(--step) * 10);
+}
+
+.app-header {
+    margin-bottom: calc(var(--step) * 4);
+}
+
+.wordmark {
+    font-family: var(--font-system);
+    font-size: 22px;
+    letter-spacing: 0.4em;
+    color: var(--accent);
+    text-shadow: 0 0 18px var(--accent-glow);
+}
+
+.wordmark-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--text-faint);
+}
+
+.tabs {
+    display: flex;
+    gap: calc(var(--step) * 1.5);
+    margin-bottom: calc(var(--step) * 3);
+}
+
+.tab {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom-color: rgba(143, 176, 216, 0.18);
+    color: var(--text-faint);
+    font-family: var(--font-system);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+    border-color: var(--accent-line);
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.category-group {
+    margin-bottom: calc(var(--step) * 4);
+}
+
+.category-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--step);
+    margin-bottom: calc(var(--step) * 1.5);
+    color: var(--text-dim);
+    font-family: var(--font-system);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+}
+
+.category-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent-line), transparent);
+}
+
+.task {
+    display: flex;
+    gap: calc(var(--step) * 2);
+    padding: calc(var(--step) * 2);
+    margin-bottom: var(--step);
+    background: var(--panel);
+    border: 1px solid rgba(77, 210, 255, 0.16);
+    border-left: 2px solid var(--task-accent, var(--accent-line));
+    border-radius: var(--radius);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.task:hover {
+    background: var(--panel-hover);
+    border-color: var(--accent-line);
+}
+
+.task-done {
+    opacity: 0.55;
+}
+
+.task-done .task-title {
+    text-decoration: line-through;
+}
+
+.task-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-title {
+    font-size: 15px;
+    word-break: break-word;
+}
+
+.task-description {
+    margin: 4px 0 0;
+    color: var(--text-dim);
+    font-size: 13px;
+    white-space: pre-wrap;
+}
+
+.task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--step);
+    margin-top: var(--step);
+    font-family: var(--font-system);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border: 1px solid rgba(143, 176, 216, 0.24);
+    border-radius: var(--radius);
+    color: var(--text-dim);
+}
+
+.chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.chip-state {
+    border-color: var(--state-colour, var(--accent-line));
+    color: var(--state-colour, var(--accent));
+}
+
+.chip-overdue {
+    border-color: rgba(255, 84, 112, 0.5);
+    color: var(--danger);
+}
+
+.task-actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.icon-button {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(143, 176, 216, 0.24);
+    border-radius: var(--radius);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.icon-button:hover:not(:disabled) {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+    color: var(--accent);
+}
+
+.icon-button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.icon-button-danger:hover:not(:disabled) {
+    background: rgba(255, 84, 112, 0.14);
+    border-color: rgba(255, 84, 112, 0.5);
+    color: var(--danger);
+}
+
+/* A subtask hangs off its parent on a rail, so the nesting is readable at a glance. */
+.subtasks {
+    margin: var(--step) 0 0 calc(var(--step) * 2);
+    padding-left: calc(var(--step) * 2);
+    border-left: 1px dashed rgba(77, 210, 255, 0.24);
+}
+
+.subtasks .task {
+    padding: var(--step) calc(var(--step) * 1.5);
+    background: rgba(5, 11, 28, 0.5);
+}
+
+.empty {
+    padding: calc(var(--step) * 6) calc(var(--step) * 3);
+    text-align: center;
+    color: var(--text-faint);
+    font-family: var(--font-system);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+}
+
+.auth-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: calc(var(--step) * 3);
+}
+
+.auth-panel {
+    width: 100%;
+    max-width: 420px;
+}
+
+.form-grid {
+    display: grid;
+    gap: calc(var(--step) * 2);
+}
+
+.form-grid-two {
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 560px) {
+    .form-grid-two {
+        grid-template-columns: 1fr;
+    }
+}
+
+.alert {
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 84, 112, 0.45);
+    border-radius: var(--radius);
+    background: rgba(255, 84, 112, 0.1);
+    color: var(--danger);
+    font-family: var(--font-system);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+}
+
+/* ------------------------------------------------------------- the window */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(var(--step) * 3);
+    background: rgba(3, 6, 15, 0.7);
+    backdrop-filter: blur(10px) saturate(0.7);
+    animation: window-in 0.16s ease-out;
+}
+
+.modal {
+    width: 100%;
+    max-width: 560px;
+    max-height: calc(100vh - var(--step) * 6);
+    overflow-y: auto;
+}
+
+@keyframes window-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* The one shape a form's buttons ever take: centred, cancel first, the verb second. */
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: calc(var(--step) * 1.5);
+    margin-top: var(--step);
+}
