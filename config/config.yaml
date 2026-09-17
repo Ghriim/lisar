@@ -1,0 +1,9 @@
+# Application parameters. Every value is read from an environment variable, which is itself
+# declared with a local-dev default in .env — the canonical inventory. See §11 of the blueprint.
+
+parameters:
+    events_schema_folder: '%kernel.project_dir%/schemas/import'
+
+    access_token_ttl: '%env(int:ACCESS_TOKEN_TTL)%'
+    refresh_token_ttl: '%env(int:REFRESH_TOKEN_TTL)%'
+    refresh_token_cookie_secure: '%env(bool:REFRESH_TOKEN_COOKIE_SECURE)%'

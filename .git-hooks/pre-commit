@@ -1,0 +1,17 @@
+#!/bin/sh
+# Installed by `make setup` (git config core.hooksPath .git-hooks/).
+# Same sequence as `make pre-commit`: cs-fix, PHPStan level 8, unit suite.
+set -e
+
+make cs-fix
+make stan
+make test-unit
+
+# cs-fix rewrites files in place. If it touched anything that was staged, the commit would
+# record the unformatted version: abort and let the developer restage.
+if ! git diff --quiet; then
+    echo
+    echo "php-cs-fixer reformatted files that are not staged. Review and stage them, then commit again:"
+    git --no-pager diff --name-only
+    exit 1
+fi

@@ -1,0 +1,39 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+        profiling_collect_backtrace: '%kernel.debug%'
+    orm:
+        validate_xml_mapping: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore
+        auto_mapping: false
+        # Doctrine defaults to src/Entity with the App\Entity prefix. The word "entity" does not
+        # exist here: the persisted classes are the data models, and nothing is mapped without
+        # this override.
+        mappings:
+            App:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Domain/DTO/DataModel'
+                prefix: 'App\Domain\DTO\DataModel'
+                alias: App
+
+# No dbname_suffix in the test environment: isolation comes from a dedicated container
+# (mysql-test) with its own database, not from a suffix on the working one.
+
+when@prod:
+    doctrine:
+        orm:
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system

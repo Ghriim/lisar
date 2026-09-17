@@ -1,11 +1,15 @@
 # yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
 
 # This file is the entry point to configure the routes of your app.
-# Methods with the #[Route] attribute are automatically imported.
+# Routes are declared with #[Route] attributes on the controllers.
 # See also https://symfony.com/doc/current/routing.html
 
 # To list all registered routes, run the following command:
 #   bin/console debug:router
 
+# Imported by directory rather than through the "routing.controllers" tagged-service
+# shortcut: a #[Route] outside Infrastructure/Controller/ must not be routable.
 controllers:
-    resource: routing.controllers
+    resource: ../src/Infrastructure/Controller/
+    type: attribute
+    format: json

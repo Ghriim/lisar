@@ -1,0 +1,3 @@
+# Only needed so Twig can render the API documentation UI in dev (see bundles.php).
+framework:
+    assets: ~
