@@ -34,9 +34,52 @@ function useTaskMutation<TVariables, TResult>(mutationFn: (variables: TVariables
 
     return useMutation({
         mutationFn,
-        // Both lists move together: ticking a task off takes it out of one and into the other.
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS }),
+        onSuccess: async () => {
+            // Both lists move together: ticking a task off takes it out of one and into the
+            // other. And writing a task can mint a tag the account did not have.
+            await queryClient.invalidateQueries({ queryKey: TASKS })
+            await queryClient.invalidateQueries({ queryKey: ['tags'] })
+        },
     })
+}
+
+export function useTags() {
+    return useQuery({
+        queryKey: ['tags'],
+        queryFn: api.fetchTags,
+    })
+}
+
+/**
+ * A category the person owns: renaming one changes how every task reads, so the task lists go
+ * with it.
+ */
+function useCategoryMutation<TVariables, TResult>(
+    mutationFn: (variables: TVariables) => Promise<TResult>,
+) {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn,
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['categories'] })
+            await queryClient.invalidateQueries({ queryKey: TASKS })
+        },
+    })
+}
+
+export function useCreateCategory() {
+    return useCategoryMutation((label: string) => api.createCategory(label))
+}
+
+export function useUpdateCategory() {
+    return useCategoryMutation(({ id, label }: { id: number; label: string }) =>
+        api.updateCategory(id, label),
+    )
+}
+
+export function useDeleteCategory() {
+    return useCategoryMutation((id: number) => api.deleteCategory(id))
 }
 
 export function useCreateTask() {

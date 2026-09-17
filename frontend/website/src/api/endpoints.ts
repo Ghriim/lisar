@@ -73,3 +73,19 @@ export function fetchPriorities(): Promise<Priority[]> {
 export function fetchCategories(): Promise<Category[]> {
     return request<Category[]>('/api/categories')
 }
+
+export function fetchTags(): Promise<string[]> {
+    return request<string[]>('/api/tags')
+}
+
+export function createCategory(label: string): Promise<Category> {
+    return request<Category>('/api/categories', { method: 'POST', body: { label } })
+}
+
+export function updateCategory(id: number, label: string): Promise<Category> {
+    return request<Category>(`/api/categories/${id}`, { method: 'PUT', body: { label } })
+}
+
+export function deleteCategory(id: number): Promise<void> {
+    return request<void>(`/api/categories/${id}`, { method: 'DELETE' })
+}

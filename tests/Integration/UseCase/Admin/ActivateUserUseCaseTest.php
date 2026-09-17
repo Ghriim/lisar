@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Admin;
 
 use App\Domain\DTO\DataModel\UserDataModel;
-use App\Domain\DTO\Input\Session\CreateSessionDataInput;
+use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\Gateway\Provider\UserProviderGateway;
 use App\Fixtures\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\UseCase\Admin\ActivateUserUseCase;
-use App\UseCase\Session\CreateSessionUseCase;
+use App\UseCase\Session\LoginUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ActivateUserUseCaseTest extends KernelTestCase
@@ -52,7 +52,7 @@ final class ActivateUserUseCaseTest extends KernelTestCase
 
         $this->useCase->execute($bob->id);
 
-        $session = self::getContainer()->get(CreateSessionUseCase::class)->execute(new CreateSessionDataInput(
+        $session = self::getContainer()->get(LoginUseCase::class)->execute(new LoginDataInput(
             email: 'bob@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
         ));

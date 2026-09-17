@@ -65,7 +65,7 @@ Everything runs in containers. The host never needs PHP, Composer or MySQL.
 
 | | `Domain` | `UseCase` | `Infrastructure` | Vendor |
 | --- | --- | --- | --- | --- |
-| `Domain` | yes | **never** | **never** (see exceptions) | only the 4 whitelisted Doctrine/`\Exception` symbols |
+| `Domain` | yes | **never** | **never**, bar `#[NotTrimmed]` on a DataInput (§2.1) | only the 4 whitelisted Doctrine/`\Exception` symbols, plus `Assert` on a DataInput |
 | `UseCase` | yes | yes | **exceptions only** (`Infrastructure\Exception\*`), plus tagged-service finders | yes |
 | `Infrastructure` | yes — but only `Repository`/`Persister`/`EventHandler`/`HttpClient` classes touch `Domain\DTO\DataModel` and `Domain\Gateway` | only `Controller` and `Command` | yes | yes |
 
@@ -98,8 +98,20 @@ and that is the ruling, not a compromise waiting to be undone. The reasoning:
   transitions) are *not* attributes — they are `Constraint` classes (§6.8). The split is
   "shape versus meaning", and it is easy to apply in review.
 
-So the whitelist of vendor symbols allowed in `Domain/` is the four Doctrine ones, `\Exception`,
-and `Symfony\Component\Validator\Constraints` in `Domain/DTO/Input/`. Nothing else.
+**One Infrastructure symbol is allowed too, on the same grounds:**
+`Infrastructure\HttpKernel\Attribute\NotTrimmed`, and only on a DataInput property. It is the
+same kind of declaration as an `#[Assert\…]` — inert metadata, read by the resolver rather than
+executed — and it belongs next to the property whose whitespace it protects. It lives in
+`Infrastructure` because the behaviour it opts out of is the transport's (§6.12), and nothing in
+the Domain is entitled to an opinion about it.
+
+This is the **only** sanctioned Domain → Infrastructure import. A second one is a design
+problem, not a precedent: the contracts a use case needs from the outside world are declared in
+the Domain and implemented in Infrastructure (§6.19), never the other way round.
+
+So the whitelist of symbols allowed in `Domain/` is the four Doctrine ones, `\Exception`,
+`Symfony\Component\Validator\Constraints` in `Domain/DTO/Input/`, and `NotTrimmed` on a
+DataInput property. Nothing else.
 
 ### 2.2 Why the Gateway pattern
 
@@ -306,6 +318,8 @@ unauthenticated sign-up — as opposed to `Create…`, which an authenticated ac
 `Update…`, `Delete…`, `Activate…`, `Deactivate…`, `Refresh…` (re-pull from a third party, or renew a short-lived artefact of our own, such as a
 session),
 `Complete…` / `Reopen…` (close and unclose something the person ticks off),
+`Login…` / `Logout…` (open and drop a session — named after what the person does, not after
+the row it writes),
 `Import…` (ingest a file/feed), `Build…` (derive and persist a projection), `Process…` (consume an
 event), `Fetch…` (call a third party and persist the result).
 
@@ -628,6 +642,17 @@ Rules:
   shape violations and domain constraints must speak the same vocabulary, and a client must never
   have to parse prose to know which rule it broke.
 - Document with a comment any bound that comes from the schema rather than the business.
+- **Strings arrive trimmed.** The resolver does it (§6.12), so a DataInput never declares a
+  `normalizer: 'trim'` and never exposes a `getTrimmedX()` accessor: `#[Assert\NotBlank]` sees
+  the trimmed value, and the use case stores the property as it stands.
+- The corollary: **a DataInput built by hand is not trimmed.** A console command, a test or an
+  event handler constructing one passes values already in the shape it wants. The trim belongs
+  to the transport, and nothing outside the transport gets it for free.
+- Mark a field `#[NotTrimmed]` (`Infrastructure\HttpKernel\Attribute`, allowed here by §2.1)
+  when its surrounding whitespace is part of the value. There is essentially one case:
+  credentials. `CreateSessionDataInput` marks **every** field, because credentials are matched,
+  not interpreted — editing what someone sent before comparing it would mean granting a session
+  to something they did not type.
 
 ### 6.6 DataOutput
 
@@ -1052,16 +1077,23 @@ final class MapDataInput extends ValueResolver
    programming error, not a runtime one.
 2. Builds the payload as `array_replace($request->query->all(), $bodyData)`, so one DataInput
    serves both `GET ?a=1` and `POST {json}`.
-3. Denormalises with `['filter_bool' => true]` **and
+3. **Trims every string in that payload, recursively**, lists included. Surrounding whitespace
+   is never meaningful in a payload: a title typed with a trailing space is the same title, and
+   a label of three spaces is a blank one. Doing it here, once, is what lets every DataInput and
+   every validator downstream ignore the question — and what makes the value a validator accepts
+   the very value the application stores. A field carrying `#[NotTrimmed]` is left exactly as
+   sent; in practice that means secrets, because trimming a password silently forbids the ones
+   that begin or end with a space.
+4. Denormalises with `['filter_bool' => true]` **and
    `AbstractObjectNormalizer::ENABLE_TYPE_CONVERSION => true`**, because a query string carries
    strings and nothing else: `"2"` has to become the `int` the DataInput declares and `"true"` the
    `bool`. Without that flag a paginated `?perPage=2` fails to map — this is what makes one
    DataInput genuinely serve both `GET ?a=1` and `POST {json}`.
-4. On failure, logs route, method, content-type, content-length, payload keys, the serializer
+5. On failure, logs route, method, content-type, content-length, payload keys, the serializer
    reason, missing fields and invalid path — **and the raw payload, unless the DataInput
    implements `SensitiveDataInputInterface`**. Opting out is explicit; being logged is the
    default.
-5. Throws `DataInputMappingException` with a generic client-facing message. Internals never leak
+6. Throws `DataInputMappingException` with a generic client-facing message. Internals never leak
    to the caller.
 
 ### 6.13 Exceptions and the error contract

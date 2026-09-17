@@ -7,9 +7,11 @@ namespace App\Infrastructure\HttpKernel\ArgumentResolver;
 use App\Domain\DTO\Input\DataInputInterface;
 use App\Domain\DTO\Input\SensitiveDataInputInterface;
 use App\Infrastructure\Exception\DataInputMappingException;
+use App\Infrastructure\HttpKernel\Attribute\NotTrimmed;
 use JsonException;
 use LogicException;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\AsTargetedValueResolver;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
@@ -20,7 +22,9 @@ use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
+use function in_array;
 use function is_array;
+use function is_string;
 use function sprintf;
 
 use const JSON_THROW_ON_ERROR;
@@ -57,7 +61,10 @@ final readonly class DataInputValueResolver implements ValueResolverInterface
             throw new LogicException(sprintf('Argument "$%s" is annotated with #[MapDataInput] but is not typed as a %s.', $argument->getName(), DataInputInterface::class));
         }
 
-        $payload = array_replace($request->query->all(), $this->getBodyData($request));
+        $payload = $this->trim(
+            array_replace($request->query->all(), $this->getBodyData($request)),
+            $dataInputClass,
+        );
 
         try {
             $dataInput = $this->denormalizer->denormalize($payload, $dataInputClass, null, [
@@ -74,6 +81,71 @@ final readonly class DataInputValueResolver implements ValueResolverInterface
         }
 
         return [$dataInput];
+    }
+
+    /**
+     * Surrounding whitespace is never meaningful in a payload: a title typed with a trailing
+     * space is the same title, and a label of three spaces is a blank one. Trimming here, once,
+     * is what lets every DataInput and every validator downstream ignore the question — and what
+     * makes the value a validator accepts the very value the application stores.
+     *
+     * The one exception is a field marked #[NotTrimmed]: a secret is taken as sent.
+     *
+     * @param array<string, mixed>             $payload
+     * @param class-string<DataInputInterface> $dataInputClass
+     *
+     * @return array<string, mixed>
+     */
+    private function trim(array $payload, string $dataInputClass): array
+    {
+        $rawFields = $this->getNotTrimmedFields($dataInputClass);
+
+        foreach ($payload as $field => $value) {
+            if (true === in_array($field, $rawFields, true)) {
+                continue;
+            }
+
+            $payload[$field] = $this->trimDeep($value);
+        }
+
+        return $payload;
+    }
+
+    /** Walks into lists too: the tags of a task arrive as an array of strings. */
+    private function trimDeep(mixed $value): mixed
+    {
+        if (true === is_string($value)) {
+            return trim($value);
+        }
+
+        if (true === is_array($value)) {
+            return array_map($this->trimDeep(...), $value);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param class-string<DataInputInterface> $dataInputClass
+     *
+     * @return list<string>
+     */
+    private function getNotTrimmedFields(string $dataInputClass): array
+    {
+        $constructor = (new ReflectionClass($dataInputClass))->getConstructor();
+
+        if (null === $constructor) {
+            return [];
+        }
+
+        $fields = [];
+        foreach ($constructor->getParameters() as $parameter) {
+            if ([] !== $parameter->getAttributes(NotTrimmed::class)) {
+                $fields[] = $parameter->getName();
+            }
+        }
+
+        return $fields;
     }
 
     /**

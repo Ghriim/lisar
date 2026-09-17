@@ -49,8 +49,10 @@ final class CreateAdminCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $username = (string) $input->getArgument('username');
-        $email = (string) $input->getArgument('email');
+        // Trimmed here because this DataInput is built by hand: the #[MapDataInput] resolver,
+        // which trims everything arriving over HTTP, is not in the picture on the console.
+        $username = trim((string) $input->getArgument('username'));
+        $email = trim((string) $input->getArgument('email'));
         $password = $input->getOption('password');
 
         if (false === is_string($password) || '' === $password) {

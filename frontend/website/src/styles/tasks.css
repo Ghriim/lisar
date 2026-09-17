@@ -292,3 +292,31 @@
     gap: calc(var(--step) * 1.5);
     margin-top: var(--step);
 }
+
+/* The tags the account already uses, offered back rather than retyped. */
+.tag-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+button.chip {
+    background: transparent;
+    font-family: var(--font-system);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+button.chip:hover {
+    border-color: var(--accent-line);
+    color: var(--accent);
+}
+
+button.chip[aria-pressed='true'] {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+    color: var(--accent);
+}

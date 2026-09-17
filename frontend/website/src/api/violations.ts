@@ -28,6 +28,11 @@ const MESSAGES: Record<string, string> = {
     parent_task_not_found: 'La quête parente est introuvable.',
     parent_task_is_a_subtask: 'Une sous-quête ne peut pas en porter d’autres.',
     task_has_open_subtasks: 'Une sous-quête est encore ouverte.',
+    label_required: 'Un nom est nécessaire.',
+    label_too_long: 'Trente-deux caractères au maximum.',
+    category_label_already_used: 'Une catégorie porte déjà ce nom.',
+    category_not_editable: 'Une catégorie commune ne se modifie pas.',
+    category_in_use: 'Des quêtes y sont encore rangées.',
 }
 
 export function humanise(code: string): string {

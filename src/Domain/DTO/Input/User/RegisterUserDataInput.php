@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\DTO\Input\User;
 
 use App\Domain\DTO\Input\SensitiveDataInputInterface;
+use App\Infrastructure\HttpKernel\Attribute\NotTrimmed;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -25,8 +26,7 @@ final readonly class RegisterUserDataInput implements SensitiveDataInputInterfac
         #[Assert\Length(max: 180, maxMessage: 'email_too_long')]
         public string $email,
 
-        // One rule per character class, so the caller learns every missing one in a single
-        // round trip instead of discovering them one at a time.
+        #[NotTrimmed]
         #[Assert\NotBlank(message: 'password_required')]
         // Upper bound is the hasher's own limit.
         #[Assert\Length(min: 8, max: 4096, minMessage: 'password_too_short', maxMessage: 'password_too_long')]

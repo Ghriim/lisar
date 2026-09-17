@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Controller\User;
 
-use App\Domain\DTO\Input\Session\CreateSessionDataInput;
+use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Infrastructure\Factory\RefreshTokenCookieFactory;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\UseCase\Session\CreateSessionUseCase;
-use App\UseCase\Session\DeleteSessionUseCase;
+use App\UseCase\Session\LoginUseCase;
+use App\UseCase\Session\LogoutUseCase;
 use App\UseCase\Session\RefreshSessionUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
@@ -27,7 +27,7 @@ final class SessionController extends AbstractController
     }
 
     #[Route('/api/auth/login', methods: Request::METHOD_POST)]
-    #[OA\RequestBody(required: true, content: new Model(type: CreateSessionDataInput::class))]
+    #[OA\RequestBody(required: true, content: new Model(type: LoginDataInput::class))]
     #[OA\Response(
         response: Response::HTTP_OK,
         description: 'Signed in. The refresh token is returned as an httpOnly cookie, not in the body.',
@@ -36,7 +36,7 @@ final class SessionController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNAUTHORIZED, description: 'Invalid credentials.')]
     #[OA\Response(response: Response::HTTP_FORBIDDEN, description: 'The account is deactivated.')]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Invalid payload.')]
-    public function createSession(#[MapDataInput] CreateSessionDataInput $input, CreateSessionUseCase $useCase): JsonResponse
+    public function login(#[MapDataInput] LoginDataInput $input, LoginUseCase $useCase): JsonResponse
     {
         return $this->respondWithSession($useCase->execute($input));
     }
@@ -59,7 +59,7 @@ final class SessionController extends AbstractController
         response: Response::HTTP_NO_CONTENT,
         description: 'Signed out of every device of the account. Idempotent.',
     )]
-    public function deleteSession(Request $request, DeleteSessionUseCase $useCase): JsonResponse
+    public function logout(Request $request, LogoutUseCase $useCase): JsonResponse
     {
         $useCase->execute($this->readRefreshToken($request));
 

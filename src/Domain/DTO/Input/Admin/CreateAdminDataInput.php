@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\DTO\Input\Admin;
 
 use App\Domain\DTO\Input\SensitiveDataInputInterface;
+use App\Infrastructure\HttpKernel\Attribute\NotTrimmed;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -25,6 +26,9 @@ final readonly class CreateAdminDataInput implements SensitiveDataInputInterface
         public string $email,
 
         // The same policy as a public sign-up: an administrator's password is not exempt.
+        // Taken exactly as sent: trimming a secret would quietly forbid the passwords that
+        // begin or end with a space.
+        #[NotTrimmed]
         #[Assert\NotBlank(message: 'password_required')]
         #[Assert\Length(min: 8, max: 4096, minMessage: 'password_too_short', maxMessage: 'password_too_long')]
         #[Assert\Regex(pattern: '/\p{Ll}/u', message: 'password_missing_lowercase')]

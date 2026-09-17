@@ -3,6 +3,7 @@ import type { Task } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { Modal } from '../components/Modal'
 import { SystemPanel } from '../components/SystemPanel'
+import { CategoryManager } from '../features/tasks/CategoryManager'
 import { TaskComposer } from '../features/tasks/TaskComposer'
 import { TaskItem } from '../features/tasks/TaskItem'
 import { useTasks } from '../features/tasks/queries'
@@ -15,6 +16,7 @@ export function TasksPage() {
     const { user, signOut } = useAuth()
     const [showDone, setShowDone] = useState(false)
     const [composer, setComposer] = useState<Composer>(null)
+    const [managingCategories, setManagingCategories] = useState(false)
 
     const tasks = useTasks(showDone)
     const groups = groupByCategory(tasks.data ?? [])
@@ -40,15 +42,26 @@ export function TasksPage() {
             <SystemPanel
                 title="Journal de quêtes"
                 actions={
-                    <button
-                        type="button"
-                        className="icon-button"
-                        aria-label="Nouvelle quête"
-                        title="Nouvelle quête"
-                        onClick={() => setComposer({ mode: 'create', parent: null })}
-                    >
-                        +
-                    </button>
+                    <span className="row" style={{ gap: 6 }}>
+                        <button
+                            type="button"
+                            className="icon-button"
+                            aria-label="Gérer les catégories"
+                            title="Gérer les catégories"
+                            onClick={() => setManagingCategories(true)}
+                        >
+                            ▤
+                        </button>
+                        <button
+                            type="button"
+                            className="icon-button"
+                            aria-label="Créer une quête"
+                            title="Créer une quête"
+                            onClick={() => setComposer({ mode: 'create', parent: null })}
+                        >
+                            +
+                        </button>
+                    </span>
                 }
             >
                 <div className="tabs" role="tablist">
@@ -95,6 +108,12 @@ export function TasksPage() {
                     </div>
                 ))}
             </SystemPanel>
+
+            {managingCategories && (
+                <Modal title="Catégories" onClose={() => setManagingCategories(false)}>
+                    <CategoryManager />
+                </Modal>
+            )}
 
             {composer !== null && (
                 <Modal title={composerTitle(composer)} onClose={close}>

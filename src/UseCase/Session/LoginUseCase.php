@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCase\Session;
 
-use App\Domain\DTO\Input\Session\CreateSessionDataInput;
+use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
@@ -18,7 +18,7 @@ use App\Domain\Registry\User\IdentityProviderRegistry;
 use App\Domain\Session\AccessTokenIssuerInterface;
 use App\Domain\Session\RefreshTokenGenerator;
 use App\Domain\User\PasswordHasherInterface;
-use App\Domain\Validation\Validator\Session\CreateSessionValidator;
+use App\Domain\Validation\Validator\Session\LoginValidator;
 use App\UseCase\UseCaseInterface;
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
@@ -26,10 +26,10 @@ use Psr\Clock\ClockInterface;
 /**
  * Signing in: credentials in, a session out.
  */
-final readonly class CreateSessionUseCase implements UseCaseInterface
+final readonly class LoginUseCase implements UseCaseInterface
 {
     public function __construct(
-        private CreateSessionValidator $validator,
+        private LoginValidator $validator,
         private UserProviderGateway $userProviderGateway,
         private UserPersisterGateway $userPersisterGateway,
         private SessionPersisterGateway $sessionPersisterGateway,
@@ -47,7 +47,7 @@ final readonly class CreateSessionUseCase implements UseCaseInterface
      * @throws InvalidCredentialsException
      * @throws AccountDeactivatedException
      */
-    public function execute(CreateSessionDataInput $input): SessionDataOutput
+    public function execute(LoginDataInput $input): SessionDataOutput
     {
         $this->validator->validate($input);
 

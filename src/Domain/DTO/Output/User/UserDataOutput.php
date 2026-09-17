@@ -23,6 +23,9 @@ final class UserDataOutput
 
     public bool $isActive;
 
+    /** One of UserRoleRegistry. Shown to the account itself, and to the back-office. */
+    public string $role;
+
     #[Map(transform: [DateDataTransformer::class, 'dateToString'])]
     public ?string $lastSignedInAt = null;
 

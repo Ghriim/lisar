@@ -8,7 +8,7 @@ use DateTimeImmutable;
 use JsonSerializable;
 
 /**
- * What a sign-in answers with.
+ * A session, as it is handed to whoever just obtained one: by signing in, or by refreshing.
  *
  * The refresh token is carried here for the controller to put in an httpOnly cookie, and is
  * deliberately kept out of the JSON body: JsonSerializable is what declares that contract, so a

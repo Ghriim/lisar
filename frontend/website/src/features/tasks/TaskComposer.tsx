@@ -3,7 +3,7 @@ import { ApiError } from '../../api/client'
 import type { Task } from '../../api/types'
 import { Field, TextArea, TextInput } from '../../components/Field'
 import { FormActions } from '../../components/FormActions'
-import { useCategories, useCreateTask, usePriorities, useUpdateTask } from './queries'
+import { useCategories, useCreateTask, usePriorities, useTags, useUpdateTask } from './queries'
 
 interface TaskComposerProps {
     /** Set when writing a subtask: the quest it hangs from. */
@@ -55,6 +55,7 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
     const [form, setForm] = useState<FormState>(() => (editing === null ? EMPTY : fromTask(editing)))
     const priorities = usePriorities()
     const categories = useCategories()
+    const tags = useTags()
     const create = useCreateTask()
     const update = useUpdateTask()
 
@@ -64,6 +65,19 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
 
     const set = (field: keyof FormState) => (value: string) =>
         setForm((current) => ({ ...current, [field]: value }))
+
+    const chosenTags = form.tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag !== '')
+
+    const toggleTag = (label: string) => {
+        const next = chosenTags.includes(label)
+            ? chosenTags.filter((tag) => tag !== label)
+            : [...chosenTags, label]
+
+        set('tags')(next.join(', '))
+    }
 
     const submit = async (event: FormEvent) => {
         event.preventDefault()
@@ -164,6 +178,22 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
                     />
                 </Field>
             </div>
+
+            {(tags.data ?? []).length > 0 && (
+                <div className="tag-suggestions">
+                    {(tags.data ?? []).map((label) => (
+                        <button
+                            key={label}
+                            type="button"
+                            className="chip"
+                            aria-pressed={chosenTags.includes(label)}
+                            onClick={() => toggleTag(label)}
+                        >
+                            #{label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <FormActions>
             <button type="button" className="button button-quiet" onClick={onDone}>

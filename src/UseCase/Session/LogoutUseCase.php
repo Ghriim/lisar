@@ -19,7 +19,7 @@ use Psr\Clock\ClockInterface;
  * Idempotent on purpose: an unknown token is not an error, the caller wanted the sessions gone
  * and they are gone.
  */
-final readonly class DeleteSessionUseCase implements UseCaseInterface
+final readonly class LogoutUseCase implements UseCaseInterface
 {
     public function __construct(
         private SessionProviderGateway $sessionProviderGateway,

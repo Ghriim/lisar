@@ -122,6 +122,28 @@ Free-form text, several per task, **private to each account**. No shared referen
 
 ## 7. Settled along the way
 
+- **There is always exactly one default priority.** The default is never dropped, only handed
+  over: setting it on another priority takes it from the one that had it, and the very first
+  priority ever created gets it whether or not anyone asked. A task created without a priority
+  has to get something.
+- **A priority cannot be deleted while it is the default, or while any task carries it.** The
+  two reasons are reported together, so the back-office learns both in one go.
+- **A personal label does not block a common one.** An administrator naming a common category
+  "Sport" while someone already has a personal "Sport" is allowed: personal labels are private,
+  and the website shows the two sets apart, which keeps the duplicate readable.
+- **A common category cannot be deleted while any account's tasks sit in it** — across every
+  account, not just the administrator's own.
+- **The person manages their own categories** — create, rename, delete — and sees the
+  reference ones alongside, greyed out: the list they choose from is the list they manage.
+  A reference category comes back as *not editable* rather than *not found*, because they can
+  see it and pretending otherwise would only puzzle them. A category still holding tasks
+  cannot be deleted; they empty it first.
+- **Two accounts may each have a category of the same name.** The lists never meet, so there
+  is nothing to collide. A label only has to be unique within what one person sees: their own
+  categories plus the reference ones.
+- **The tags already used are offered back** when writing a task, as chips to toggle. Typing
+  a new one still works — the field is free text — but the offer is what stops the same word
+  being spelled three ways.
 - **A tag is a row on the account, not a word on the task.** The account keeps its tags even
   when no task carries them any more, which is what lets the front ends offer the ones
   already in use and makes filtering on a tag a join rather than a text search. Labels are
@@ -146,3 +168,4 @@ Free-form text, several per task, **private to each account**. No shared referen
 - which timezone is "overdue" computed against? The profile does not store one today
   (see `user-account.md`)
 - should a tag the account no longer uses be offered for deletion, or quietly kept?
+- renaming a tag across every task that carries it: worth an endpoint?

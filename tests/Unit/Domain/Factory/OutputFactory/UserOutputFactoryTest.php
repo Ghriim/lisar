@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Domain\Factory\OutputFactory;
 use App\Domain\DataTransformer\DateDataTransformer;
 use App\Domain\DTO\DataModel\UserDataModel;
 use App\Domain\Factory\OutputFactory\UserOutputFactory;
+use App\Domain\Registry\User\UserRoleRegistry;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\ObjectMapper\ObjectMapper;
@@ -33,6 +34,7 @@ final class UserOutputFactoryTest extends TestCase
         self::assertSame('alice', $output->username);
         self::assertSame('alice@lisar.test', $output->email);
         self::assertTrue($output->isActive);
+        self::assertSame(UserRoleRegistry::USER, $output->role);
         self::assertSame($createdAt->format(DateDataTransformer::FORMAT), $output->createdAt);
         self::assertNull($output->lastSignedInAt);
     }

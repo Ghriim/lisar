@@ -6,7 +6,7 @@ namespace App\Tests\Integration\UseCase\Session;
 
 use App\Domain\DTO\DataModel\SessionDataModel;
 use App\Domain\DTO\DataModel\UserDataModel;
-use App\Domain\DTO\Input\Session\CreateSessionDataInput;
+use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
@@ -16,7 +16,7 @@ use App\Domain\Gateway\Provider\UserProviderGateway;
 use App\Domain\Session\RefreshTokenGenerator;
 use App\Fixtures\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
-use App\UseCase\Session\CreateSessionUseCase;
+use App\UseCase\Session\LoginUseCase;
 use App\UseCase\Session\RefreshSessionUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -25,7 +25,7 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
     use LoadFixturesTrait;
 
     private RefreshSessionUseCase $useCase;
-    private CreateSessionUseCase $createSessionUseCase;
+    private LoginUseCase $createSessionUseCase;
     private SessionProviderGateway $sessionProviderGateway;
     private UserProviderGateway $userProviderGateway;
     private UserPersisterGateway $userPersisterGateway;
@@ -36,7 +36,7 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
         parent::setUp();
 
         $this->useCase = self::getContainer()->get(RefreshSessionUseCase::class);
-        $this->createSessionUseCase = self::getContainer()->get(CreateSessionUseCase::class);
+        $this->createSessionUseCase = self::getContainer()->get(LoginUseCase::class);
         $this->sessionProviderGateway = self::getContainer()->get(SessionProviderGateway::class);
         $this->userProviderGateway = self::getContainer()->get(UserProviderGateway::class);
         $this->userPersisterGateway = self::getContainer()->get(UserPersisterGateway::class);
@@ -126,7 +126,7 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
 
     private function signIn(): SessionDataOutput
     {
-        return $this->createSessionUseCase->execute(new CreateSessionDataInput(
+        return $this->createSessionUseCase->execute(new LoginDataInput(
             email: 'alice@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
         ));

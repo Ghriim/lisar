@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Session;
 
 use App\Domain\DTO\DataModel\UserDataModel;
-use App\Domain\DTO\Input\Session\CreateSessionDataInput;
+use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Domain\Gateway\Provider\SessionProviderGateway;
 use App\Domain\Session\RefreshTokenGenerator;
 use App\Fixtures\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
-use App\UseCase\Session\CreateSessionUseCase;
-use App\UseCase\Session\DeleteSessionUseCase;
+use App\UseCase\Session\LoginUseCase;
+use App\UseCase\Session\LogoutUseCase;
 use App\UseCase\Session\RefreshSessionUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-final class DeleteSessionUseCaseTest extends KernelTestCase
+final class LogoutUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
 
-    private DeleteSessionUseCase $useCase;
-    private CreateSessionUseCase $createSessionUseCase;
+    private LogoutUseCase $useCase;
+    private LoginUseCase $createSessionUseCase;
     private SessionProviderGateway $sessionProviderGateway;
     private RefreshTokenGenerator $refreshTokenGenerator;
 
@@ -29,8 +29,8 @@ final class DeleteSessionUseCaseTest extends KernelTestCase
     {
         parent::setUp();
 
-        $this->useCase = self::getContainer()->get(DeleteSessionUseCase::class);
-        $this->createSessionUseCase = self::getContainer()->get(CreateSessionUseCase::class);
+        $this->useCase = self::getContainer()->get(LogoutUseCase::class);
+        $this->createSessionUseCase = self::getContainer()->get(LoginUseCase::class);
         $this->sessionProviderGateway = self::getContainer()->get(SessionProviderGateway::class);
         $this->refreshTokenGenerator = self::getContainer()->get(RefreshTokenGenerator::class);
 
@@ -99,7 +99,7 @@ final class DeleteSessionUseCaseTest extends KernelTestCase
 
     private function signIn(): SessionDataOutput
     {
-        return $this->createSessionUseCase->execute(new CreateSessionDataInput(
+        return $this->createSessionUseCase->execute(new LoginDataInput(
             email: 'alice@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
         ));

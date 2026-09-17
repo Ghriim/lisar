@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Admin;
 
 use App\Domain\DTO\DataModel\UserDataModel;
-use App\Domain\DTO\Input\Session\CreateSessionDataInput;
+use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\SessionProviderGateway;
 use App\Domain\Gateway\Provider\UserProviderGateway;
@@ -14,7 +14,7 @@ use App\Fixtures\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\UseCase\Admin\DeactivateUserUseCase;
-use App\UseCase\Session\CreateSessionUseCase;
+use App\UseCase\Session\LoginUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class DeactivateUserUseCaseTest extends KernelTestCase
@@ -22,7 +22,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
     use LoadFixturesTrait;
 
     private DeactivateUserUseCase $useCase;
-    private CreateSessionUseCase $createSessionUseCase;
+    private LoginUseCase $createSessionUseCase;
     private SessionProviderGateway $sessionProviderGateway;
     private UserProviderGateway $userProviderGateway;
 
@@ -31,7 +31,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         parent::setUp();
 
         $this->useCase = self::getContainer()->get(DeactivateUserUseCase::class);
-        $this->createSessionUseCase = self::getContainer()->get(CreateSessionUseCase::class);
+        $this->createSessionUseCase = self::getContainer()->get(LoginUseCase::class);
         $this->sessionProviderGateway = self::getContainer()->get(SessionProviderGateway::class);
         $this->userProviderGateway = self::getContainer()->get(UserProviderGateway::class);
 
@@ -57,7 +57,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
 
     public function testItDropsTheLiveSessionsOfTheAccount(): void
     {
-        $this->createSessionUseCase->execute(new CreateSessionDataInput(
+        $this->createSessionUseCase->execute(new LoginDataInput(
             email: 'alice@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
         ));
