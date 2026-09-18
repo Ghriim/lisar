@@ -1,27 +1,32 @@
+import { Check, Eye, RotateCcw } from 'lucide-react'
 import { ApiError } from '../../api/client'
 import type { Task } from '../../api/types'
 import { humanise } from '../../api/violations'
-import { useCompleteTask, useDeleteTask, useReopenTask } from './queries'
+import { Chip, DotChip, IconButton, ListItem, StateChip } from '../../components'
+import { useCompleteTask, useReopenTask } from './queries'
 import { formatDay, isOverdue, stateDisplay } from './taskDisplay'
 
 interface TaskItemProps {
     task: Task
-    onAddSubtask?: (parent: Task) => void
-    onEdit?: (task: Task) => void
+    /** Opens the quest in the window that holds everything else one can do to it. */
+    onView: (task: Task) => void
 }
 
-export function TaskItem({ task, onAddSubtask, onEdit }: TaskItemProps) {
+/** What a task looks like as a row: which chips, which actions, what the count counts. */
+export function TaskItem({ task, onView }: TaskItemProps) {
     const complete = useCompleteTask()
     const reopen = useReopenTask()
-    const remove = useDeleteTask()
 
     const state = stateDisplay(task.state)
     const overdue = isOverdue(task)
-    const busy = complete.isPending || reopen.isPending || remove.isPending
+    const busy = complete.isPending || reopen.isPending
+
+    const subtaskCount = task.subtasks.length
+    const doneSubtaskCount = task.subtasks.filter((subtask) => subtask.state === 'done').length
 
     // Refusing to close a task whose subtask is still open is the one error this row can raise,
     // and it belongs next to the row that raised it.
-    const failure = [complete.error, reopen.error, remove.error].find((one) => one !== null)
+    const failure = [complete.error, reopen.error].find((one) => one !== null)
     const error =
         failure instanceof ApiError
             ? humanise(failure.violationsFor('id')[0] ?? failure.code ?? 'action_failed')
@@ -29,117 +34,69 @@ export function TaskItem({ task, onAddSubtask, onEdit }: TaskItemProps) {
 
     return (
         <>
-            <article
-                className={task.state === 'done' ? 'task task-done' : 'task'}
-                style={{ '--task-accent': task.priority?.colour } as React.CSSProperties}
-            >
-                <div className="task-body">
-                    <div className="task-title">{task.title}</div>
-
-                    {task.description !== null && task.description !== '' && (
-                        <p className="task-description">{task.description}</p>
-                    )}
-
-                    <div className="task-meta">
-                        <span className="chip chip-state" style={{ '--state-colour': state.colour } as React.CSSProperties}>
-                            {state.label}
-                        </span>
+            <ListItem
+                title={task.title}
+                note={subtaskCount > 0 ? `(${doneSubtaskCount}/${subtaskCount})` : undefined}
+                description={task.description}
+                accent={task.priority?.colour}
+                muted={task.state === 'done'}
+                error={error}
+                meta={
+                    <>
+                        <StateChip colour={state.colour}>{state.label}</StateChip>
 
                         {task.priority !== null && (
-                            <span className="chip" style={{ color: task.priority.colour }}>
-                                <i className="chip-dot" />
-                                {task.priority.label}
-                            </span>
+                            <DotChip colour={task.priority.colour}>{task.priority.label}</DotChip>
                         )}
 
                         {task.dueDate !== null && (
-                            <span className={overdue ? 'chip chip-overdue' : 'chip'}>
+                            <Chip tone={overdue ? 'danger' : 'default'}>
                                 {overdue ? 'En retard · ' : ''}
                                 {formatDay(task.dueDate)}
-                            </span>
+                            </Chip>
                         )}
 
                         {task.tags.map((tag) => (
-                            <span key={tag} className="chip">
-                                #{tag}
-                            </span>
+                            <Chip key={tag}>#{tag}</Chip>
                         ))}
-                    </div>
+                    </>
+                }
+                actions={
+                    <>
+                        {task.state === 'done' ? (
+                            <IconButton
+                                icon={RotateCcw}
+                                label="Rouvrir"
+                                subject={task.title}
+                                disabled={busy}
+                                onClick={() => reopen.mutate(task.id)}
+                            />
+                        ) : (
+                            <IconButton
+                                icon={Check}
+                                label="Terminer"
+                                subject={task.title}
+                                disabled={busy}
+                                onClick={() => complete.mutate(task.id)}
+                            />
+                        )}
 
-                    {error !== null && <p className="field-error">{error}</p>}
-                </div>
+                        <IconButton
+                            icon={Eye}
+                            label="Consulter"
+                            subject={task.title}
+                            onClick={() => onView(task)}
+                        />
+                    </>
+                }
+            >
+                {subtaskCount > 0
+                    ? task.subtasks.map((subtask) => (
+                          <TaskItem key={subtask.id} task={subtask} onView={onView} />
+                      ))
+                    : undefined}
+            </ListItem>
 
-                <div className="task-actions">
-                    {task.state === 'done' ? (
-                        <button
-                            type="button"
-                            className="icon-button"
-                            title="Rouvrir"
-                            aria-label={`Rouvrir « ${task.title} »`}
-                            disabled={busy}
-                            onClick={() => reopen.mutate(task.id)}
-                        >
-                            ↺
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            className="icon-button"
-                            title="Terminer"
-                            aria-label={`Terminer « ${task.title} »`}
-                            disabled={busy}
-                            onClick={() => complete.mutate(task.id)}
-                        >
-                            ✓
-                        </button>
-                    )}
-
-                    {onEdit !== undefined && (
-                        <button
-                            type="button"
-                            className="icon-button"
-                            title="Modifier"
-                            aria-label={`Modifier « ${task.title} »`}
-                            disabled={busy}
-                            onClick={() => onEdit(task)}
-                        >
-                            ✎
-                        </button>
-                    )}
-
-                    {onAddSubtask !== undefined && task.parentId === null && (
-                        <button
-                            type="button"
-                            className="icon-button"
-                            title="Ajouter une sous-quête"
-                            aria-label={`Ajouter une sous-quête à « ${task.title} »`}
-                            disabled={busy}
-                            onClick={() => onAddSubtask(task)}
-                        >
-                            +
-                        </button>
-                    )}
-
-                    <button
-                        type="button"
-                        className="icon-button icon-button-danger"
-                        title="Supprimer"
-                        aria-label={`Supprimer « ${task.title} »`}
-                        disabled={busy}
-                        onClick={() => remove.mutate(task.id)}
-                    >
-                        ✕
-                    </button>
-                </div>
-            </article>
-
-            {task.subtasks.length > 0 && (
-                <div className="subtasks">
-                    {task.subtasks.map((subtask) => (
-                        <TaskItem key={subtask.id} task={subtask} onEdit={onEdit} />
-                    ))}
-                </div>
-            )}
         </>
     )
 }

@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Infrastructure\HttpKernel\ArgumentResolver;
 
 use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Input\Task\CreateTaskDataInput;
+use App\Domain\DTO\Input\Weight\SaveWeightDataInput;
 use App\Infrastructure\Exception\DataInputMappingException;
 use App\Infrastructure\HttpKernel\ArgumentResolver\DataInputValueResolver;
 use LogicException;
@@ -17,8 +18,11 @@ use ReflectionClass;
 use stdClass;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
+use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
 
 /**
  * The resolver is the one place that normalises what arrives from the transport, so this is the
@@ -90,6 +94,40 @@ final class DataInputValueResolverTest extends TestCase
         self::assertSame('  Corr3ct-Horse!  ', $this->denormalised['password']);
     }
 
+    /**
+     * A browser sends 72, not 72.0, for a weight of exactly seventy-two kilograms — and the
+     * serializer only accepts a JSON integer for a float property when it is told it is reading
+     * JSON. Without that, every decimal field in the API refuses whole numbers.
+     *
+     * Run against the real serializer, because the point being proved is its behaviour.
+     */
+    public function testItAcceptsAWholeNumberForADecimalField(): void
+    {
+        $resolver = new DataInputValueResolver($this->realDenormalizer(), new NullLogger());
+
+        $resolved = $resolver->resolve(
+            new Request(content: (string) json_encode(['weightInKilograms' => 72])),
+            $this->metadataFor(SaveWeightDataInput::class),
+        );
+
+        self::assertInstanceOf(SaveWeightDataInput::class, $resolved[0]);
+        self::assertSame(72.0, $resolved[0]->weightInKilograms);
+    }
+
+    /** And a decimal still arrives as one: the fix must not round the value to an int. */
+    public function testItKeepsTheDecimalsOfADecimalField(): void
+    {
+        $resolver = new DataInputValueResolver($this->realDenormalizer(), new NullLogger());
+
+        $resolved = $resolver->resolve(
+            new Request(content: (string) json_encode(['weightInKilograms' => 71.85])),
+            $this->metadataFor(SaveWeightDataInput::class),
+        );
+
+        self::assertInstanceOf(SaveWeightDataInput::class, $resolved[0]);
+        self::assertSame(71.85, $resolved[0]->weightInKilograms);
+    }
+
     public function testItRefusesAnArgumentThatIsNotADataInput(): void
     {
         $this->expectException(LogicException::class);
@@ -129,6 +167,14 @@ final class DataInputValueResolverTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
 
         (new DataInputValueResolver($denormalizer, $logger))->resolve($request, $this->metadataFor($type));
+    }
+
+    /** The serializer the application actually runs, not a stand-in for it. */
+    private function realDenormalizer(): DenormalizerInterface
+    {
+        return new Serializer([
+            new ObjectNormalizer(propertyTypeExtractor: new ReflectionExtractor()),
+        ]);
     }
 
     private function metadataFor(string $type): ArgumentMetadata

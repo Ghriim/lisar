@@ -1,11 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Card, Flex, Input, Segmented, Space, Table, Tag, Typography } from 'antd'
 import { useState } from 'react'
-import { ApiError } from '../api/client'
 import * as api from '../api/endpoints'
-import { ROLE_ADMIN, type User } from '../api/types'
-import { summarise } from '../api/violations'
-import { formatDate } from './formatDate'
+import type { User } from '../api/types'
+import {
+    Button,
+    DataTable,
+    DateText,
+    LinkText,
+    ListToolbar,
+    Page,
+    RoleTag,
+    Row,
+    StatusTag,
+    useNotifier,
+} from '../components'
 import { UserDrawer } from './UserDrawer'
 
 type StatusFilter = 'all' | 'active' | 'inactive'
@@ -13,7 +21,7 @@ type StatusFilter = 'all' | 'active' | 'inactive'
 const PER_PAGE = 25
 
 export function UsersPage() {
-    const { message } = App.useApp()
+    const notify = useNotifier()
     const queryClient = useQueryClient()
 
     const [search, setSearch] = useState('')
@@ -36,104 +44,91 @@ export function UsersPage() {
     const toggle = useMutation({
         mutationFn: (user: User) => (user.isActive ? api.deactivateUser(user.id) : api.activateUser(user.id)),
         onSuccess: async (user) => {
-            message.success(user.isActive ? 'Compte réactivé.' : 'Compte désactivé.')
+            notify.success(user.isActive ? 'Compte réactivé.' : 'Compte désactivé.')
             await queryClient.invalidateQueries({ queryKey: ['users'] })
         },
-        onError: (failure) => {
-            message.error(
-                failure instanceof ApiError && failure.violations !== null
-                    ? summarise(failure.violations)
-                    : 'L’opération a échoué.',
-            )
-        },
+        onError: (failure) => notify.failure(failure, 'L’opération a échoué.'),
     })
 
     return (
-        <Card title="Comptes">
-            <Flex gap={16} wrap style={{ marginBottom: 16 }}>
-                <Input.Search
-                    placeholder="Nom ou adresse"
-                    allowClear
-                    style={{ maxWidth: 280 }}
-                    onSearch={(value) => {
-                        setSearch(value)
-                        setPage(1)
-                    }}
-                />
-
-                <Segmented<StatusFilter>
-                    value={status}
-                    onChange={(value) => {
+        <Page title="Comptes">
+            <ListToolbar<StatusFilter>
+                searchPlaceholder="Nom ou adresse"
+                onSearch={(term) => {
+                    setSearch(term)
+                    setPage(1)
+                }}
+                filter={{
+                    value: status,
+                    onChange: (value) => {
                         setStatus(value)
                         setPage(1)
-                    }}
-                    options={[
+                    },
+                    options: [
                         { label: 'Tous', value: 'all' },
                         { label: 'Actifs', value: 'active' },
                         { label: 'Désactivés', value: 'inactive' },
-                    ]}
-                />
-            </Flex>
+                    ],
+                }}
+            />
 
-            <Table<User>
-                rowKey="id"
+            <DataTable<User>
+                rows={users.data?.items ?? []}
+                rowKey={(user) => user.id}
                 loading={users.isPending}
-                dataSource={users.data?.items ?? []}
+                emptyText="Aucun compte"
                 pagination={{
-                    current: page,
-                    pageSize: PER_PAGE,
+                    page,
+                    perPage: PER_PAGE,
                     total: users.data?.total ?? 0,
-                    showSizeChanger: false,
                     onChange: setPage,
                 }}
                 columns={[
                     {
+                        key: 'username',
                         title: 'Nom',
-                        dataIndex: 'username',
-                        render: (username: string, user) => (
-                            <Space>
-                                <Typography.Link onClick={() => setOpened(user)}>{username}</Typography.Link>
-                                {user.role === ROLE_ADMIN && <Tag color="gold">admin</Tag>}
-                            </Space>
+                        render: (user) => (
+                            <Row gap={8}>
+                                <LinkText onClick={() => setOpened(user)}>{user.username}</LinkText>
+                                <RoleTag role={user.role} />
+                            </Row>
                         ),
                     },
-                    { title: 'Adresse', dataIndex: 'email' },
+                    { key: 'email', title: 'Adresse', render: (user) => user.email },
                     {
+                        key: 'status',
                         title: 'Statut',
-                        dataIndex: 'isActive',
-                        render: (isActive: boolean) => (
-                            <Tag color={isActive ? 'green' : 'red'}>{isActive ? 'Actif' : 'Désactivé'}</Tag>
-                        ),
+                        render: (user) => <StatusTag isActive={user.isActive} />,
                     },
                     {
+                        key: 'lastSignedInAt',
                         title: 'Dernière connexion',
-                        dataIndex: 'lastSignedInAt',
-                        render: (date: string | null) => (date === null ? '—' : formatDate(date)),
+                        render: (user) => <DateText value={user.lastSignedInAt} fallback="Jamais" />,
                     },
                     {
-                        title: '',
                         key: 'actions',
+                        title: '',
                         align: 'right',
-                        render: (_, user) => (
-                            <Space>
+                        render: (user) => (
+                            <Row gap={8} justify="end">
                                 <Button size="small" onClick={() => setOpened(user)}>
                                     Consulter
                                 </Button>
                                 <Button
                                     size="small"
-                                    danger={user.isActive}
+                                    variant={user.isActive ? 'danger' : 'default'}
                                     loading={toggle.isPending && toggle.variables?.id === user.id}
                                     onClick={() => toggle.mutate(user)}
                                 >
                                     {user.isActive ? 'Désactiver' : 'Réactiver'}
                                 </Button>
-                            </Space>
+                            </Row>
                         ),
                     },
                 ]}
             />
 
             {opened !== null && <UserDrawer user={opened} onClose={() => setOpened(null)} />}
-        </Card>
+        </Page>
     )
 }

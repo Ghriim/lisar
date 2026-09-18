@@ -1,8 +1,16 @@
 import { useState, type FormEvent } from 'react'
-import { ApiError } from '../../api/client'
 import type { Task } from '../../api/types'
-import { Field, TextArea, TextInput } from '../../components/Field'
-import { FormActions } from '../../components/FormActions'
+import {
+    Button,
+    Field,
+    FormActions,
+    FormGrid,
+    Select,
+    TextArea,
+    TextInput,
+    ToggleChip,
+    useViolations,
+} from '../../components'
 import { useCategories, useCreateTask, usePriorities, useTags, useUpdateTask } from './queries'
 
 interface TaskComposerProps {
@@ -60,8 +68,7 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
     const update = useUpdateTask()
 
     const pending = create.isPending || update.isPending
-    const failure = (editing === null ? create.error : update.error) ?? null
-    const violations = failure instanceof ApiError ? failure : null
+    const violations = useViolations(editing === null ? create.error : update.error)
 
     const set = (field: keyof FormState) => (value: string) =>
         setForm((current) => ({ ...current, [field]: value }))
@@ -88,10 +95,7 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
             dueDate: form.dueDate === '' ? null : form.dueDate,
             priorityId: form.priorityId === '' ? null : Number(form.priorityId),
             categoryId: form.categoryId === '' ? null : Number(form.categoryId),
-            tags: form.tags
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter((tag) => tag !== ''),
+            tags: chosenTags,
         }
 
         try {
@@ -110,7 +114,7 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
 
     return (
         <form className="form-grid" onSubmit={(event) => void submit(event)}>
-            <Field label="Intitulé" errors={violations?.violationsFor('title')}>
+            <Field label="Intitulé" errors={violations.for('title')}>
                 <TextInput
                     value={form.title}
                     onChange={(event) => set('title')(event.target.value)}
@@ -120,7 +124,7 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
                 />
             </Field>
 
-            <Field label="Détail" errors={violations?.violationsFor('description')}>
+            <Field label="Détail" errors={violations.for('description')}>
                 <TextArea
                     value={form.description}
                     onChange={(event) => set('description')(event.target.value)}
@@ -128,81 +132,72 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
                 />
             </Field>
 
-            <div className="form-grid form-grid-two">
-                <Field label="Échéance" errors={violations?.violationsFor('dueDate')}>
-                    <TextInput
-                        type="date"
-                        value={form.dueDate}
-                        onChange={(event) => set('dueDate')(event.target.value)}
+            <FormGrid columns={2}>
+                <Field label="Catégorie" errors={violations.for('categoryId')}>
+                    <Select
+                        value={form.categoryId}
+                        onChange={set('categoryId')}
+                        placeholder="Aucune"
+                        options={(categories.data ?? []).map((category) => ({
+                            value: String(category.id),
+                            label: category.isPersonal ? `${category.label} ·` : category.label,
+                        }))}
                     />
                 </Field>
 
-                <Field label="Rang" errors={violations?.violationsFor('priorityId')}>
-                    <select
-                        className="field-input"
+                <Field label="Priorité" errors={violations.for('priorityId')}>
+                    <Select
                         value={form.priorityId}
-                        onChange={(event) => set('priorityId')(event.target.value)}
-                    >
-                        <option value="">Par défaut</option>
-                        {(priorities.data ?? []).map((priority) => (
-                            <option key={priority.id} value={priority.id}>
-                                {priority.label}
-                            </option>
-                        ))}
-                    </select>
+                        onChange={set('priorityId')}
+                        placeholder="Par défaut"
+                        options={(priorities.data ?? []).map((priority) => ({
+                            value: String(priority.id),
+                            label: priority.label,
+                        }))}
+                    />
                 </Field>
-            </div>
+            </FormGrid>
 
-            <div className="form-grid form-grid-two">
-                <Field label="Catégorie" errors={violations?.violationsFor('categoryId')}>
-                    <select
-                        className="field-input"
-                        value={form.categoryId}
-                        onChange={(event) => set('categoryId')(event.target.value)}
-                    >
-                        <option value="">Aucune</option>
-                        {(categories.data ?? []).map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.label}
-                                {category.isPersonal ? ' ·' : ''}
-                            </option>
-                        ))}
-                    </select>
-                </Field>
-
-                <Field label="Étiquettes" errors={violations?.violationsFor('tags')}>
+            <FormGrid columns={2}>
+                <Field label="Étiquettes" errors={violations.for('tags')}>
                     <TextInput
                         value={form.tags}
                         onChange={(event) => set('tags')(event.target.value)}
                         placeholder="séparées par des virgules"
                     />
                 </Field>
-            </div>
+
+                <Field label="Échéance" errors={violations.for('dueDate')}>
+                    <TextInput
+                        type="date"
+                        value={form.dueDate}
+                        onChange={(event) => set('dueDate')(event.target.value)}
+                    />
+                </Field>
+            </FormGrid>
 
             {(tags.data ?? []).length > 0 && (
                 <div className="tag-suggestions">
                     {(tags.data ?? []).map((label) => (
-                        <button
+                        <ToggleChip
                             key={label}
-                            type="button"
-                            className="chip"
-                            aria-pressed={chosenTags.includes(label)}
-                            onClick={() => toggleTag(label)}
+                            pressed={chosenTags.includes(label)}
+                            onToggle={() => toggleTag(label)}
                         >
                             #{label}
-                        </button>
+                        </ToggleChip>
                     ))}
                 </div>
             )}
 
             <FormActions>
-            <button type="button" className="button button-quiet" onClick={onDone}>
-                Annuler
-            </button>
+                <Button variant="quiet" onClick={onDone}>
+                    Annuler
+                </Button>
 
-            <button type="submit" className="button" disabled={pending}>
-                {editing !== null ? 'Enregistrer' : 'Créer'}
-            </button>
+                <Button variant="primary" submit disabled={pending}>
+                    {editing !== null ? 'Enregistrer' : 'Créer'}
+                </Button>
             </FormActions>
         </form>
     )

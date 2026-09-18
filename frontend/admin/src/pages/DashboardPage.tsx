@@ -1,4 +1,4 @@
-import { Card, Empty, Typography } from 'antd'
+import { EmptyState, Page } from '../components'
 
 /**
  * The landing screen. Empty on purpose for now: what a back-office dashboard should show is a
@@ -7,14 +7,8 @@ import { Card, Empty, Typography } from 'antd'
  */
 export function DashboardPage() {
     return (
-        <Card title="Dashboard">
-            <Empty
-                description={
-                    <Typography.Text type="secondary">
-                        Rien à afficher pour l’instant.
-                    </Typography.Text>
-                }
-            />
-        </Card>
+        <Page title="Dashboard">
+            <EmptyState description="Rien à afficher pour l’instant." />
+        </Page>
     )
 }

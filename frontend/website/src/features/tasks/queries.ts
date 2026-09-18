@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '../../api/endpoints'
-import type { CreateTaskPayload, UpdateTaskPayload } from '../../api/types'
+import type { CreateTaskPayload, Task, UpdateTaskPayload } from '../../api/types'
 
 /** Every task list in the app answers to this key, so one mutation refreshes them all. */
 const TASKS = ['tasks'] as const
@@ -9,6 +9,19 @@ export function useTasks(isDone: boolean) {
     return useQuery({
         queryKey: [...TASKS, isDone],
         queryFn: () => api.fetchTasks(isDone),
+    })
+}
+
+/**
+ * One quest, kept fresh while its window is open. The key sits under the same prefix as the
+ * lists, so every mutation refreshes it too — which is what lets the window show the effect of
+ * an action taken inside it.
+ */
+export function useTask(id: number, fallback: Task) {
+    return useQuery({
+        queryKey: [...TASKS, 'one', id],
+        queryFn: () => api.fetchTask(id),
+        initialData: fallback,
     })
 }
 

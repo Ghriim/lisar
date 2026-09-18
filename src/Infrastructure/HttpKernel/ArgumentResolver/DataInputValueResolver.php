@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\AsTargetedValueResolver;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\Exception\MissingConstructorArgumentsException;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
@@ -67,7 +68,11 @@ final readonly class DataInputValueResolver implements ValueResolverInterface
         );
 
         try {
-            $dataInput = $this->denormalizer->denormalize($payload, $dataInputClass, null, [
+            // The format is declared, not left to default: the serializer only accepts a JSON
+            // integer for a float property when it knows it is reading JSON, so without this a
+            // DataInput taking a float refuses 72 and accepts 72.0 — and a browser sending 72.0
+            // writes 72. Every decimal field in the API depends on this argument.
+            $dataInput = $this->denormalizer->denormalize($payload, $dataInputClass, JsonEncoder::FORMAT, [
                 // A query string carries strings and nothing else: "2" has to become the int a
                 // DataInput declares, and "true" the bool. This is the whole reason one DataInput
                 // can serve both GET ?a=1 and POST {json}.

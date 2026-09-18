@@ -1,112 +1,104 @@
+import { FolderCog, Plus } from 'lucide-react'
 import { useState } from 'react'
 import type { Task } from '../api/types'
 import { useAuth } from '../auth/useAuth'
-import { Modal } from '../components/Modal'
-import { SystemPanel } from '../components/SystemPanel'
+import {
+    DataList,
+    IconButton,
+    Modal,
+    PageShell,
+    Row,
+    SystemPanel,
+    Tabs,
+    useReloadOnDayChange,
+} from '../components'
+import { HydrationWidget } from '../features/hydration/HydrationWidget'
+import { useHydrationToday } from '../features/hydration/queries'
+import { WeightWidget } from '../features/weight/WeightWidget'
 import { CategoryManager } from '../features/tasks/CategoryManager'
 import { TaskComposer } from '../features/tasks/TaskComposer'
+import { TaskDetail } from '../features/tasks/TaskDetail'
 import { TaskItem } from '../features/tasks/TaskItem'
 import { useTasks } from '../features/tasks/queries'
 import { groupByCategory } from '../features/tasks/taskDisplay'
 
-/** What the window above the list is currently for. Closed means there is no window. */
-type Composer = { mode: 'create'; parent: Task | null } | { mode: 'edit'; task: Task } | null
+/**
+ * What the window above the list is currently for. Closed means there is no window.
+ *
+ * Reading a quest and editing it are the same window in two states: the eye opens it read-only,
+ * and its pencil turns it into the form without ever closing.
+ */
+type Panel =
+    | { mode: 'view'; task: Task }
+    | { mode: 'edit'; task: Task }
+    | { mode: 'create'; parent: Task | null }
+    | null
+
+type View = 'open' | 'done'
 
 export function TasksPage() {
     const { user, signOut } = useAuth()
-    const [showDone, setShowDone] = useState(false)
-    const [composer, setComposer] = useState<Composer>(null)
+    const [view, setView] = useState<View>('open')
+    const [panel, setPanel] = useState<Panel>(null)
     const [managingCategories, setManagingCategories] = useState(false)
 
-    const tasks = useTasks(showDone)
+    const tasks = useTasks(view === 'done')
     const groups = groupByCategory(tasks.data ?? [])
 
-    const close = () => setComposer(null)
+    // When the day turns under a page left open, the whole screen is stale, not one widget: the
+    // day's totals, its goal, its entries. So the page is what watches for it — and the day
+    // comes from the API, never from the browser, because the timezone days are counted in is a
+    // back-end decision and computing it here is how the two start disagreeing.
+    //
+    // This reads the same cached query the hydration widget does, so it costs no extra request.
+    const hydration = useHydrationToday()
+    useReloadOnDayChange(hydration.data?.day, hydration.refetch)
+
+    const close = () => setPanel(null)
 
     return (
-        <div className="app-shell">
-            <header className="app-header row spread wrap">
-                <div>
-                    <span className="wordmark">LISAR</span>
-                    <span className="wordmark-sub">Life is a RPG</span>
-                </div>
-
-                <div className="row">
-                    <span className="system-text dim">{user?.username}</span>
-                    <button type="button" className="button button-quiet" onClick={() => void signOut()}>
-                        Se déconnecter
-                    </button>
-                </div>
-            </header>
+        <PageShell username={user?.username} onSignOut={() => void signOut()}>
+            <div className="tracker-row" style={{ marginBottom: 'calc(var(--step) * 3)' }}>
+                <HydrationWidget />
+                <WeightWidget />
+            </div>
 
             <SystemPanel
                 title="Journal de quêtes"
                 actions={
-                    <span className="row" style={{ gap: 6 }}>
-                        <button
-                            type="button"
-                            className="icon-button"
-                            aria-label="Gérer les catégories"
-                            title="Gérer les catégories"
+                    <Row style={{ gap: 6 }}>
+                        <IconButton
+                            icon={FolderCog}
+                            label="Gérer les catégories"
                             onClick={() => setManagingCategories(true)}
-                        >
-                            ▤
-                        </button>
-                        <button
-                            type="button"
-                            className="icon-button"
-                            aria-label="Créer une quête"
-                            title="Créer une quête"
-                            onClick={() => setComposer({ mode: 'create', parent: null })}
-                        >
-                            +
-                        </button>
-                    </span>
+                        />
+                        <IconButton
+                            icon={Plus}
+                            label="Créer une quête"
+                            onClick={() => setPanel({ mode: 'create', parent: null })}
+                        />
+                    </Row>
                 }
             >
-                <div className="tabs" role="tablist">
-                    <button
-                        type="button"
-                        role="tab"
-                        className="tab"
-                        aria-selected={!showDone}
-                        onClick={() => setShowDone(false)}
-                    >
-                        En cours
-                    </button>
-                    <button
-                        type="button"
-                        role="tab"
-                        className="tab"
-                        aria-selected={showDone}
-                        onClick={() => setShowDone(true)}
-                    >
-                        Terminées
-                    </button>
-                </div>
+                <Tabs<View>
+                    current={view}
+                    onChange={setView}
+                    tabs={[
+                        { value: 'open', label: 'En cours' },
+                        { value: 'done', label: 'Terminées' },
+                    ]}
+                />
 
-                {tasks.isPending && <p className="empty">Synchronisation…</p>}
-
-                {tasks.isError && <p className="alert">Le System ne répond pas. Réessaie dans un instant.</p>}
-
-                {tasks.isSuccess && groups.length === 0 && (
-                    <p className="empty">{showDone ? 'Aucune quête terminée.' : 'Aucune quête en cours.'}</p>
-                )}
-
-                {groups.map((group) => (
-                    <div key={group.label} className="category-group">
-                        <h2 className="category-heading">{group.label}</h2>
-
-                        {group.tasks.map((task) => (
-                            <TaskItem
-                                key={task.id}
-                                task={task}
-                                onAddSubtask={(parent) => setComposer({ mode: 'create', parent })}
-                                onEdit={(target) => setComposer({ mode: 'edit', task: target })}
-                            />
-                        ))}
-                    </div>
-                ))}
+                <DataList<Task>
+                    groups={groups.map((group) => ({ label: group.label, items: group.tasks }))}
+                    keyOf={(task) => task.id}
+                    loading={tasks.isPending}
+                    error={tasks.isError ? 'Le System ne répond pas. Réessaie dans un instant.' : null}
+                    emptyText={view === 'done' ? 'Aucune quête terminée.' : 'Aucune quête en cours.'}
+                    renderItem={(task) => (
+                        <TaskItem task={task} onView={(target) => setPanel({ mode: 'view', task: target })} />
+                    )}
+                />
             </SystemPanel>
 
             {managingCategories && (
@@ -115,23 +107,38 @@ export function TasksPage() {
                 </Modal>
             )}
 
-            {composer !== null && (
-                <Modal title={composerTitle(composer)} onClose={close}>
-                    <TaskComposer
-                        parent={composer.mode === 'create' ? composer.parent : null}
-                        editing={composer.mode === 'edit' ? composer.task : null}
-                        onDone={close}
-                    />
+            {panel !== null && (
+                <Modal title={panelTitle(panel)} onClose={close}>
+                    {panel.mode === 'view' ? (
+                        <TaskDetail
+                            task={panel.task}
+                            onEdit={() => setPanel({ mode: 'edit', task: panel.task })}
+                            onAddSubtask={() => setPanel({ mode: 'create', parent: panel.task })}
+                            onDeleted={close}
+                        />
+                    ) : (
+                        <TaskComposer
+                            parent={panel.mode === 'create' ? panel.parent : null}
+                            editing={panel.mode === 'edit' ? panel.task : null}
+                            onDone={close}
+                        />
+                    )}
                 </Modal>
             )}
-        </div>
+        </PageShell>
     )
 }
 
-function composerTitle(composer: NonNullable<Composer>): string {
-    if (composer.mode === 'edit') {
+function panelTitle(panel: NonNullable<Panel>): string {
+    if (panel.mode === 'view') {
+        // Generic on purpose: the quest's own title is the first field inside the window, and
+        // saying it twice in the same box says it once too often.
+        return 'Détails de la quête'
+    }
+
+    if (panel.mode === 'edit') {
         return 'Modifier la quête'
     }
 
-    return composer.parent === null ? 'Nouvelle quête' : `Sous-quête de « ${composer.parent.title} »`
+    return panel.parent === null ? 'Nouvelle quête' : `Sous-quête de « ${panel.parent.title} »`
 }

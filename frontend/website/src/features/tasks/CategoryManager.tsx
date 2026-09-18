@@ -1,19 +1,25 @@
+import { Pencil, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '../../api/client'
-import { humanise } from '../../api/violations'
 import type { Category } from '../../api/types'
-import { Field, TextInput } from '../../components/Field'
-import { FormActions } from '../../components/FormActions'
+import { humanise } from '../../api/violations'
 import {
-    useCategories,
-    useCreateCategory,
-    useDeleteCategory,
-    useUpdateCategory,
-} from './queries'
+    Button,
+    ConfirmDialog,
+    DataList,
+    Field,
+    FormActions,
+    IconButton,
+    ListItem,
+    Stack,
+    TextInput,
+    useViolations,
+} from '../../components'
+import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from './queries'
 
 /**
- * The person's own categories: create, rename, drop. The reference ones are shown alongside so
- * that the list they see here is the list they choose from — but they are not theirs to touch.
+ * The person's own categories: create, rename, drop. The common ones are shown alongside so that
+ * the list they see here is the list they choose from — but they are not theirs to touch.
  */
 export function CategoryManager() {
     const categories = useCategories()
@@ -23,8 +29,12 @@ export function CategoryManager() {
 
     const [newLabel, setNewLabel] = useState('')
     const [editing, setEditing] = useState<{ id: number; label: string } | null>(null)
+    const [confirming, setConfirming] = useState<Category | null>(null)
     // Which row a refused deletion belongs to: the mutation only knows that one failed.
     const [refusedDeletion, setRefusedDeletion] = useState<{ id: number; code: string } | null>(null)
+
+    const creation = useViolations(create.error)
+    const rename = useViolations(update.error)
 
     const all = categories.data ?? []
     const personal = all.filter((category) => category.isPersonal)
@@ -38,18 +48,6 @@ export function CategoryManager() {
             setNewLabel('')
         } catch {
             // The violations are on the mutation, and the field below reads them.
-        }
-    }
-
-    const submitDelete = async (id: number) => {
-        setRefusedDeletion(null)
-
-        try {
-            await remove.mutateAsync(id)
-        } catch (failure) {
-            if (failure instanceof ApiError) {
-                setRefusedDeletion({ id, code: failure.violationsFor('id')[0] ?? 'action_failed' })
-            }
         }
     }
 
@@ -68,23 +66,33 @@ export function CategoryManager() {
         }
     }
 
+    const submitDelete = async (category: Category) => {
+        setConfirming(null)
+        setRefusedDeletion(null)
+
+        try {
+            await remove.mutateAsync(category.id)
+        } catch (failure) {
+            if (failure instanceof ApiError) {
+                setRefusedDeletion({
+                    id: category.id,
+                    code: failure.violationsFor('id')[0] ?? 'action_failed',
+                })
+            }
+        }
+    }
+
     return (
-        <div className="stack">
-            <div>
-                <h3 className="category-heading">À moi</h3>
-
-                {personal.length === 0 && <p className="empty">Aucune catégorie personnelle.</p>}
-
-                {personal.map((category) =>
+        <Stack>
+            <DataList<Category>
+                groups={[{ label: 'À moi', items: personal }]}
+                keyOf={(category) => category.id}
+                loading={categories.isPending}
+                emptyText="Aucune catégorie personnelle."
+                renderItem={(category) =>
                     editing?.id === category.id ? (
-                        <form key={category.id} className="form-grid" onSubmit={(event) => void submitRename(event)}>
-                            <Field
-                                label="Nom"
-                                errors={[
-                                    ...violationsOf(update.error, 'label'),
-                                    ...violationsOf(update.error, 'id'),
-                                ]}
-                            >
+                        <form className="form-grid" onSubmit={(event) => void submitRename(event)}>
+                            <Field label="Nom" errors={[...rename.for('label'), ...rename.for('id')]}>
                                 <TextInput
                                     value={editing.label}
                                     onChange={(event) => setEditing({ id: category.id, label: event.target.value })}
@@ -93,45 +101,57 @@ export function CategoryManager() {
                             </Field>
 
                             <FormActions>
-                                <button type="button" className="button button-quiet" onClick={() => setEditing(null)}>
+                                <Button variant="quiet" onClick={() => setEditing(null)}>
                                     Annuler
-                                </button>
-                                <button type="submit" className="button" disabled={update.isPending}>
+                                </Button>
+                                <Button variant="primary" submit disabled={update.isPending}>
                                     Renommer
-                                </button>
+                                </Button>
                             </FormActions>
                         </form>
                     ) : (
-                        <CategoryRow
-                            key={category.id}
-                            category={category}
+                        <ListItem
+                            title={category.label}
                             error={
                                 refusedDeletion?.id === category.id
                                     ? humanise(refusedDeletion.code)
                                     : null
                             }
-                            onRename={() => setEditing({ id: category.id, label: category.label })}
-                            onDelete={() => void submitDelete(category.id)}
-                            busy={remove.isPending}
+                            actions={
+                                <>
+                                    <IconButton
+                                        icon={Pencil}
+                                        label="Renommer"
+                                        subject={category.label}
+                                        disabled={remove.isPending}
+                                        onClick={() => setEditing({ id: category.id, label: category.label })}
+                                    />
+                                    <IconButton
+                                        icon={X}
+                                        variant="danger"
+                                        label="Supprimer"
+                                        subject={category.label}
+                                        disabled={remove.isPending}
+                                        onClick={() => setConfirming(category)}
+                                    />
+                                </>
+                            }
                         />
-                    ),
-                )}
-            </div>
+                    )
+                }
+            />
 
             {reference.length > 0 && (
-                <div>
-                    <h3 className="category-heading">Communes</h3>
-
-                    {reference.map((category) => (
-                        <div key={category.id} className="task">
-                            <div className="task-body dim">{category.label}</div>
-                        </div>
-                    ))}
-                </div>
+                <DataList<Category>
+                    groups={[{ label: 'Communes', items: reference }]}
+                    keyOf={(category) => category.id}
+                    emptyText="Aucune catégorie commune."
+                    renderItem={(category) => <ListItem title={category.label} muted />}
+                />
             )}
 
             <form className="form-grid" onSubmit={(event) => void submitNew(event)}>
-                <Field label="Nouvelle catégorie" errors={violationsOf(create.error, 'label')}>
+                <Field label="Nouvelle catégorie" errors={creation.for('label')}>
                     <TextInput
                         value={newLabel}
                         onChange={(event) => setNewLabel(event.target.value)}
@@ -141,57 +161,21 @@ export function CategoryManager() {
                 </Field>
 
                 <FormActions>
-                    <button type="submit" className="button" disabled={create.isPending}>
+                    <Button variant="primary" submit disabled={create.isPending}>
                         Créer
-                    </button>
+                    </Button>
                 </FormActions>
             </form>
-        </div>
+
+            {confirming !== null && (
+                <ConfirmDialog
+                    title="Supprimer la catégorie"
+                    question={`« ${confirming.label} » sera supprimée. C’est définitif.`}
+                    confirmLabel="Supprimer"
+                    onCancel={() => setConfirming(null)}
+                    onConfirm={() => void submitDelete(confirming)}
+                />
+            )}
+        </Stack>
     )
-}
-
-interface CategoryRowProps {
-    category: Category
-    error: string | null
-    onRename: () => void
-    onDelete: () => void
-    busy: boolean
-}
-
-function CategoryRow({ category, error, onRename, onDelete, busy }: CategoryRowProps) {
-    return (
-        <article className="task">
-            <div className="task-body">
-                {category.label}
-                {error !== null && <p className="field-error">{error}</p>}
-            </div>
-
-            <div className="task-actions">
-                <button
-                    type="button"
-                    className="icon-button"
-                    aria-label={`Renommer « ${category.label} »`}
-                    title="Renommer"
-                    disabled={busy}
-                    onClick={onRename}
-                >
-                    ✎
-                </button>
-                <button
-                    type="button"
-                    className="icon-button icon-button-danger"
-                    aria-label={`Supprimer « ${category.label} »`}
-                    title="Supprimer"
-                    disabled={busy}
-                    onClick={onDelete}
-                >
-                    ✕
-                </button>
-            </div>
-        </article>
-    )
-}
-
-function violationsOf(error: unknown, field: string): string[] {
-    return error instanceof ApiError ? error.violationsFor(field) : []
 }

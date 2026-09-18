@@ -3,9 +3,15 @@ import { Link } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/useAuth'
 import { humanise } from '../api/violations'
-import { Field, TextInput } from '../components/Field'
-import { FormActions } from '../components/FormActions'
-import { SystemPanel } from '../components/SystemPanel'
+import {
+    Alert,
+    AuthShell,
+    Button,
+    Field,
+    FormActions,
+    SystemPanel,
+    TextInput,
+} from '../components'
 
 export function LoginPage() {
     const { signIn } = useAuth()
@@ -29,8 +35,8 @@ export function LoginPage() {
     }
 
     return (
-        <div className="auth-screen">
-            <SystemPanel title="Identification" className="panel auth-panel">
+        <AuthShell>
+            <SystemPanel title="Identification">
                 <p className="system-text dim" style={{ marginTop: 0 }}>
                     Le System attend tes identifiants.
                 </p>
@@ -58,13 +64,13 @@ export function LoginPage() {
                     </Field>
 
                     {error !== null && error.violations === null && (
-                        <p className="alert">{signInMessage(error)}</p>
+                        <Alert>{signInMessage(error)}</Alert>
                     )}
 
                     <FormActions>
-                        <button type="submit" className="button" disabled={pending}>
+                        <Button variant="primary" submit disabled={pending}>
                             {pending ? 'Entrer…' : 'Entrer'}
-                        </button>
+                        </Button>
                     </FormActions>
                 </form>
 
@@ -72,7 +78,7 @@ export function LoginPage() {
                     Pas encore de compte ? <Link to="/inscription">S’éveiller</Link>
                 </p>
             </SystemPanel>
-        </div>
+        </AuthShell>
     )
 }
 

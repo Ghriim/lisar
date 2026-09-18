@@ -58,3 +58,18 @@ export interface PriorityPayload {
 }
 
 export type Violations = Record<string, string[]>
+
+export const HYDRATION_ICONS = ['glass', 'bottle', 'mug', 'can', 'carafe'] as const
+
+export type HydrationIcon = (typeof HYDRATION_ICONS)[number]
+
+export interface HydrationPreset {
+    id: number
+    icon: string
+    volumeInMillilitres: number
+}
+
+export interface HydrationPresetPayload {
+    icon: string
+    volumeInMillilitres: number
+}

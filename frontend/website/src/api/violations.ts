@@ -33,6 +33,8 @@ const MESSAGES: Record<string, string> = {
     category_label_already_used: 'Une catégorie porte déjà ce nom.',
     category_not_editable: 'Une catégorie commune ne se modifie pas.',
     category_in_use: 'Des quêtes y sont encore rangées.',
+    volume_invalid: 'Entre 1 et 5000 millilitres.',
+    weight_invalid: 'Entre 20 et 400 kilogrammes.',
 }
 
 export function humanise(code: string): string {

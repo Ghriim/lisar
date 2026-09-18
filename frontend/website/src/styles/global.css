@@ -1,5 +1,6 @@
 @import './tokens.css';
-@import './tasks.css';
+@import './components.css';
+@import './list.css';
 
 *,
 *::before,
@@ -100,7 +101,10 @@ select {
     border-radius: var(--radius);
     box-shadow: var(--shadow-panel);
     backdrop-filter: blur(6px);
-    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+    /* The bottom two points sit a pixel past the box on purpose: clipping exactly at 100%
+       shaves the bottom border off whenever the panel lands on a fractional height, which is
+       what made short windows look open at the bottom. */
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% + 1px), 0 calc(100% + 1px));
 }
 
 .panel::before,

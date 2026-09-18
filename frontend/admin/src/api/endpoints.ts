@@ -1,5 +1,15 @@
 import { request, setAccessToken } from './client'
-import type { Category, Page, Priority, PriorityPayload, Session, User, UserComment } from './types'
+import type {
+    Category,
+    HydrationPreset,
+    HydrationPresetPayload,
+    Page,
+    Priority,
+    PriorityPayload,
+    Session,
+    User,
+    UserComment,
+} from './types'
 
 export async function signIn(email: string, password: string): Promise<Session> {
     const session = await request<Session>('/api/auth/login', {
@@ -98,4 +108,23 @@ export function updateCategory(id: number, label: string): Promise<Category> {
 
 export function deleteCategory(id: number): Promise<void> {
     return request<void>(`/api/admin/categories/${id}`, { method: 'DELETE' })
+}
+
+export function fetchHydrationPresets(): Promise<HydrationPreset[]> {
+    return request<HydrationPreset[]>('/api/admin/hydration/presets')
+}
+
+export function createHydrationPreset(payload: HydrationPresetPayload): Promise<HydrationPreset> {
+    return request<HydrationPreset>('/api/admin/hydration/presets', { method: 'POST', body: payload })
+}
+
+export function updateHydrationPreset(
+    id: number,
+    payload: HydrationPresetPayload,
+): Promise<HydrationPreset> {
+    return request<HydrationPreset>(`/api/admin/hydration/presets/${id}`, { method: 'PUT', body: payload })
+}
+
+export function deleteHydrationPreset(id: number): Promise<void> {
+    return request<void>(`/api/admin/hydration/presets/${id}`, { method: 'DELETE' })
 }

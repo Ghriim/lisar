@@ -1,8 +1,18 @@
-import { Alert, Button, Card, Flex, Form, Input, Typography } from 'antd'
 import { useState } from 'react'
 import { ApiError } from '../api/client'
 import { NotAnAdministratorError } from '../api/errors'
 import { useAuth } from '../auth/useAuth'
+import {
+    Alert,
+    Button,
+    Centered,
+    EmailField,
+    Form,
+    FormActions,
+    Page,
+    Panel,
+    PasswordField,
+} from '../components'
 
 interface Credentials {
     email: string
@@ -28,29 +38,24 @@ export function LoginPage() {
     }
 
     return (
-        <Flex align="center" justify="center" style={{ minHeight: '100vh', padding: 24 }}>
-            <Card style={{ width: 380 }}>
-                <Typography.Title level={4}>lisar · back-office</Typography.Title>
+        <Centered>
+            <Panel>
+                <Page title="lisar · back-office">
+                    <Form<Credentials> onSubmit={(values) => void submit(values)}>
+                        <EmailField name="email" label="Adresse" required autoFocus />
+                        <PasswordField name="password" label="Mot de passe" required />
 
-                <Form<Credentials> layout="vertical" onFinish={(values) => void submit(values)} requiredMark={false}>
-                    <Form.Item label="Adresse" name="email" rules={[{ required: true, message: 'Requis' }]}>
-                        <Input type="email" autoComplete="email" autoFocus />
-                    </Form.Item>
+                        {error !== null && <Alert message={error} />}
 
-                    <Form.Item label="Mot de passe" name="password" rules={[{ required: true, message: 'Requis' }]}>
-                        <Input.Password autoComplete="current-password" />
-                    </Form.Item>
-
-                    {error !== null && <Alert type="error" message={error} style={{ marginBottom: 16 }} />}
-
-                    <Flex justify="center">
-                        <Button type="primary" htmlType="submit" loading={pending}>
-                            Entrer
-                        </Button>
-                    </Flex>
-                </Form>
-            </Card>
-        </Flex>
+                        <FormActions>
+                            <Button variant="primary" submit loading={pending}>
+                                Entrer
+                            </Button>
+                        </FormActions>
+                    </Form>
+                </Page>
+            </Panel>
+        </Centered>
     )
 }
 

@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { register } from '../api/endpoints'
 import { useAuth } from '../auth/useAuth'
-import { Field, TextInput } from '../components/Field'
-import { FormActions } from '../components/FormActions'
-import { SystemPanel } from '../components/SystemPanel'
+import { Alert, AuthShell, Button, Field, FormActions, SystemPanel, TextInput } from '../components'
 
 export function RegisterPage() {
     const { signIn } = useAuth()
@@ -34,8 +32,8 @@ export function RegisterPage() {
     }
 
     return (
-        <div className="auth-screen">
-            <SystemPanel title="Éveil" className="panel auth-panel">
+        <AuthShell>
+            <SystemPanel title="Éveil">
                 <p className="system-text dim" style={{ marginTop: 0 }}>
                     Tu as été désigné. Crée ton profil.
                 </p>
@@ -76,13 +74,13 @@ export function RegisterPage() {
                     </p>
 
                     {error !== null && error.violations === null && (
-                        <p className="alert">Le System ne répond pas. Réessaie dans un instant.</p>
+                        <Alert>Le System ne répond pas. Réessaie dans un instant.</Alert>
                     )}
 
                     <FormActions>
-                        <button type="submit" className="button" disabled={pending}>
+                        <Button variant="primary" submit disabled={pending}>
                             {pending ? 'S’éveiller…' : 'S’éveiller'}
-                        </button>
+                        </Button>
                     </FormActions>
                 </form>
 
@@ -90,6 +88,6 @@ export function RegisterPage() {
                     Déjà un compte ? <Link to="/connexion">Se connecter</Link>
                 </p>
             </SystemPanel>
-        </div>
+        </AuthShell>
     )
 }

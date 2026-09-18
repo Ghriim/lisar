@@ -1,4 +1,6 @@
+import { X } from 'lucide-react'
 import { useEffect, type ReactNode } from 'react'
+import { IconButton } from './IconButton'
 import { createPortal } from 'react-dom'
 import { SystemPanel } from './SystemPanel'
 
@@ -45,11 +47,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
             <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
                 <SystemPanel
                     title={title}
-                    actions={
-                        <button type="button" className="icon-button" aria-label="Fermer" onClick={onClose}>
-                            ✕
-                        </button>
-                    }
+                    actions={<IconButton icon={X} label="Fermer" onClick={onClose} />}
                 >
                     {children}
                 </SystemPanel>

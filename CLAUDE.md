@@ -5,7 +5,9 @@
 `docs/` est la source de vérité, à alimenter au fil du développement :
 
 - `docs/dev/` — conventions, architecture, schéma de base de données.
-- `docs/product/` — description des fonctionnalités.
+- `docs/product/` — description des fonctionnalités, **une page md par écran**, réparties en
+  `website/` et `admin/`. `docs/product/README.md` explique le découpage et porte les règles
+  transverses aux deux fronts.
 
 ## Avant d'écrire du code
 

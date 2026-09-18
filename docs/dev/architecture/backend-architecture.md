@@ -318,6 +318,11 @@ unauthenticated sign-up — as opposed to `Create…`, which an authenticated ac
 `Update…`, `Delete…`, `Activate…`, `Deactivate…`, `Refresh…` (re-pull from a third party, or renew a short-lived artefact of our own, such as a
 session),
 `Complete…` / `Reopen…` (close and unclose something the person ticks off),
+`Save…` (**one use case that both creates and updates** — the row is keyed on something other
+than its id, a day for instance, so the caller cannot know which of the two it is asking for and
+must not have to. Saving twice is correcting, and a single idempotent write cannot be raced into
+two rows the way a `Create…`/`Update…` pair can. Use it only when that is genuinely the case:
+when the caller does know, `Create…` and `Update…` stay two use cases with two sets of rules),
 `Login…` / `Logout…` (open and drop a session — named after what the person does, not after
 the row it writes),
 `Import…` (ingest a file/feed), `Build…` (derive and persist a projection), `Process…` (consume an
@@ -404,7 +409,14 @@ Rules:
   projections, cache tables and append-only logs included, with no exception to remember. They
   are stamped by the abstract persister; never assign them by hand.
 - Decimal columns are `float` + `Types::DECIMAL` with explicit `precision`/`scale`. Do not use
-  decimal-as-string.
+  decimal-as-string. The use case rounds to the column's `scale` before writing: what comes back
+  from the database must be the number that was sent, and `assertSame(71.85, $entry->weight)` is
+  the assertion to write.
+- A moment written to a `DATETIME` column is stored in **UTC**, always — see
+  `Domain\Tracking\DayClock::asStoredInstant()`. The column has no timezone, so it keeps the wall
+  clock it is handed and drops the offset: give it a moment carried in `Europe/Paris` and the
+  same moment reads back two hours early. Anything that builds a moment out of a calendar day or
+  a local time (a fixture, an import) passes it through the clock first.
 - No data model lifecycle callbacks; side effects live in the persister.
 - Inline `//` comments on non-obvious columns (units, business meaning, why nullable) are
   encouraged and reviewed.
@@ -1089,11 +1101,18 @@ final class MapDataInput extends ValueResolver
    strings and nothing else: `"2"` has to become the `int` the DataInput declares and `"true"` the
    `bool`. Without that flag a paginated `?perPage=2` fails to map — this is what makes one
    DataInput genuinely serve both `GET ?a=1` and `POST {json}`.
-5. On failure, logs route, method, content-type, content-length, payload keys, the serializer
+5. **Denormalises with `JsonEncoder::FORMAT` as the format, never `null`.** The serializer only
+   accepts a JSON integer for a `float` property when it knows it is reading JSON
+   (`AbstractObjectNormalizer::validateAndDenormalize`), so with `null` a DataInput declaring a
+   `float` refuses `72` and accepts `72.0` — and `JSON.stringify(72.0)` emits `72`. Every decimal
+   field in the API depends on this one argument; the regression test is
+   `DataInputValueResolverTest::testItAcceptsAWholeNumberForADecimalField`, and it runs against
+   the real serializer rather than a mock, because what it proves is the serializer's behaviour.
+6. On failure, logs route, method, content-type, content-length, payload keys, the serializer
    reason, missing fields and invalid path — **and the raw payload, unless the DataInput
    implements `SensitiveDataInputInterface`**. Opting out is explicit; being logged is the
    default.
-6. Throws `DataInputMappingException` with a generic client-facing message. Internals never leak
+7. Throws `DataInputMappingException` with a generic client-facing message. Internals never leak
    to the caller.
 
 ### 6.13 Exceptions and the error contract

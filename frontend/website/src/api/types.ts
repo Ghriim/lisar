@@ -67,3 +67,40 @@ export type UpdateTaskPayload = Omit<CreateTaskPayload, 'parentId'>
  * wording belongs to the front end.
  */
 export type Violations = Record<string, string[]>
+
+export interface HydrationPreset {
+    id: number
+    /** One of the codes the API knows; each front end draws and words it its own way. */
+    icon: string
+    volumeInMillilitres: number
+}
+
+export interface HydrationEntry {
+    id: number
+    volumeInMillilitres: number
+    recordedAt: string | null
+}
+
+/**
+ * The last known weight: today's if there is one, otherwise the most recent day's. Every field
+ * is null for someone who has never weighed themselves.
+ */
+export interface Weight {
+    weightInKilograms: number | null
+    /** A calendar day, YYYY-MM-DD, in the timezone the app counts days in. */
+    day: string | null
+    recordedAt: string | null
+    /**
+     * Whether that weight is today's, and therefore whether recording corrects it or creates
+     * one. The browser cannot work this out: the timezone days are counted in belongs to the API.
+     */
+    isFromToday: boolean
+}
+
+export interface HydrationDay {
+    /** A calendar day, YYYY-MM-DD, in the timezone the app counts days in. */
+    day: string
+    goalInMillilitres: number
+    totalInMillilitres: number
+    entries: HydrationEntry[]
+}

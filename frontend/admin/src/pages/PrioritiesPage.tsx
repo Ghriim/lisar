@@ -1,175 +1,133 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Card, Flex, Form, Input, InputNumber, Modal, Popconfirm, Space, Switch, Table, Tag } from 'antd'
 import { useState } from 'react'
-import { ApiError } from '../api/client'
 import * as api from '../api/endpoints'
 import type { Priority, PriorityPayload } from '../api/types'
-import { summarise } from '../api/violations'
+import {
+    Button,
+    ColourDot,
+    ConfirmButton,
+    DataTable,
+    FormModal,
+    NumberField,
+    Page,
+    Row,
+    SwitchField,
+    Tag,
+    TextField,
+    useNotifier,
+} from '../components'
 
 export function PrioritiesPage() {
-    const { message } = App.useApp()
+    const notify = useNotifier()
     const queryClient = useQueryClient()
+    /** undefined: no window. null: creating. A priority: editing that one. */
     const [editing, setEditing] = useState<Priority | null | undefined>(undefined)
 
     const priorities = useQuery({ queryKey: ['priorities'], queryFn: api.fetchPriorities })
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ['priorities'] })
 
-    const onError = (fallback: string) => (failure: unknown) => {
-        message.error(
-            failure instanceof ApiError && failure.violations !== null
-                ? summarise(failure.violations)
-                : fallback,
-        )
-    }
-
     const save = useMutation({
         mutationFn: ({ id, payload }: { id: number | null; payload: PriorityPayload }) =>
             id === null ? api.createPriority(payload) : api.updatePriority(id, payload),
         onSuccess: async () => {
             setEditing(undefined)
-            message.success('Priorité enregistrée.')
+            notify.success('Priorité enregistrée.')
             await refresh()
         },
-        onError: onError('L’enregistrement a échoué.'),
+        onError: (failure) => notify.failure(failure, 'L’enregistrement a échoué.'),
     })
 
     const remove = useMutation({
         mutationFn: (id: number) => api.deletePriority(id),
         onSuccess: async () => {
-            message.success('Priorité supprimée.')
+            notify.success('Priorité supprimée.')
             await refresh()
         },
-        onError: onError('La suppression a échoué.'),
+        onError: (failure) => notify.failure(failure, 'La suppression a échoué.'),
     })
 
     return (
-        <Card
+        <Page
             title="Priorités"
-            extra={
-                <Button type="primary" onClick={() => setEditing(null)}>
+            action={
+                <Button variant="primary" onClick={() => setEditing(null)}>
                     Créer
                 </Button>
             }
         >
-            <Table<Priority>
-                rowKey="id"
+            <DataTable<Priority>
+                rows={priorities.data ?? []}
+                rowKey={(priority) => priority.id}
                 loading={priorities.isPending}
-                dataSource={priorities.data ?? []}
-                pagination={false}
+                emptyText="Aucune priorité"
                 columns={[
                     {
+                        key: 'label',
                         title: 'Libellé',
-                        dataIndex: 'label',
-                        render: (label: string, priority) => (
-                            <Space>
-                                <span
-                                    aria-hidden
-                                    style={{
-                                        display: 'inline-block',
-                                        width: 10,
-                                        height: 10,
-                                        borderRadius: '50%',
-                                        background: priority.colour,
-                                    }}
-                                />
-                                {label}
-                                {priority.isDefault && <Tag color="blue">défaut</Tag>}
-                            </Space>
+                        render: (priority) => (
+                            <Row gap={8}>
+                                <ColourDot colour={priority.colour} />
+                                {priority.label}
+                                {priority.isDefault && <Tag colour="blue">défaut</Tag>}
+                            </Row>
                         ),
                     },
-                    { title: 'Poids', dataIndex: 'weight', width: 100 },
-                    { title: 'Couleur', dataIndex: 'colour', width: 140 },
+                    { key: 'weight', title: 'Poids', width: 100, render: (priority) => priority.weight },
+                    { key: 'colour', title: 'Couleur', width: 140, render: (priority) => priority.colour },
                     {
-                        title: '',
                         key: 'actions',
+                        title: '',
                         align: 'right',
-                        render: (_, priority) => (
-                            <Space>
+                        render: (priority) => (
+                            <Row gap={8} justify="end">
                                 <Button size="small" onClick={() => setEditing(priority)}>
                                     Modifier
                                 </Button>
-                                <Popconfirm
-                                    title="Supprimer cette priorité ?"
-                                    okText="Supprimer"
-                                    cancelText="Annuler"
+                                <ConfirmButton
+                                    question="Supprimer cette priorité ?"
+                                    loading={remove.isPending && remove.variables === priority.id}
                                     onConfirm={() => remove.mutate(priority.id)}
                                 >
-                                    <Button size="small" danger loading={remove.isPending && remove.variables === priority.id}>
-                                        Supprimer
-                                    </Button>
-                                </Popconfirm>
-                            </Space>
+                                    Supprimer
+                                </ConfirmButton>
+                            </Row>
                         ),
                     },
                 ]}
             />
 
             {editing !== undefined && (
-                <PriorityModal
-                    priority={editing}
+                <FormModal<PriorityPayload>
+                    title={editing === null ? 'Nouvelle priorité' : 'Modifier la priorité'}
+                    submitLabel="Enregistrer"
                     pending={save.isPending}
                     onCancel={() => setEditing(undefined)}
                     onSubmit={(payload) => save.mutate({ id: editing?.id ?? null, payload })}
-                />
-            )}
-        </Card>
-    )
-}
-
-interface PriorityModalProps {
-    priority: Priority | null
-    pending: boolean
-    onCancel: () => void
-    onSubmit: (payload: PriorityPayload) => void
-}
-
-/**
- * Mounted only while open, so the form always starts from the priority being edited — and the
- * buttons follow the house rule: centred, cancel first, a verb and nothing else.
- */
-function PriorityModal({ priority, pending, onCancel, onSubmit }: PriorityModalProps) {
-    return (
-        <Modal open title={priority === null ? 'Nouvelle priorité' : 'Modifier la priorité'} footer={null} onCancel={onCancel}>
-            <Form<PriorityPayload>
-                layout="vertical"
-                requiredMark={false}
-                initialValues={{
-                    label: priority?.label ?? '',
-                    weight: priority?.weight ?? 0,
-                    colour: priority?.colour ?? '#3e63dd',
-                    isDefault: priority?.isDefault ?? false,
-                }}
-                onFinish={onSubmit}
-            >
-                <Form.Item label="Libellé" name="label" rules={[{ required: true, message: 'Requis' }]}>
-                    <Input autoFocus />
-                </Form.Item>
-
-                <Form.Item label="Poids" name="weight" extra="Plus le poids est faible, plus la priorité remonte.">
-                    <InputNumber min={0} max={9999} style={{ width: '100%' }} />
-                </Form.Item>
-
-                <Form.Item label="Couleur" name="colour" rules={[{ required: true, message: 'Requis' }]}>
-                    <Input placeholder="#RRGGBB" />
-                </Form.Item>
-
-                <Form.Item
-                    label="Priorité par défaut"
-                    name="isDefault"
-                    valuePropName="checked"
-                    extra="La donner à celle-ci la retire à celle qui l’avait. Elle ne se retire jamais seule."
+                    initialValues={{
+                        label: editing?.label ?? '',
+                        weight: editing?.weight ?? 0,
+                        colour: editing?.colour ?? '#3e63dd',
+                        isDefault: editing?.isDefault ?? false,
+                    }}
                 >
-                    <Switch disabled={priority?.isDefault === true} />
-                </Form.Item>
-
-                <Flex justify="center" gap={8}>
-                    <Button onClick={onCancel}>Annuler</Button>
-                    <Button type="primary" htmlType="submit" loading={pending}>
-                        Enregistrer
-                    </Button>
-                </Flex>
-            </Form>
-        </Modal>
+                    <TextField name="label" label="Libellé" required autoFocus />
+                    <NumberField
+                        name="weight"
+                        label="Poids"
+                        min={0}
+                        max={9999}
+                        hint="Plus le poids est faible, plus la priorité remonte."
+                    />
+                    <TextField name="colour" label="Couleur" required placeholder="#RRGGBB" />
+                    <SwitchField
+                        name="isDefault"
+                        label="Priorité par défaut"
+                        disabled={editing?.isDefault === true}
+                        hint="La donner à celle-ci la retire à celle qui l’avait. Elle ne se retire jamais seule."
+                    />
+                </FormModal>
+            )}
+        </Page>
     )
 }

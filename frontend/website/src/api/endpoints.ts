@@ -2,11 +2,14 @@ import { request, setAccessToken } from './client'
 import type {
     Category,
     CreateTaskPayload,
+    HydrationDay,
+    HydrationPreset,
     Priority,
     Session,
     Task,
     UpdateTaskPayload,
     User,
+    Weight,
 } from './types'
 
 export async function signIn(email: string, password: string): Promise<Session> {
@@ -44,6 +47,10 @@ export function fetchCurrentUser(): Promise<User> {
 
 export function fetchTasks(isDone: boolean): Promise<Task[]> {
     return request<Task[]>(`/api/tasks?isDone=${isDone ? 'true' : 'false'}`)
+}
+
+export function fetchTask(id: number): Promise<Task> {
+    return request<Task>(`/api/tasks/${id}`)
 }
 
 export function createTask(payload: CreateTaskPayload): Promise<Task> {
@@ -88,4 +95,46 @@ export function updateCategory(id: number, label: string): Promise<Category> {
 
 export function deleteCategory(id: number): Promise<void> {
     return request<void>(`/api/categories/${id}`, { method: 'DELETE' })
+}
+
+export function fetchHydrationToday(): Promise<HydrationDay> {
+    return request<HydrationDay>('/api/hydration/today')
+}
+
+export function fetchHydrationPresets(): Promise<HydrationPreset[]> {
+    return request<HydrationPreset[]>('/api/hydration/presets')
+}
+
+/** Every write answers with the whole day: one round trip refreshes the total and the goal. */
+export function createHydrationEntry(volumeInMillilitres: number): Promise<HydrationDay> {
+    return request<HydrationDay>('/api/hydration/entries', {
+        method: 'POST',
+        body: { volumeInMillilitres },
+    })
+}
+
+export function updateHydrationEntry(id: number, volumeInMillilitres: number): Promise<HydrationDay> {
+    return request<HydrationDay>(`/api/hydration/entries/${id}`, {
+        method: 'PUT',
+        body: { volumeInMillilitres },
+    })
+}
+
+export function deleteHydrationEntry(id: number): Promise<HydrationDay> {
+    return request<HydrationDay>(`/api/hydration/entries/${id}`, { method: 'DELETE' })
+}
+
+export function fetchLatestWeight(): Promise<Weight> {
+    return request<Weight>('/api/weight/latest')
+}
+
+/**
+ * A PUT on the day in progress: there is one weight per day, so recording twice writes the same
+ * thing twice — which is what PUT means. No day is ever sent; the server knows which one it is.
+ */
+export function saveWeight(weightInKilograms: number): Promise<Weight> {
+    return request<Weight>('/api/weight/today', {
+        method: 'PUT',
+        body: { weightInKilograms },
+    })
 }

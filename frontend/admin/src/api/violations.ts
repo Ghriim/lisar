@@ -20,6 +20,8 @@ const MESSAGES: Record<string, string> = {
     email_required: 'Une adresse est requise.',
     email_invalid: 'Adresse invalide.',
     password_required: 'Un mot de passe est requis.',
+    icon_unknown: 'Cette icône n’existe pas.',
+    volume_invalid: 'Volume attendu entre 1 et 5000 mL.',
 }
 
 export function humanise(code: string): string {
