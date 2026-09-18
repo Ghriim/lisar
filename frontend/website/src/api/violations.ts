@@ -35,6 +35,13 @@ const MESSAGES: Record<string, string> = {
     category_in_use: 'Des quêtes y sont encore rangées.',
     volume_invalid: 'Entre 1 et 5000 millilitres.',
     weight_invalid: 'Entre 20 et 400 kilogrammes.',
+    bedtime_required: 'L’heure du coucher est nécessaire.',
+    bedtime_invalid: 'Heure attendue au format HH:MM.',
+    wake_up_time_required: 'L’heure du lever est nécessaire.',
+    wake_up_time_invalid: 'Heure attendue au format HH:MM.',
+    mood_rating_invalid: 'Note attendue entre 1 et 5.',
+    sleep_too_short: 'Trente minutes au minimum.',
+    sleep_too_long: 'Seize heures au maximum — vérifie l’heure du coucher.',
 }
 
 export function humanise(code: string): string {

@@ -6,6 +6,7 @@ import type {
     HydrationPreset,
     Priority,
     Session,
+    SleepNight,
     Task,
     UpdateTaskPayload,
     User,
@@ -136,5 +137,25 @@ export function saveWeight(weightInKilograms: number): Promise<Weight> {
     return request<Weight>('/api/weight/today', {
         method: 'PUT',
         body: { weightInKilograms },
+    })
+}
+
+export function fetchSleepToday(): Promise<SleepNight> {
+    return request<SleepNight>('/api/sleep/today')
+}
+
+/**
+ * A PUT on the day in progress, like the weight: one night per day, so noting it twice writes
+ * the same thing twice. No date is ever sent — two times of day say the whole night, and the
+ * server works out which day each one falls on.
+ */
+export function saveSleepNight(
+    bedtime: string,
+    wakeUpTime: string,
+    moodRating: number | null,
+): Promise<SleepNight> {
+    return request<SleepNight>('/api/sleep/today', {
+        method: 'PUT',
+        body: { bedtime, wakeUpTime, moodRating },
     })
 }

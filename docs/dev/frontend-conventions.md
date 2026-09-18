@@ -49,6 +49,18 @@ the cross closes, and nothing else does either.
 announces itself before it is reached, otherwise it looks like every other icon until it is
 too late.
 
+### An icon that is not an action
+
+A **scale** is drawn with icons too — the five faces of the sleep mood — and those are not
+actions: they name a value, not a verb, so the verb rule above does not apply to them. Everything
+else does. Each level still carries a tooltip and a spoken label (`Bon réveil`), because an
+unlabelled face is a guess exactly like an unlabelled verb.
+
+Such a scale belongs in `RatingScale`, not in the feature that happens to need it first: picking
+one level out of five, drawn as icons, with nothing chosen until someone chooses and a second
+click taking the choice back. The faces themselves stay with the feature — the component knows
+about levels, not about sleep.
+
 ## 2. Form actions
 
 Every form ends with the same block, `FormActions`:

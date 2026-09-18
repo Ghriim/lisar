@@ -82,6 +82,21 @@ export interface HydrationEntry {
 }
 
 /**
+ * The night of the day in progress. Everything but the day is null when nothing has been noted
+ * this morning — which is the normal first state of every day, not an error.
+ */
+export interface SleepNight {
+    /** The waking day, YYYY-MM-DD, in the timezone the app counts days in. */
+    day: string
+    /** The instant one went to bed — the evening before, when the night crossed midnight. */
+    bedtimeAt: string | null
+    wakeUpAt: string | null
+    durationInMinutes: number | null
+    /** How one felt on waking, 1 to 5, or null for a night one did not rate. */
+    moodRating: number | null
+}
+
+/**
  * The last known weight: today's if there is one, otherwise the most recent day's. Every field
  * is null for someone who has never weighed themselves.
  */

@@ -14,6 +14,7 @@ import {
 } from '../components'
 import { HydrationWidget } from '../features/hydration/HydrationWidget'
 import { useHydrationToday } from '../features/hydration/queries'
+import { SleepWidget } from '../features/sleep/SleepWidget'
 import { WeightWidget } from '../features/weight/WeightWidget'
 import { CategoryManager } from '../features/tasks/CategoryManager'
 import { TaskComposer } from '../features/tasks/TaskComposer'
@@ -61,6 +62,7 @@ export function TasksPage() {
             <div className="tracker-row" style={{ marginBottom: 'calc(var(--step) * 3)' }}>
                 <HydrationWidget />
                 <WeightWidget />
+                <SleepWidget />
             </div>
 
             <SystemPanel
