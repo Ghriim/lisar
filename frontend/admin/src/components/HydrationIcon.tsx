@@ -1,4 +1,4 @@
-import { CanSoda, Coffee, FlaskRound, GlassWater, Milk, type LucideIcon } from 'lucide-react'
+import { CanSoda, Coffee, CupSoda, FlaskRound, GlassWater, Milk, type LucideIcon } from 'lucide-react'
 
 /**
  * The API stores a code, never an image. This is the back-office's reading of it — the website
@@ -10,6 +10,7 @@ const ICONS: Record<string, LucideIcon> = {
     mug: Coffee,
     can: CanSoda,
     carafe: FlaskRound,
+    soda_cup: CupSoda,
 }
 
 /** Falls back to a glass: a code this front end does not know still renders. */

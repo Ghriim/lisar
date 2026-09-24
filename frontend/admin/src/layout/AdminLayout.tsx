@@ -35,6 +35,11 @@ const SECTIONS: Section[] = [
         label: 'Habitudes',
         children: [{ key: '/habitudes/catalogue', label: 'Catalogue' }],
     },
+    {
+        key: 'developers',
+        label: 'Développeurs',
+        children: [{ key: '/developpeurs/icones', label: 'Icônes' }],
+    },
 ]
 
 export function AdminLayout() {

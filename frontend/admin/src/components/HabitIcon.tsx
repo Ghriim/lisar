@@ -1,4 +1,18 @@
-import { Book, Droplet, Dumbbell, Footprints, Heart, Leaf, Moon, Target, type LucideIcon } from 'lucide-react'
+import {
+    Book,
+    Brush,
+    Droplet,
+    Dumbbell,
+    Footprints,
+    Guitar,
+    Heart,
+    Leaf,
+    MonitorSmartphone,
+    Moon,
+    NotebookPen,
+    Target,
+    type LucideIcon,
+} from 'lucide-react'
 
 /**
  * The API stores a code, never an image. This is the back-office's reading of it — the website
@@ -13,6 +27,10 @@ const ICONS: Record<string, LucideIcon> = {
     moon: Moon,
     heart: Heart,
     target: Target,
+    guitar: Guitar,
+    brush: Brush,
+    notebook: NotebookPen,
+    monitor: MonitorSmartphone,
 }
 
 /** Falls back to a target: a code this front end does not know still renders. */

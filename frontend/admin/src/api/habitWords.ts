@@ -11,6 +11,10 @@ const ICON_WORDS: Record<string, string> = {
     moon: 'Sommeil',
     heart: 'Santé',
     target: 'Objectif',
+    guitar: 'Instrument de musique',
+    brush: 'Art',
+    notebook: 'Étude',
+    monitor: 'Travail',
 }
 
 const TRACKER_WORDS: Record<string, string> = {

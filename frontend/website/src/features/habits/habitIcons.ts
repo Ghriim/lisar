@@ -1,4 +1,18 @@
-import { Book, Droplet, Dumbbell, Footprints, Heart, Leaf, Moon, Target, type LucideIcon } from 'lucide-react'
+import {
+    Book,
+    Brush,
+    Droplet,
+    Dumbbell,
+    Footprints,
+    Guitar,
+    Heart,
+    Leaf,
+    MonitorSmartphone,
+    Moon,
+    NotebookPen,
+    Target,
+    type LucideIcon,
+} from 'lucide-react'
 
 /**
  * How this front end draws a catalogue habit's icon code. The API answers a code, not an image;
@@ -14,6 +28,10 @@ const ICONS: Record<string, LucideIcon> = {
     moon: Moon,
     heart: Heart,
     target: Target,
+    guitar: Guitar,
+    brush: Brush,
+    notebook: NotebookPen,
+    monitor: MonitorSmartphone,
 }
 
 const WORDS: Record<string, string> = {
@@ -25,6 +43,10 @@ const WORDS: Record<string, string> = {
     moon: 'Sommeil',
     heart: 'Santé',
     target: 'Objectif',
+    guitar: 'Instrument de musique',
+    brush: 'Art',
+    notebook: 'Étude',
+    monitor: 'Travail',
 }
 
 export function iconFor(code: string): LucideIcon {

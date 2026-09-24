@@ -30,6 +30,7 @@ export {
 export { FormModal } from './FormModal'
 export { HabitIcon } from './HabitIcon'
 export { HydrationIcon } from './HydrationIcon'
+export { IconGallery } from './IconGallery'
 export { Centered, Row, Stack } from './Layout'
 export { ListToolbar, type FilterOption } from './ListToolbar'
 export { Page } from './Page'

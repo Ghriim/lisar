@@ -1,4 +1,4 @@
-import { CanSoda, Coffee, FlaskRound, GlassWater, Milk, type LucideIcon } from 'lucide-react'
+import { CanSoda, Coffee, CupSoda, FlaskRound, GlassWater, Milk, type LucideIcon } from 'lucide-react'
 
 /**
  * The API stores a code, never an image. This is the website's reading of it — the back-office
@@ -10,6 +10,7 @@ const ICONS: Record<string, LucideIcon> = {
     mug: Coffee,
     can: CanSoda,
     carafe: FlaskRound,
+    soda_cup: CupSoda,
 }
 
 const WORDS: Record<string, string> = {
@@ -18,6 +19,7 @@ const WORDS: Record<string, string> = {
     mug: 'Tasse',
     can: 'Canette',
     carafe: 'Carafe',
+    soda_cup: 'Gobelet',
 }
 
 /** Falls back to a glass: a shortcut whose code this front end does not know still works. */

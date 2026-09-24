@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/useAuth'
 import { FullPageLoader, PlainShell } from './components'
@@ -9,6 +10,9 @@ import { HydrationPresetsPage } from './pages/HydrationPresetsPage'
 import { LoginPage } from './pages/LoginPage'
 import { PrioritiesPage } from './pages/PrioritiesPage'
 import { UsersPage } from './pages/UsersPage'
+
+// Loaded on demand: it pulls in every lucide icon, which no other screen needs to download.
+const IconsPage = lazy(() => import('./pages/IconsPage').then((module) => ({ default: module.IconsPage })))
 
 export function App() {
     const { status } = useAuth()
@@ -42,6 +46,14 @@ export function App() {
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/hydratation/raccourcis" element={<HydrationPresetsPage />} />
                 <Route path="/habitudes/catalogue" element={<HabitsPage />} />
+                <Route
+                    path="/developpeurs/icones"
+                    element={
+                        <Suspense fallback={<FullPageLoader />}>
+                            <IconsPage />
+                        </Suspense>
+                    }
+                />
                 {/* Signing in lands here, and so does anything that does not match. */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

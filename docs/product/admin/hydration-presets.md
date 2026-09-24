@@ -8,13 +8,13 @@ An **icon** and a **volume**. Nothing else: no label, because the icon and the v
 a glass at 250 mL needs no word, and the word would have to be translated by each front end
 anyway.
 
-The icon is picked from a fixed vocabulary — glass, bottle, mug, can, carafe — stored as a code.
+The icon is picked from a fixed vocabulary — glass, bottle, mug, can, carafe, soda cup — stored as a code.
 Each front end draws it with its own icon set, which is what keeps the back-office from shipping
 images.
 
 They are listed smallest volume first, which is the order they are offered in.
 
-The vocabulary today: `glass`, `bottle`, `mug`, `can`, `carafe`.
+The vocabulary today: `glass`, `bottle`, `mug`, `can`, `carafe`, `soda_cup`.
 
 ## Deleting one is safe, and that is deliberate
 

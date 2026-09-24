@@ -15,7 +15,8 @@ interface HydrationIconRegistry
     public const string MUG = 'mug';
     public const string CAN = 'can';
     public const string CARAFE = 'carafe';
+    public const string SODA_CUP = 'soda_cup';
 
     /** @var list<string> */
-    public const array ALL = [self::GLASS, self::BOTTLE, self::MUG, self::CAN, self::CARAFE];
+    public const array ALL = [self::GLASS, self::BOTTLE, self::MUG, self::CAN, self::CARAFE, self::SODA_CUP];
 }

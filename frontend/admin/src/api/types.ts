@@ -58,7 +58,20 @@ export interface PriorityPayload {
 }
 
 /** The habit-catalogue vocabularies, mirroring the backend registries. Kept in sync by hand. */
-export const HABIT_ICONS = ['run', 'book', 'dumbbell', 'droplet', 'leaf', 'moon', 'heart', 'target'] as const
+export const HABIT_ICONS = [
+    'run',
+    'book',
+    'dumbbell',
+    'droplet',
+    'leaf',
+    'moon',
+    'heart',
+    'target',
+    'guitar',
+    'brush',
+    'notebook',
+    'monitor',
+] as const
 export const HABIT_SOURCES = ['manual', 'tracker'] as const
 export const HABIT_TRACKERS = ['steps', 'hydration'] as const
 
@@ -82,7 +95,7 @@ export interface HabitPayload {
 
 export type Violations = Record<string, string[]>
 
-export const HYDRATION_ICONS = ['glass', 'bottle', 'mug', 'can', 'carafe'] as const
+export const HYDRATION_ICONS = ['glass', 'bottle', 'mug', 'can', 'carafe', 'soda_cup'] as const
 
 export type HydrationIcon = (typeof HYDRATION_ICONS)[number]
 

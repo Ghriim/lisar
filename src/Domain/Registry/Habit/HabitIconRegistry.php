@@ -19,6 +19,10 @@ interface HabitIconRegistry
     public const string MOON = 'moon';
     public const string HEART = 'heart';
     public const string TARGET = 'target';
+    public const string GUITAR = 'guitar';
+    public const string BRUSH = 'brush';
+    public const string NOTEBOOK = 'notebook';
+    public const string MONITOR = 'monitor';
 
     /** Every code, for the admin form's choices and the validator that guards them. */
     public const array ALL = [
@@ -30,5 +34,9 @@ interface HabitIconRegistry
         self::MOON,
         self::HEART,
         self::TARGET,
+        self::GUITAR,
+        self::BRUSH,
+        self::NOTEBOOK,
+        self::MONITOR,
     ];
 }

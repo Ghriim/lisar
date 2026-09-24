@@ -8,6 +8,7 @@ const WORDS: Record<string, string> = {
     mug: 'Tasse',
     can: 'Canette',
     carafe: 'Carafe',
+    soda_cup: 'Gobelet',
 }
 
 /** Falls back to a neutral word: a code this front end does not know still reads. */

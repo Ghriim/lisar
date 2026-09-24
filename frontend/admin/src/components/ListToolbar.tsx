@@ -10,6 +10,8 @@ interface ListToolbarProps<TValue extends string> {
     /** Omit the pair to drop the search box: a list filtered only by status has nothing to search. */
     searchPlaceholder?: string
     onSearch?: (term: string) => void
+    /** Filters on every keystroke rather than on Enter: for a list held whole in memory. */
+    searchAsYouType?: boolean
     filter?: {
         value: TValue
         options: FilterOption<TValue>[]
@@ -21,6 +23,7 @@ interface ListToolbarProps<TValue extends string> {
 export function ListToolbar<TValue extends string>({
     searchPlaceholder,
     onSearch,
+    searchAsYouType = false,
     filter,
 }: ListToolbarProps<TValue>) {
     return (
@@ -31,6 +34,7 @@ export function ListToolbar<TValue extends string>({
                     allowClear
                     style={{ maxWidth: 280 }}
                     onSearch={onSearch}
+                    onChange={searchAsYouType ? (event) => onSearch(event.target.value) : undefined}
                 />
             )}
 

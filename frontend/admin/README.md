@@ -20,6 +20,7 @@ single origin — which is what makes the httpOnly refresh cookie work in develo
 | Comptes | the account list, searchable and filterable by status, with deactivation and reactivation; a drawer per account showing its metadata and its internal note thread |
 | Priorités | the priority set: label, weight, colour, and which one is the default |
 | Catégories | the common categories, the ones every account picks from |
+| Icônes | every lucide icon, searchable, a click copying its name — a developer's catalogue, not data |
 
 **It never shows the contents of an account.** A person's tasks are not the back-office's
 business, and the API would not serve them here anyway.
