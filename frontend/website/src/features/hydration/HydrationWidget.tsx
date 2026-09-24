@@ -24,10 +24,9 @@ export function HydrationWidget() {
                     <div className="tracker">
                         <GlassWater size={45} strokeWidth={1.6} className="tracker-icon" aria-hidden />
                         <div className="tracker-body">
-                            <span className="tracker-value">
-                                {today.data.totalInMillilitres}
-                                <span className="tracker-note"> / {today.data.goalInMillilitres} mL</span>
-                            </span>
+                            <span className="tracker-value">{today.data.totalInMillilitres} mL</span>
+
+                            <div className="tracker-aux">Objectif {today.data.goalInMillilitres} mL</div>
 
                             <ProgressBar
                                 value={today.data.totalInMillilitres}

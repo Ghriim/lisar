@@ -26,10 +26,9 @@ export function StepWidget() {
                     <div className="tracker">
                         <Footprints size={45} strokeWidth={1.6} className="tracker-icon" aria-hidden />
                         <div className="tracker-body">
-                            <span className="tracker-value">
-                                {recorded ?? 0}
-                                <span className="tracker-note"> / {today.data.goalInSteps} pas</span>
-                            </span>
+                            <span className="tracker-value">{recorded ?? 0} pas</span>
+
+                            <div className="tracker-aux">Objectif {today.data.goalInSteps} pas</div>
 
                             <ProgressBar
                                 value={recorded ?? 0}

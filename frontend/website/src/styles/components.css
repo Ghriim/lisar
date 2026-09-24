@@ -508,6 +508,31 @@ button.chip[aria-pressed='true'] {
     opacity: 0.5;
 }
 
+/* The quest log and the habits, side by side: two thirds for the log, one for the habits. They
+   align at the top rather than stretching to the same height, and stack on a narrow screen. */
+.main-columns {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: calc(var(--step) * 2);
+    align-items: start;
+}
+
+@media (max-width: 860px) {
+    .main-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* A glyph in its own column at the head of a list row — the same shape as a tracker widget's
+   icon: centred against the whole row, the rest of the line to its right, in the accent. */
+.list-item-lead {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
 /* ------------------------------------------------------------ the habits */
 
 /* The seven-day run under a habit's name: a circle a day, checked when the day was kept. */

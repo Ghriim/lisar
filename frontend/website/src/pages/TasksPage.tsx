@@ -68,12 +68,9 @@ export function TasksPage() {
                 <WeightWidget />
             </div>
 
-            <div style={{ marginBottom: 'calc(var(--step) * 3)' }}>
-                <HabitPanel />
-            </div>
-
-            <SystemPanel
-                title="Journal de quêtes"
+            <div className="main-columns">
+                <SystemPanel
+                    title="Journal de quêtes"
                 actions={
                     <Row style={{ gap: 6 }}>
                         <IconButton
@@ -109,6 +106,9 @@ export function TasksPage() {
                     )}
                 />
             </SystemPanel>
+
+                <HabitPanel />
+            </div>
 
             {managingCategories && (
                 <Modal title="Catégories" onClose={() => setManagingCategories(false)}>

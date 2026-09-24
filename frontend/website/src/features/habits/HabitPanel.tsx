@@ -2,6 +2,7 @@ import { Check, RotateCcw, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState, IconButton, ListItem, Loader, Modal, SystemPanel } from '../../components'
 import { HabitCatalog } from './HabitCatalog'
+import { iconFor } from './habitIcons'
 import { HabitStreak } from './HabitStreak'
 import { useCompleteHabit, useHabits, useUncompleteHabit } from './queries'
 
@@ -30,10 +31,14 @@ export function HabitPanel() {
             )}
 
             {habits.isSuccess &&
-                habits.data.map((habit) => (
+                habits.data.map((habit) => {
+                    const Icon = iconFor(habit.icon)
+
+                    return (
                     <ListItem
                         key={habit.habitId}
                         title={habit.name}
+                        icon={<Icon size={26} strokeWidth={1.6} aria-hidden />}
                         meta={<HabitStreak days={habit.days} />}
                         actions={
                             habit.sourceKind === 'manual' ? (
@@ -57,7 +62,8 @@ export function HabitPanel() {
                             ) : undefined
                         }
                     />
-                ))}
+                    )
+                })}
 
             {managing && (
                 <Modal title="Gérer les habitudes" onClose={() => setManaging(false)}>

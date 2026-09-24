@@ -1,4 +1,5 @@
 import { Button, Chip, EmptyState, ListItem, Loader, Stack } from '../../components'
+import { iconFor } from './habitIcons'
 import { useHabitCatalog, useSubscribeHabit, useUnsubscribeHabit } from './queries'
 
 /**
@@ -21,10 +22,14 @@ export function HabitCatalog() {
             )}
 
             {catalog.isSuccess &&
-                catalog.data.map((item) => (
+                catalog.data.map((item) => {
+                    const Icon = iconFor(item.icon)
+
+                    return (
                     <ListItem
                         key={item.habitId}
                         title={item.name}
+                        icon={<Icon size={26} strokeWidth={1.6} aria-hidden />}
                         meta={item.sourceKind === 'tracker' ? <Chip>Automatique</Chip> : undefined}
                         actions={
                             item.isSubscribed ? (
@@ -46,7 +51,8 @@ export function HabitCatalog() {
                             )
                         }
                     />
-                ))}
+                    )
+                })}
         </Stack>
     )
 }

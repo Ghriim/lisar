@@ -5,6 +5,8 @@ import { IconButton } from './IconButton'
 interface ListItemProps {
     /** Plain text: it is also what the fold control announces. */
     title: string
+    /** A glyph in its own column at the head of the row, centred against it — what the row is about. */
+    icon?: ReactNode
     /** Right after the title, dimmed. A progress count, a quantity, a duration. */
     note?: string
     description?: string | null
@@ -30,6 +32,7 @@ interface ListItemProps {
  */
 export function ListItem({
     title,
+    icon,
     note,
     description,
     meta,
@@ -49,6 +52,8 @@ export function ListItem({
                 className={muted ? 'list-item list-item-muted' : 'list-item'}
                 style={{ '--list-item-accent': accent } as CSSProperties}
             >
+                {icon !== undefined && <span className="list-item-lead">{icon}</span>}
+
                 <div className="list-item-body">
                     <div className="list-item-title">
                         {foldable && (
