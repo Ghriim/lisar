@@ -1,53 +1,49 @@
-import { Eye, GlassWater } from 'lucide-react'
+import { GlassWater } from 'lucide-react'
 import { useState } from 'react'
-import { IconButton, Loader, Modal, ProgressBar, Row, SystemPanel } from '../../components'
+import { Loader, Modal, ProgressBar, SystemPanel } from '../../components'
 import { HydrationPanel } from './HydrationPanel'
 import { useHydrationToday } from './queries'
 
 /**
  * A glass of water and where the day stands, on the quest log. Drinking is noted in passing,
- * several times a day: sending someone to another page for it would mean they stop noting it.
- *
- * Everything but the glance happens in the window behind the eye.
+ * several times a day: a click anywhere on the widget opens the window where everything happens.
  */
 export function HydrationWidget() {
     const today = useHydrationToday()
     const [opened, setOpened] = useState(false)
 
     return (
-        <SystemPanel
-            title="Hydratation"
-            actions={<IconButton icon={Eye} label="Consulter" onClick={() => setOpened(true)} />}
-        >
-            {today.isPending && <Loader />}
+        <>
+            <SystemPanel
+                ariaLabel="Hydratation du jour"
+                onActivate={today.isSuccess ? () => setOpened(true) : undefined}
+            >
+                {today.isPending && <Loader />}
 
-            {today.isSuccess && (
-                <>
-                    <Row spread>
-                        <Row>
-                            <GlassWater size={22} strokeWidth={1.8} aria-hidden />
+                {today.isSuccess && (
+                    <div className="tracker">
+                        <GlassWater size={45} strokeWidth={1.6} className="tracker-icon" aria-hidden />
+                        <div className="tracker-body">
                             <span className="tracker-value">
                                 {today.data.totalInMillilitres}
                                 <span className="tracker-note"> / {today.data.goalInMillilitres} mL</span>
                             </span>
-                        </Row>
-                    </Row>
 
-                    <div style={{ marginTop: 12 }}>
-                        <ProgressBar
-                            value={today.data.totalInMillilitres}
-                            max={today.data.goalInMillilitres}
-                            label={`${today.data.totalInMillilitres} sur ${today.data.goalInMillilitres} millilitres`}
-                        />
+                            <ProgressBar
+                                value={today.data.totalInMillilitres}
+                                max={today.data.goalInMillilitres}
+                                label={`${today.data.totalInMillilitres} sur ${today.data.goalInMillilitres} millilitres`}
+                            />
+                        </div>
                     </div>
-                </>
-            )}
+                )}
+            </SystemPanel>
 
             {opened && today.isSuccess && (
                 <Modal title="Hydratation du jour" onClose={() => setOpened(false)}>
                     <HydrationPanel day={today.data} />
                 </Modal>
             )}
-        </SystemPanel>
+        </>
     )
 }

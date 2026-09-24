@@ -28,6 +28,7 @@ export {
     type SelectOption,
 } from './Form'
 export { FormModal } from './FormModal'
+export { HabitIcon } from './HabitIcon'
 export { HydrationIcon } from './HydrationIcon'
 export { Centered, Row, Stack } from './Layout'
 export { ListToolbar, type FilterOption } from './ListToolbar'

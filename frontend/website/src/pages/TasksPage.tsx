@@ -12,9 +12,11 @@ import {
     Tabs,
     useReloadOnDayChange,
 } from '../components'
+import { HabitPanel } from '../features/habits/HabitPanel'
 import { HydrationWidget } from '../features/hydration/HydrationWidget'
 import { useHydrationToday } from '../features/hydration/queries'
 import { SleepWidget } from '../features/sleep/SleepWidget'
+import { StepWidget } from '../features/steps/StepWidget'
 import { WeightWidget } from '../features/weight/WeightWidget'
 import { CategoryManager } from '../features/tasks/CategoryManager'
 import { TaskComposer } from '../features/tasks/TaskComposer'
@@ -61,8 +63,13 @@ export function TasksPage() {
         <PageShell username={user?.username} onSignOut={() => void signOut()}>
             <div className="tracker-row" style={{ marginBottom: 'calc(var(--step) * 3)' }}>
                 <HydrationWidget />
-                <WeightWidget />
+                <StepWidget />
                 <SleepWidget />
+                <WeightWidget />
+            </div>
+
+            <div style={{ marginBottom: 'calc(var(--step) * 3)' }}>
+                <HabitPanel />
             </div>
 
             <SystemPanel

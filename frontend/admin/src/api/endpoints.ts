@@ -1,6 +1,8 @@
 import { request, setAccessToken } from './client'
 import type {
     Category,
+    Habit,
+    HabitPayload,
     HydrationPreset,
     HydrationPresetPayload,
     Page,
@@ -123,6 +125,26 @@ export function updateHydrationPreset(
     payload: HydrationPresetPayload,
 ): Promise<HydrationPreset> {
     return request<HydrationPreset>(`/api/admin/hydration/presets/${id}`, { method: 'PUT', body: payload })
+}
+
+export function fetchHabits(): Promise<Habit[]> {
+    return request<Habit[]>('/api/admin/habits')
+}
+
+export function createHabit(payload: HabitPayload): Promise<Habit> {
+    return request<Habit>('/api/admin/habits', { method: 'POST', body: payload })
+}
+
+export function updateHabit(id: number, payload: HabitPayload): Promise<Habit> {
+    return request<Habit>(`/api/admin/habits/${id}`, { method: 'PUT', body: payload })
+}
+
+export function activateHabit(id: number): Promise<Habit> {
+    return request<Habit>(`/api/admin/habits/${id}/activate`, { method: 'POST' })
+}
+
+export function deactivateHabit(id: number): Promise<Habit> {
+    return request<Habit>(`/api/admin/habits/${id}/deactivate`, { method: 'POST' })
 }
 
 export function deleteHydrationPreset(id: number): Promise<void> {

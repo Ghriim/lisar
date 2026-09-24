@@ -1,7 +1,7 @@
 /* The quest log: the list, its rows, and the shapes that carry a task's state. */
 
 .app-shell {
-    max-width: 960px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: calc(var(--step) * 5) calc(var(--step) * 2) calc(var(--step) * 10);
 }
@@ -420,11 +420,33 @@ button.chip[aria-pressed='true'] {
 
 /* ------------------------------------------------------------ the trackers */
 
-/* A tracker widget: one line, glanceable, out of the way of the list beside it. Hydration and
-   weight share this vocabulary, and whatever tracker comes next will too. */
+/* A tracker widget: a big glyph and the day's figure on one line, its details a size down
+   beneath. Every tracker on the quest log speaks this vocabulary, and whatever comes next will
+   too. */
+.tracker {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 2);
+}
+
+/* The glyph that says which tracker this is — its own full-height column, nothing beneath it. */
+.tracker-icon {
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+/* The figure and its details, stacked beside the glyph. */
+.tracker-body {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 1.5);
+    flex: 1;
+    min-width: 0;
+}
+
 .tracker-value {
     font-family: var(--font-system);
-    font-size: 18px;
+    font-size: 20px;
     letter-spacing: 0.08em;
     color: var(--accent);
 }
@@ -434,10 +456,18 @@ button.chip[aria-pressed='true'] {
     font-size: 13px;
 }
 
-/* The face beside a night's length: aligned on the text, and never louder than it. */
+/* The line under the figure: times, a date, a mood — everything that is not the headline number. */
+.tracker-aux {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 1.5);
+    color: var(--text-faint);
+    font-size: 12px;
+}
+
+/* The face beside a night's times: the same quiet colour as them, never louder than the line. */
 .tracker-mood {
-    vertical-align: -4px;
-    margin-left: calc(var(--step) * 1.5);
+    color: inherit;
 }
 
 /* A scale one picks a level on: faint until chosen, lit and slightly larger once it is. */
@@ -478,9 +508,47 @@ button.chip[aria-pressed='true'] {
     opacity: 0.5;
 }
 
-/* Side by side while there is room for it, stacked as soon as there is not. */
+/* ------------------------------------------------------------ the habits */
+
+/* The seven-day run under a habit's name: a circle a day, checked when the day was kept. */
+.habit-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.habit-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--accent-line);
+    border-radius: 50%;
+}
+
+.habit-dot-done {
+    background: var(--accent);
+    border-color: var(--accent);
+    /* The check sits dark on the lit dot, so a kept day reads at a glance. */
+    color: #05141c;
+}
+
+/* Four across on the quest log, folding to two then one as the screen narrows. */
 .tracker-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: calc(var(--step) * 2);
+}
+
+@media (max-width: 860px) {
+    .tracker-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .tracker-row {
+        grid-template-columns: 1fr;
+    }
 }

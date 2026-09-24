@@ -8,6 +8,7 @@ parameters:
     refresh_token_ttl: '%env(int:REFRESH_TOKEN_TTL)%'
     refresh_token_cookie_secure: '%env(bool:REFRESH_TOKEN_COOKIE_SECURE)%'
 
-    # Where a day starts, for every tracker, and what reaching the hydration goal means.
+    # Where a day starts, for every tracker, and what reaching each daily goal means.
     tracking_timezone: '%env(TRACKING_TIMEZONE)%'
     hydration_daily_goal: '%env(int:HYDRATION_DAILY_GOAL)%'
+    step_daily_goal: '%env(int:STEP_DAILY_GOAL)%'

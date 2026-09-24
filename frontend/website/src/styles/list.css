@@ -57,7 +57,7 @@
 /* The quest log: the list, its rows, and the shapes that carry a task's state. */
 
 .app-shell {
-    max-width: 960px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: calc(var(--step) * 5) calc(var(--step) * 2) calc(var(--step) * 10);
 }
@@ -201,7 +201,7 @@
 /* The quest log: the list, its rows, and the shapes that carry a task's state. */
 
 .app-shell {
-    max-width: 960px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: calc(var(--step) * 5) calc(var(--step) * 2) calc(var(--step) * 10);
 }

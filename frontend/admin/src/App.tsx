@@ -4,6 +4,7 @@ import { FullPageLoader, PlainShell } from './components'
 import { AdminLayout } from './layout/AdminLayout'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { HabitsPage } from './pages/HabitsPage'
 import { HydrationPresetsPage } from './pages/HydrationPresetsPage'
 import { LoginPage } from './pages/LoginPage'
 import { PrioritiesPage } from './pages/PrioritiesPage'
@@ -40,6 +41,7 @@ export function App() {
                 <Route path="/priorites" element={<PrioritiesPage />} />
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/hydratation/raccourcis" element={<HydrationPresetsPage />} />
+                <Route path="/habitudes/catalogue" element={<HabitsPage />} />
                 {/* Signing in lands here, and so does anything that does not match. */}
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

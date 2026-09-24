@@ -2,11 +2,14 @@ import { request, setAccessToken } from './client'
 import type {
     Category,
     CreateTaskPayload,
+    Habit,
+    HabitCatalogItem,
     HydrationDay,
     HydrationPreset,
     Priority,
     Session,
     SleepNight,
+    StepDay,
     Task,
     UpdateTaskPayload,
     User,
@@ -138,6 +141,48 @@ export function saveWeight(weightInKilograms: number): Promise<Weight> {
         method: 'PUT',
         body: { weightInKilograms },
     })
+}
+
+export function fetchStepsToday(): Promise<StepDay> {
+    return request<StepDay>('/api/steps/today')
+}
+
+/**
+ * A PUT on the day in progress, like the weight: one count per day, and it is cumulative, so
+ * recording twice writes the same thing twice — which is what PUT means. No day is ever sent; the
+ * server knows which one it is.
+ */
+export function saveSteps(countInSteps: number): Promise<StepDay> {
+    return request<StepDay>('/api/steps/today', {
+        method: 'PUT',
+        body: { countInSteps },
+    })
+}
+
+export function fetchHabits(): Promise<Habit[]> {
+    return request<Habit[]>('/api/habits')
+}
+
+/** Ticking a manual habit for today answers with that habit, its week refreshed. */
+export function completeHabit(id: number): Promise<Habit> {
+    return request<Habit>(`/api/habits/${id}/complete`, { method: 'POST' })
+}
+
+/** Un-ticking today — the undo of a mis-tap. Answers with the habit, its week refreshed. */
+export function uncompleteHabit(id: number): Promise<Habit> {
+    return request<Habit>(`/api/habits/${id}/complete`, { method: 'DELETE' })
+}
+
+export function fetchHabitCatalog(): Promise<HabitCatalogItem[]> {
+    return request<HabitCatalogItem[]>('/api/habits/catalog')
+}
+
+export function subscribeHabit(id: number): Promise<HabitCatalogItem> {
+    return request<HabitCatalogItem>(`/api/habits/${id}/subscribe`, { method: 'POST' })
+}
+
+export function unsubscribeHabit(id: number): Promise<HabitCatalogItem> {
+    return request<HabitCatalogItem>(`/api/habits/${id}/subscribe`, { method: 'DELETE' })
 }
 
 export function fetchSleepToday(): Promise<SleepNight> {

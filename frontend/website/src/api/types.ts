@@ -119,3 +119,50 @@ export interface HydrationDay {
     totalInMillilitres: number
     entries: HydrationEntry[]
 }
+
+/**
+ * The step count of the day in progress. `day` and `goalInSteps` are always there — a day always
+ * has a goal. `countInSteps` and `source` are null until the first save of the day, and that null
+ * is not a zero: zero is a day recorded as having no steps, null is a day nothing was recorded on.
+ */
+export interface StepDay {
+    /** A calendar day, YYYY-MM-DD, in the timezone the app counts days in. */
+    day: string
+    goalInSteps: number
+    countInSteps: number | null
+    /** Which writer set the count — a code the API knows — or null on an untouched day. */
+    source: string | null
+}
+
+export type HabitSource = 'manual' | 'tracker'
+
+/** One of the seven days a habit's line shows. */
+export interface HabitDay {
+    /** A calendar day, YYYY-MM-DD. */
+    day: string
+    isCompleted: boolean
+}
+
+/** A subscribed habit, as its line on the panel. */
+export interface Habit {
+    habitId: number
+    name: string
+    /** One of the codes the API knows; this front end draws its own glyph for it. */
+    icon: string
+    /** A manual habit is ticked by hand; a tracker habit is kept on its own. */
+    sourceKind: HabitSource
+    isCompletedToday: boolean
+    /** Last seven days, oldest first, today last. */
+    days: HabitDay[]
+}
+
+/** One catalogue habit in the subscribe window. */
+export interface HabitCatalogItem {
+    habitId: number
+    name: string
+    icon: string
+    sourceKind: HabitSource
+    trackerKind: string | null
+    trackerThreshold: number | null
+    isSubscribed: boolean
+}

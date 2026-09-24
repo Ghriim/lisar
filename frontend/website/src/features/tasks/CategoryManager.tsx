@@ -146,7 +146,7 @@ export function CategoryManager() {
                     groups={[{ label: 'Communes', items: reference }]}
                     keyOf={(category) => category.id}
                     emptyText="Aucune catégorie commune."
-                    renderItem={(category) => <ListItem title={category.label} muted />}
+                    renderItem={(category) => <ListItem title={category.label} />}
                 />
             )}
 

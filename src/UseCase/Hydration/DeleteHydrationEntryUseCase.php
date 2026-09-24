@@ -13,9 +13,11 @@ use App\Domain\Gateway\Persister\HydrationEntryPersisterGateway;
 use App\Domain\Gateway\Provider\HydrationDayProviderGateway;
 use App\Domain\Gateway\Provider\HydrationEntryProviderGateway;
 use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Registry\Habit\HabitTrackerRegistry;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Constraint\Hydration\EntryFromTodayConstraint;
 use App\Infrastructure\Exception\DataModelNotFoundException;
+use App\UseCase\Habit\SyncTrackerHabitsUseCase;
 use App\UseCase\UseCaseInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
@@ -34,6 +36,7 @@ final readonly class DeleteHydrationEntryUseCase implements UseCaseInterface
         private HydrationDayProviderGateway $hydrationDayProviderGateway,
         private HydrationDayOutputFactory $outputFactory,
         private DayClock $clock,
+        private SyncTrackerHabitsUseCase $syncTrackerHabits,
         #[Autowire('%hydration_daily_goal%')]
         private int $defaultGoalInMillilitres,
     ) {
@@ -64,6 +67,10 @@ final readonly class DeleteHydrationEntryUseCase implements UseCaseInterface
 
         $today = $this->clock->today();
         $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($owner, $today);
+
+        // The day's total changed: habits watching hydration are kept, or unkept, to match.
+        $total = null === $day ? 0 : $day->getTotalInMillilitres();
+        $this->syncTrackerHabits->execute($ownerId, HabitTrackerRegistry::HYDRATION, $total, $today);
 
         return null === $day
             ? $this->outputFactory->buildEmpty($today, $this->defaultGoalInMillilitres)

@@ -57,6 +57,29 @@ export interface PriorityPayload {
     isDefault: boolean
 }
 
+/** The habit-catalogue vocabularies, mirroring the backend registries. Kept in sync by hand. */
+export const HABIT_ICONS = ['run', 'book', 'dumbbell', 'droplet', 'leaf', 'moon', 'heart', 'target'] as const
+export const HABIT_SOURCES = ['manual', 'tracker'] as const
+export const HABIT_TRACKERS = ['steps', 'hydration'] as const
+
+export interface Habit {
+    id: number
+    name: string
+    icon: string
+    sourceKind: string
+    trackerKind: string | null
+    trackerThreshold: number | null
+    isActive: boolean
+}
+
+export interface HabitPayload {
+    name: string
+    icon: string
+    sourceKind: string
+    trackerKind: string | null
+    trackerThreshold: number | null
+}
+
 export type Violations = Record<string, string[]>
 
 export const HYDRATION_ICONS = ['glass', 'bottle', 'mug', 'can', 'carafe'] as const
