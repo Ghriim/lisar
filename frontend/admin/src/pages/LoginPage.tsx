@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { ApiError } from '../api/client'
-import { NotAnAdministratorError } from '../api/errors'
 import { useAuth } from '../auth/useAuth'
 import {
     Alert,
@@ -60,11 +59,11 @@ export function LoginPage() {
 }
 
 function messageFor(failure: unknown): string {
-    if (failure instanceof NotAnAdministratorError) {
-        return 'Ce compte existe, mais il n’est pas administrateur.'
-    }
-
     if (failure instanceof ApiError) {
+        if (failure.code === 'wrong_audience') {
+            return 'Ce compte existe, mais il n’est pas administrateur.'
+        }
+
         if (failure.code === 'account_deactivated') {
             return 'Ce compte est désactivé.'
         }

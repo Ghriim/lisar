@@ -13,8 +13,9 @@ import type {
     UserComment,
 } from './types'
 
+/** The back-office's own session endpoints and cookie: signing in or out here leaves the website alone. */
 export async function signIn(email: string, password: string): Promise<Session> {
-    const session = await request<Session>('/api/auth/login', {
+    const session = await request<Session>('/api/admin/auth/login', {
         method: 'POST',
         body: { email, password },
         skipRefresh: true,
@@ -27,7 +28,7 @@ export async function signIn(email: string, password: string): Promise<Session> 
 
 export async function signOut(): Promise<void> {
     try {
-        await request<void>('/api/auth/logout', { method: 'POST', skipRefresh: true })
+        await request<void>('/api/admin/auth/logout', { method: 'POST', skipRefresh: true })
     } finally {
         setAccessToken(null)
     }

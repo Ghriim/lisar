@@ -5,10 +5,8 @@ security:
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
-    # An administrator is an account like any other, plus the back-office. Without this an
-    # admin cannot use the app they administer.
-    role_hierarchy:
-        ROLE_ADMIN: [ROLE_USER]
+    # No role hierarchy, on purpose: an account belongs to one front end. An administrator's
+    # token opens the back-office and nothing else, a user's token the website and nothing else.
 
     providers:
         app_users:
@@ -30,9 +28,12 @@ security:
         # Public: signing up, and everything that hands out or drops a session.
         - { path: ^/api/users/register$, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/auth/, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         # The back-office surface, in one place rather than an attribute per route.
         - { path: ^/api/admin, roles: ROLE_ADMIN }
+        # Who is signed in: both front ends ask, each with its own kind of token.
+        - { path: ^/api/users/me$, methods: [GET], roles: [ROLE_USER, ROLE_ADMIN] }
         - { path: ^/api, roles: ROLE_USER }
 
 when@test:

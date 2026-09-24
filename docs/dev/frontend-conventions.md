@@ -119,6 +119,21 @@ previous number is almost the next one and retyping it in full is work for nothi
 the exception is whether the field has a *previous value of its own* rather than a *likely
 choice*; a category does not, and stays empty.
 
+## 4.1 An active/inactive filter
+
+A list that can be filtered on whether its rows are active always offers the same three
+choices, **in this order: active, inactive, all** — `Actifs / Inactifs / Tous`, agreed with the
+noun (`Actives / Inactives / Toutes` for habits). **It opens on active only**: what is live is
+what a screen is usually for, and the retired rows are one click away rather than in the way.
+
+This is not a preselected *choice* in the sense of §4 — nothing is submitted on anyone's behalf,
+it is only which rows are shown first.
+
+In the back-office this is **`ActiveFilter`**, with its state from **`useActiveFilter()`**, and
+nothing else: the order, the labels (`gender="feminine"` for the second set) and the default live
+there, so a screen cannot get them wrong. The hook also hands back `isActive`, the API's reading
+of it — `undefined` for all.
+
 ## 5. A page draws with components, never with the library
 
 Both front ends keep everything they draw with in `src/components/`, re-exported from one

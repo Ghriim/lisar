@@ -1044,7 +1044,10 @@ Rules:
   `Controller\User\UserController` would be two classes with the same short name, imported side
   by side in a review. The public side keeps the bare name.
 - Authorization is declared once in `security.yaml`'s `access_control` (`^/api/admin` →
-  `ROLE_ADMIN`), not as an attribute repeated on every route.
+  `ROLE_ADMIN`), not as an attribute repeated on every route. There is **no role hierarchy**:
+  an account belongs to one audience, and its token opens that audience's routes only.
+- Sessions are per audience too: `/api/auth/*` for the website, `/api/admin/auth/*` for the
+  back-office, each with its own refresh cookie (`RefreshTokenCookieFactory`).
 - Watch out for method names `AbstractController` already defines: `getUser()` is taken, so the
   route method is `getUserAccount()`.
 - **Use cases are injected as method arguments**, not constructor arguments — a controller holding
@@ -1124,11 +1127,14 @@ final class MapDataInput extends ValueResolver
 | `DataModelNotFoundException` | `Infrastructure\Exception` | 404 | `{"message": "DataModel App\\Domain\\DTO\\DataModel\\XDataModel not found"}` |
 | `InvalidCredentialsException` | `Domain\Exception` | 401 | `{"message": "invalid_credentials"}` |
 | `AccountDeactivatedException` | `Domain\Exception` | 403 | `{"message": "account_deactivated"}` |
+| `WrongAudienceException` | `Domain\Exception` | 403 | `{"message": "wrong_audience"}` |
 
 The two authentication answers are **domain** exceptions: refusing a sign-in is a business rule,
 not a transport failure. One code covers an unknown identifier, a wrong password and an unusable
 token — telling them apart would tell a stranger which accounts exist. A deactivated account gets
 its own code, and only **after** the credentials checked out, so the distinction leaks nothing.
+So does an account signing in to the wrong front end (`SessionAudienceRegistry`: an administrator
+on the website, a user in the back-office), under the same condition.
 
 ```php
 final class ValidationException extends \Exception

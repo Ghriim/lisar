@@ -27,9 +27,9 @@ business, and the API would not serve them here anyway.
 
 ## Getting in
 
-Signing in checks the role and refuses a non-administrator **at the door**, with a message saying
-why, rather than letting every screen collect a 403. The refresh cookie is shared with the
-website, so a session restored on load is re-checked the same way.
+The back-office signs in through `/api/admin/auth/*`, with a refresh cookie of its own: signing in
+or out here leaves the website's session alone. The API refuses a non-administrator **at the
+door** (`wrong_audience`), and the page says why.
 
 ## Conventions
 

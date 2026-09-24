@@ -5,6 +5,7 @@
  * library stays one decision rather than a hundred, and a screen reads in the vocabulary of the
  * product instead of the vocabulary of a widget set.
  */
+export { ActiveFilter } from './ActiveFilter'
 export { AppShell, Panel, PlainShell } from './AppShell'
 export { ColourDot, RoleTag, StatusTag } from './Badges'
 export { Button, type ButtonVariant } from './Button'
@@ -32,8 +33,9 @@ export { HabitIcon } from './HabitIcon'
 export { HydrationIcon } from './HydrationIcon'
 export { IconGallery } from './IconGallery'
 export { Centered, Row, Stack } from './Layout'
-export { ListToolbar, type FilterOption } from './ListToolbar'
+export { ListToolbar } from './ListToolbar'
 export { Page } from './Page'
 export { SideMenu, type Screen, type Section } from './SideMenu'
 export { LinkText, Paragraph, Text, Title } from './Text'
+export { useActiveFilter, type ActiveStatus } from './useActiveFilter'
 export { useNotifier, type Notifier } from './useNotifier'

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { refreshSession, setAccessToken } from '../api/client'
-import { NotAnAdministratorError } from '../api/errors'
+import { refreshSession } from '../api/client'
 import * as api from '../api/endpoints'
-import { ROLE_ADMIN, type User } from '../api/types'
+import type { User } from '../api/types'
 import { AuthContext, type AuthStatus, type AuthValue } from './AuthContext'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -17,16 +16,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (await refreshSession()) {
                     const restored = await api.fetchCurrentUser()
 
-                    // The refresh cookie is shared with the website, so a session restored here
-                    // may well belong to someone who is not an administrator.
-                    if (!cancelled && restored.role === ROLE_ADMIN) {
+                    if (!cancelled) {
                         setUser(restored)
                         setStatus('authenticated')
 
                         return
                     }
-
-                    setAccessToken(null)
                 }
             } catch {
                 // Nothing to restore; the sign-in form is the right answer.
@@ -45,18 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const signIn = useCallback(async (email: string, password: string) => {
+        // A non-administrator is refused by the API itself, at the door, with wrong_audience.
         await api.signIn(email, password)
-        const signedIn = await api.fetchCurrentUser()
-
-        if (signedIn.role !== ROLE_ADMIN) {
-            // Checked here rather than letting every page collect a 403: the person deserves to
-            // be told why, once, at the door.
-            await api.signOut()
-
-            throw new NotAnAdministratorError()
-        }
-
-        setUser(signedIn)
+        setUser(await api.fetchCurrentUser())
         setStatus('authenticated')
     }, [])
 

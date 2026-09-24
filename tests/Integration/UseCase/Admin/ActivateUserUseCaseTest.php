@@ -7,6 +7,7 @@ namespace App\Tests\Integration\UseCase\Admin;
 use App\Domain\DTO\DataModel\UserDataModel;
 use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Registry\Session\SessionAudienceRegistry;
 use App\Fixtures\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
@@ -55,7 +56,7 @@ final class ActivateUserUseCaseTest extends KernelTestCase
         $session = self::getContainer()->get(LoginUseCase::class)->execute(new LoginDataInput(
             email: 'bob@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
-        ));
+        ), SessionAudienceRegistry::WEBSITE);
 
         self::assertNotSame('', $session->accessToken);
     }

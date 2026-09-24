@@ -7,10 +7,12 @@ namespace App\UseCase\Session;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
+use App\Domain\Exception\WrongAudienceException;
 use App\Domain\Factory\DataModelFactory\SessionDataModelFactory;
 use App\Domain\Factory\OutputFactory\SessionOutputFactory;
 use App\Domain\Gateway\Persister\SessionPersisterGateway;
 use App\Domain\Gateway\Provider\SessionProviderGateway;
+use App\Domain\Registry\Session\SessionAudienceRegistry;
 use App\Domain\Session\AccessTokenIssuerInterface;
 use App\Domain\Session\RefreshTokenGenerator;
 use App\UseCase\UseCaseInterface;
@@ -36,8 +38,9 @@ final readonly class RefreshSessionUseCase implements UseCaseInterface
     /**
      * @throws InvalidCredentialsException
      * @throws AccountDeactivatedException
+     * @throws WrongAudienceException
      */
-    public function execute(string $refreshToken): SessionDataOutput
+    public function execute(string $refreshToken, string $audience): SessionDataOutput
     {
         $session = $this->sessionProviderGateway->findOneByRefreshTokenHash(
             $this->refreshTokenGenerator->hash($refreshToken),
@@ -67,6 +70,12 @@ final readonly class RefreshSessionUseCase implements UseCaseInterface
 
         if (false === $session->user->isActive) {
             throw new AccountDeactivatedException();
+        }
+
+        // Each front end has its own cookie, so this only trips when the role changed since the
+        // sign-in, or when a token is posted by hand to the other front end's endpoint.
+        if (SessionAudienceRegistry::REQUIRED_ROLE[$audience] !== $session->user->role) {
+            throw new WrongAudienceException();
         }
 
         // Rotation: the old row is spent, a new one takes over. The lifetime is not extended

@@ -28,6 +28,10 @@ every live session of that account goes down and everyone signs in again.
 
 - **One single answer for an unknown e-mail and for a wrong password.** Telling them apart would
   tell a stranger which accounts exist.
+- **An administrator account is refused** with `wrong_audience`, once the credentials have
+  checked out: it belongs to the back-office only (see `../admin/login.md`). The website has its
+  own refresh cookie, so signing in or out of the back-office in the same browser changes
+  nothing here.
 - **A deactivated account gets its own answer**, but only once the credentials have checked out,
   so the distinction leaks nothing. The person is told an administrator has to undo it; retrying
   will not help.

@@ -83,6 +83,10 @@ export function LoginPage() {
 }
 
 function signInMessage(error: ApiError): string {
+    if (error.code === 'wrong_audience') {
+        return 'Ce compte est un compte d’administration : il ne sert que dans le back-office.'
+    }
+
     if (error.code === 'account_deactivated') {
         return 'Ce compte est désactivé. Un administrateur doit le réactiver.'
     }

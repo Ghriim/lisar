@@ -9,6 +9,7 @@ use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\SessionProviderGateway;
 use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Registry\Session\SessionAudienceRegistry;
 use App\Domain\Validation\Constraint\User\SelfDeactivationConstraint;
 use App\Fixtures\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -60,7 +61,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         $this->createSessionUseCase->execute(new LoginDataInput(
             email: 'alice@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
-        ));
+        ), SessionAudienceRegistry::WEBSITE);
 
         $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
         $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);

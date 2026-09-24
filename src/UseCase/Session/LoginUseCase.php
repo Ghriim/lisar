@@ -9,11 +9,13 @@ use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Exception\WrongAudienceException;
 use App\Domain\Factory\DataModelFactory\SessionDataModelFactory;
 use App\Domain\Factory\OutputFactory\SessionOutputFactory;
 use App\Domain\Gateway\Persister\SessionPersisterGateway;
 use App\Domain\Gateway\Persister\UserPersisterGateway;
 use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Registry\Session\SessionAudienceRegistry;
 use App\Domain\Registry\User\IdentityProviderRegistry;
 use App\Domain\Session\AccessTokenIssuerInterface;
 use App\Domain\Session\RefreshTokenGenerator;
@@ -24,7 +26,7 @@ use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
 
 /**
- * Signing in: credentials in, a session out.
+ * Signing in: credentials in, a session out — for one audience, the front end asking.
  */
 final readonly class LoginUseCase implements UseCaseInterface
 {
@@ -46,8 +48,9 @@ final readonly class LoginUseCase implements UseCaseInterface
      * @throws ValidationException
      * @throws InvalidCredentialsException
      * @throws AccountDeactivatedException
+     * @throws WrongAudienceException
      */
-    public function execute(LoginDataInput $input): SessionDataOutput
+    public function execute(LoginDataInput $input, string $audience): SessionDataOutput
     {
         $this->validator->validate($input);
 
@@ -66,6 +69,12 @@ final readonly class LoginUseCase implements UseCaseInterface
         // reading the difference between 401 and 403.
         if (false === $user->isActive) {
             throw new AccountDeactivatedException();
+        }
+
+        // Same reasoning: only once the password checked out does the answer say which door the
+        // account belongs to.
+        if (SessionAudienceRegistry::REQUIRED_ROLE[$audience] !== $user->role) {
+            throw new WrongAudienceException();
         }
 
         $now = DateTimeImmutable::createFromInterface($this->clock->now());

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\Controller\User;
+namespace App\Infrastructure\Controller\Admin;
 
 use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
@@ -21,17 +21,17 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * The website's sessions. The back-office has its own, under /api/admin/auth, with its own cookie:
- * see AdminSessionController.
+ * The back-office's sessions: the same use cases as the website's, for the admin audience, under
+ * a path and a cookie of their own. Public despite the /api/admin prefix — see security.yaml.
  */
-#[OA\Tag(name: 'Sessions')]
-final class SessionController extends AbstractController
+#[OA\Tag(name: 'Admin — sessions')]
+final class AdminSessionController extends AbstractController
 {
     public function __construct(private readonly RefreshTokenCookieFactory $refreshTokenCookieFactory)
     {
     }
 
-    #[Route('/api/auth/login', methods: Request::METHOD_POST)]
+    #[Route('/api/admin/auth/login', methods: Request::METHOD_POST)]
     #[OA\RequestBody(required: true, content: new Model(type: LoginDataInput::class))]
     #[OA\Response(
         response: Response::HTTP_OK,
@@ -39,30 +39,30 @@ final class SessionController extends AbstractController
         content: new OA\JsonContent(ref: new Model(type: SessionDataOutput::class)),
     )]
     #[OA\Response(response: Response::HTTP_UNAUTHORIZED, description: 'Invalid credentials.')]
-    #[OA\Response(response: Response::HTTP_FORBIDDEN, description: 'The account is deactivated, or is an administrator (wrong_audience).')]
+    #[OA\Response(response: Response::HTTP_FORBIDDEN, description: 'The account is deactivated, or is not an administrator (wrong_audience).')]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Invalid payload.')]
     public function login(#[MapDataInput] LoginDataInput $input, LoginUseCase $useCase): JsonResponse
     {
-        return $this->respondWithSession($useCase->execute($input, SessionAudienceRegistry::WEBSITE));
+        return $this->respondWithSession($useCase->execute($input, SessionAudienceRegistry::ADMIN));
     }
 
-    #[Route('/api/auth/refresh', methods: Request::METHOD_POST)]
+    #[Route('/api/admin/auth/refresh', methods: Request::METHOD_POST)]
     #[OA\Response(
         response: Response::HTTP_OK,
         description: 'Session renewed. The previous refresh token is spent and replaced.',
         content: new OA\JsonContent(ref: new Model(type: SessionDataOutput::class)),
     )]
     #[OA\Response(response: Response::HTTP_UNAUTHORIZED, description: 'Missing, unknown, expired or already spent refresh token.')]
-    #[OA\Response(response: Response::HTTP_FORBIDDEN, description: 'The account is deactivated, or is an administrator (wrong_audience).')]
+    #[OA\Response(response: Response::HTTP_FORBIDDEN, description: 'The account is deactivated, or is not an administrator (wrong_audience).')]
     public function refreshSession(Request $request, RefreshSessionUseCase $useCase): JsonResponse
     {
-        return $this->respondWithSession($useCase->execute($this->readRefreshToken($request), SessionAudienceRegistry::WEBSITE));
+        return $this->respondWithSession($useCase->execute($this->readRefreshToken($request), SessionAudienceRegistry::ADMIN));
     }
 
-    #[Route('/api/auth/logout', methods: Request::METHOD_POST)]
+    #[Route('/api/admin/auth/logout', methods: Request::METHOD_POST)]
     #[OA\Response(
         response: Response::HTTP_NO_CONTENT,
-        description: 'Signed out of every device of the account. Idempotent.',
+        description: 'Signed out of every device of the account. Idempotent. The website session, if any, is untouched.',
     )]
     public function logout(Request $request, LogoutUseCase $useCase): JsonResponse
     {
@@ -70,7 +70,7 @@ final class SessionController extends AbstractController
 
         $response = new JsonResponse(null, Response::HTTP_NO_CONTENT);
         $response->headers->setCookie(
-            $this->refreshTokenCookieFactory->buildCleared(SessionAudienceRegistry::WEBSITE),
+            $this->refreshTokenCookieFactory->buildCleared(SessionAudienceRegistry::ADMIN),
         );
 
         return $response;
@@ -81,7 +81,7 @@ final class SessionController extends AbstractController
         $response = new JsonResponse($output);
         $response->headers->setCookie(
             $this->refreshTokenCookieFactory->buildOne(
-                SessionAudienceRegistry::WEBSITE,
+                SessionAudienceRegistry::ADMIN,
                 $output->refreshToken,
                 $output->refreshTokenExpiresAt,
             ),
@@ -96,7 +96,7 @@ final class SessionController extends AbstractController
      */
     private function readRefreshToken(Request $request): string
     {
-        $cookieName = $this->refreshTokenCookieFactory->getName(SessionAudienceRegistry::WEBSITE);
+        $cookieName = $this->refreshTokenCookieFactory->getName(SessionAudienceRegistry::ADMIN);
 
         return (string) $request->cookies->get($cookieName, '');
     }

@@ -8,6 +8,7 @@ use App\Domain\DTO\DataModel\UserDataModel;
 use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Domain\Gateway\Provider\SessionProviderGateway;
+use App\Domain\Registry\Session\SessionAudienceRegistry;
 use App\Domain\Session\RefreshTokenGenerator;
 use App\Fixtures\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
@@ -73,7 +74,7 @@ final class LogoutUseCaseTest extends KernelTestCase
     public function testItStillSignsOutWhenTheTokenWasAlreadyRotated(): void
     {
         $signedIn = $this->signIn();
-        $refreshed = self::getContainer()->get(RefreshSessionUseCase::class)->execute($signedIn->refreshToken);
+        $refreshed = self::getContainer()->get(RefreshSessionUseCase::class)->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
 
         // The caller hands back the token it had before the silent refresh landed.
         $this->useCase->execute($signedIn->refreshToken);
@@ -102,6 +103,6 @@ final class LogoutUseCaseTest extends KernelTestCase
         return $this->createSessionUseCase->execute(new LoginDataInput(
             email: 'alice@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
-        ));
+        ), SessionAudienceRegistry::WEBSITE);
     }
 }

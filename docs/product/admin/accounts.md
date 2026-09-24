@@ -5,7 +5,7 @@
 ## What the page shows
 
 A paginated table: username, e-mail, status, last sign-in, with the administrators marked. Free
-text search over **username and e-mail**, and a filter on status — all, active, deactivated.
+text search over **username and e-mail**, and a filter on status — active, inactive, all — opening on the active accounts.
 
 Opening an account shows a drawer: its metadata, and its note thread.
 

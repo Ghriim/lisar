@@ -3,6 +3,7 @@ import { useState } from 'react'
 import * as api from '../api/endpoints'
 import type { User } from '../api/types'
 import {
+    ActiveFilter,
     Button,
     DataTable,
     DateText,
@@ -12,11 +13,10 @@ import {
     RoleTag,
     Row,
     StatusTag,
+    useActiveFilter,
     useNotifier,
 } from '../components'
 import { UserDrawer } from './UserDrawer'
-
-type StatusFilter = 'all' | 'active' | 'inactive'
 
 const PER_PAGE = 25
 
@@ -25,13 +25,13 @@ export function UsersPage() {
     const queryClient = useQueryClient()
 
     const [search, setSearch] = useState('')
-    const [status, setStatus] = useState<StatusFilter>('all')
+    const status = useActiveFilter()
     const [page, setPage] = useState(1)
     const [opened, setOpened] = useState<User | null>(null)
 
     const filters = {
         search,
-        isActive: status === 'all' ? undefined : status === 'active',
+        isActive: status.isActive,
         page,
         perPage: PER_PAGE,
     }
@@ -52,25 +52,21 @@ export function UsersPage() {
 
     return (
         <Page title="Comptes">
-            <ListToolbar<StatusFilter>
+            <ListToolbar
                 searchPlaceholder="Nom ou adresse"
                 onSearch={(term) => {
                     setSearch(term)
                     setPage(1)
                 }}
-                filter={{
-                    value: status,
-                    onChange: (value) => {
-                        setStatus(value)
+            >
+                <ActiveFilter
+                    value={status.status}
+                    onChange={(value) => {
+                        status.setStatus(value)
                         setPage(1)
-                    },
-                    options: [
-                        { label: 'Tous', value: 'all' },
-                        { label: 'Actifs', value: 'active' },
-                        { label: 'Désactivés', value: 'inactive' },
-                    ],
-                }}
-            />
+                    }}
+                />
+            </ListToolbar>
 
             <DataTable<User>
                 rows={users.data?.items ?? []}

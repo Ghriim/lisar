@@ -76,7 +76,7 @@ async function toError(response: Response): Promise<ApiError> {
 }
 
 export async function refreshSession(): Promise<boolean> {
-    const response = await send('/api/auth/refresh', { method: 'POST', skipRefresh: true })
+    const response = await send('/api/admin/auth/refresh', { method: 'POST', skipRefresh: true })
 
     if (!response.ok) {
         accessToken = null

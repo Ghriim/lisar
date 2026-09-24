@@ -10,9 +10,12 @@ use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\DTO\Output\Session\SessionDataOutput;
 use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
+use App\Domain\Exception\WrongAudienceException;
 use App\Domain\Gateway\Persister\UserPersisterGateway;
 use App\Domain\Gateway\Provider\SessionProviderGateway;
 use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Registry\Session\SessionAudienceRegistry;
+use App\Domain\Registry\User\UserRoleRegistry;
 use App\Domain\Session\RefreshTokenGenerator;
 use App\Fixtures\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
@@ -49,7 +52,7 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
     {
         $signedIn = $this->signIn();
 
-        $refreshed = $this->useCase->execute($signedIn->refreshToken);
+        $refreshed = $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
 
         self::assertNotSame($signedIn->refreshToken, $refreshed->refreshToken);
         self::assertNotSame('', $refreshed->accessToken);
@@ -69,21 +72,21 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
     public function testItRejectsATokenThatWasAlreadySpent(): void
     {
         $signedIn = $this->signIn();
-        $this->useCase->execute($signedIn->refreshToken);
+        $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
 
         $this->expectException(InvalidCredentialsException::class);
 
-        $this->useCase->execute($signedIn->refreshToken);
+        $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
     }
 
     public function testItKillsEverySessionOfTheAccountWhenATokenIsReplayed(): void
     {
         $signedIn = $this->signIn();
-        $refreshed = $this->useCase->execute($signedIn->refreshToken);
+        $refreshed = $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
 
         try {
             // Replaying a spent token: we cannot tell the legitimate holder from a thief.
-            $this->useCase->execute($signedIn->refreshToken);
+            $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
         } catch (InvalidCredentialsException) {
             // Expected; what matters is the state it left behind.
         }
@@ -93,21 +96,21 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
 
         // Including the one that had just been handed out.
         $this->expectException(InvalidCredentialsException::class);
-        $this->useCase->execute($refreshed->refreshToken);
+        $this->useCase->execute($refreshed->refreshToken, SessionAudienceRegistry::WEBSITE);
     }
 
     public function testItRejectsAnUnknownToken(): void
     {
         $this->expectException(InvalidCredentialsException::class);
 
-        $this->useCase->execute('not-a-refresh-token');
+        $this->useCase->execute('not-a-refresh-token', SessionAudienceRegistry::WEBSITE);
     }
 
     public function testItRejectsAnEmptyToken(): void
     {
         $this->expectException(InvalidCredentialsException::class);
 
-        $this->useCase->execute('');
+        $this->useCase->execute('', SessionAudienceRegistry::WEBSITE);
     }
 
     public function testItRefusesAnAccountDeactivatedSinceTheSignIn(): void
@@ -121,7 +124,30 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
 
         $this->expectException(AccountDeactivatedException::class);
 
-        $this->useCase->execute($signedIn->refreshToken);
+        $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
+    }
+
+    public function testItRefusesAWebsiteTokenPresentedToTheBackOffice(): void
+    {
+        $signedIn = $this->signIn();
+
+        $this->expectException(WrongAudienceException::class);
+
+        $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::ADMIN);
+    }
+
+    public function testItRefusesAnAccountWhoseRoleChangedSinceTheSignIn(): void
+    {
+        $signedIn = $this->signIn();
+
+        $alice = $this->userProviderGateway->findOneByEmail('alice@lisar.test');
+        self::assertNotNull($alice);
+        $alice->role = UserRoleRegistry::ADMIN;
+        $this->userPersisterGateway->update($alice);
+
+        $this->expectException(WrongAudienceException::class);
+
+        $this->useCase->execute($signedIn->refreshToken, SessionAudienceRegistry::WEBSITE);
     }
 
     private function signIn(): SessionDataOutput
@@ -129,7 +155,7 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
         return $this->createSessionUseCase->execute(new LoginDataInput(
             email: 'alice@lisar.test',
             password: UserFixtures::PLAIN_PASSWORD,
-        ));
+        ), SessionAudienceRegistry::WEBSITE);
     }
 
     private function findSession(string $refreshToken): ?SessionDataModel

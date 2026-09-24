@@ -9,8 +9,10 @@ use App\Domain\DTO\Input\Session\LoginDataInput;
 use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Exception\WrongAudienceException;
 use App\Domain\Gateway\Provider\SessionProviderGateway;
 use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Registry\Session\SessionAudienceRegistry;
 use App\Domain\Session\RefreshTokenGenerator;
 use App\Fixtures\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
@@ -42,7 +44,7 @@ final class LoginUseCaseTest extends KernelTestCase
 
     public function testItOpensASession(): void
     {
-        $output = $this->useCase->execute($this->buildInput());
+        $output = $this->useCase->execute($this->buildInput(), SessionAudienceRegistry::WEBSITE);
 
         self::assertNotSame('', $output->accessToken);
         self::assertSame(900, $output->expiresIn);
@@ -65,7 +67,7 @@ final class LoginUseCaseTest extends KernelTestCase
         self::assertNotNull($user);
         self::assertNull($user->lastSignedInAt);
 
-        $this->useCase->execute($this->buildInput());
+        $this->useCase->execute($this->buildInput(), SessionAudienceRegistry::WEBSITE);
 
         $user = $this->userProviderGateway->findOneByEmail('alice@lisar.test');
         self::assertNotNull($user);
@@ -74,8 +76,8 @@ final class LoginUseCaseTest extends KernelTestCase
 
     public function testItOpensOneSessionPerSignIn(): void
     {
-        $first = $this->useCase->execute($this->buildInput());
-        $second = $this->useCase->execute($this->buildInput());
+        $first = $this->useCase->execute($this->buildInput(), SessionAudienceRegistry::WEBSITE);
+        $second = $this->useCase->execute($this->buildInput(), SessionAudienceRegistry::WEBSITE);
 
         self::assertNotSame($first->refreshToken, $second->refreshToken);
 
@@ -88,27 +90,27 @@ final class LoginUseCaseTest extends KernelTestCase
     {
         $this->expectException(InvalidCredentialsException::class);
 
-        $this->useCase->execute($this->buildInput(password: 'Wr0ng-Password!'));
+        $this->useCase->execute($this->buildInput(password: 'Wr0ng-Password!'), SessionAudienceRegistry::WEBSITE);
     }
 
     public function testItRejectsAnUnknownEmailTheSameWayAsAWrongPassword(): void
     {
         $this->expectException(InvalidCredentialsException::class);
 
-        $this->useCase->execute($this->buildInput(email: 'nobody@lisar.test'));
+        $this->useCase->execute($this->buildInput(email: 'nobody@lisar.test'), SessionAudienceRegistry::WEBSITE);
     }
 
     public function testItRefusesADeactivatedAccount(): void
     {
         $this->expectException(AccountDeactivatedException::class);
 
-        $this->useCase->execute($this->buildInput(email: 'bob@lisar.test'));
+        $this->useCase->execute($this->buildInput(email: 'bob@lisar.test'), SessionAudienceRegistry::WEBSITE);
     }
 
     public function testItOpensNoSessionForADeactivatedAccount(): void
     {
         try {
-            $this->useCase->execute($this->buildInput(email: 'bob@lisar.test'));
+            $this->useCase->execute($this->buildInput(email: 'bob@lisar.test'), SessionAudienceRegistry::WEBSITE);
         } catch (AccountDeactivatedException) {
             // Expected; what matters is what was not written.
         }
@@ -117,10 +119,46 @@ final class LoginUseCaseTest extends KernelTestCase
         self::assertSame([], $this->sessionProviderGateway->findAllLiveForUser($bob));
     }
 
+    public function testItOpensAnAdminSessionForAnAdministrator(): void
+    {
+        $output = $this->useCase->execute(
+            $this->buildInput(email: 'admin@lisar.test'),
+            SessionAudienceRegistry::ADMIN,
+        );
+
+        self::assertNotSame('', $output->accessToken);
+    }
+
+    public function testItRefusesAnAdministratorOnTheWebsite(): void
+    {
+        $this->expectException(WrongAudienceException::class);
+
+        $this->useCase->execute($this->buildInput(email: 'admin@lisar.test'), SessionAudienceRegistry::WEBSITE);
+    }
+
+    public function testItRefusesAUserInTheBackOffice(): void
+    {
+        $this->expectException(WrongAudienceException::class);
+
+        $this->useCase->execute($this->buildInput(), SessionAudienceRegistry::ADMIN);
+    }
+
+    public function testItOpensNoSessionForTheWrongAudience(): void
+    {
+        try {
+            $this->useCase->execute($this->buildInput(), SessionAudienceRegistry::ADMIN);
+        } catch (WrongAudienceException) {
+            // Expected; what matters is what was not written.
+        }
+
+        $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
+        self::assertSame([], $this->sessionProviderGateway->findAllLiveForUser($alice));
+    }
+
     public function testItRejectsAnInvalidPayload(): void
     {
         try {
-            $this->useCase->execute(new LoginDataInput(email: '', password: ''));
+            $this->useCase->execute(new LoginDataInput(email: '', password: ''), SessionAudienceRegistry::WEBSITE);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('email', $exception->violations);

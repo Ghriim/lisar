@@ -7,6 +7,7 @@ namespace App\Infrastructure\HttpKernel\EventListener;
 use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Exception\WrongAudienceException;
 use App\Infrastructure\Exception\DataInputMappingException;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -43,6 +44,10 @@ final readonly class ExceptionListener
                 Response::HTTP_UNAUTHORIZED,
             ),
             $exception instanceof AccountDeactivatedException => new JsonResponse(
+                ['message' => $exception->getMessage()],
+                Response::HTTP_FORBIDDEN,
+            ),
+            $exception instanceof WrongAudienceException => new JsonResponse(
                 ['message' => $exception->getMessage()],
                 Response::HTTP_FORBIDDEN,
             ),
