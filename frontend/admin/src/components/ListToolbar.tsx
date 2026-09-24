@@ -7,8 +7,9 @@ export interface FilterOption<TValue extends string> {
 }
 
 interface ListToolbarProps<TValue extends string> {
-    searchPlaceholder: string
-    onSearch: (term: string) => void
+    /** Omit the pair to drop the search box: a list filtered only by status has nothing to search. */
+    searchPlaceholder?: string
+    onSearch?: (term: string) => void
     filter?: {
         value: TValue
         options: FilterOption<TValue>[]
@@ -16,7 +17,7 @@ interface ListToolbarProps<TValue extends string> {
     }
 }
 
-/** What sits above a list: a search box, and at most one filter. */
+/** What sits above a list: an optional search box, and at most one filter. */
 export function ListToolbar<TValue extends string>({
     searchPlaceholder,
     onSearch,
@@ -24,12 +25,14 @@ export function ListToolbar<TValue extends string>({
 }: ListToolbarProps<TValue>) {
     return (
         <Row gap={16} wrap style={{ marginBottom: 16 }}>
-            <Input.Search
-                placeholder={searchPlaceholder}
-                allowClear
-                style={{ maxWidth: 280 }}
-                onSearch={onSearch}
-            />
+            {onSearch !== undefined && (
+                <Input.Search
+                    placeholder={searchPlaceholder}
+                    allowClear
+                    style={{ maxWidth: 280 }}
+                    onSearch={onSearch}
+                />
+            )}
 
             {filter !== undefined && (
                 <Segmented<TValue>

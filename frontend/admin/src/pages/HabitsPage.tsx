@@ -9,6 +9,7 @@ import {
     DataTable,
     FormModal,
     HabitIcon,
+    ListToolbar,
     NumberField,
     Page,
     Paragraph,
@@ -21,13 +22,17 @@ import {
 
 const SOURCE_LABELS: Record<string, string> = { manual: 'Manuelle', tracker: 'Automatique (tracker)' }
 
+type StatusFilter = 'active' | 'inactive' | 'all'
+
 export function HabitsPage() {
     const notify = useNotifier()
     const queryClient = useQueryClient()
     /** undefined: no window. null: creating. A habit: editing that one. */
     const [editing, setEditing] = useState<Habit | null | undefined>(undefined)
+    const [status, setStatus] = useState<StatusFilter>('active')
 
-    const habits = useQuery({ queryKey: ['habits'], queryFn: api.fetchHabits })
+    const isActive = status === 'all' ? undefined : status === 'active'
+    const habits = useQuery({ queryKey: ['habits', status], queryFn: () => api.fetchHabits(isActive) })
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ['habits'] })
 
@@ -65,6 +70,18 @@ export function HabitsPage() {
                 Le catalogue que les gens suivent. Retirer une habitude la désactive sans effacer ce
                 qui a déjà été tenu : les séries déjà acquises lui survivent.
             </Paragraph>
+
+            <ListToolbar<StatusFilter>
+                filter={{
+                    value: status,
+                    onChange: setStatus,
+                    options: [
+                        { label: 'Actives', value: 'active' },
+                        { label: 'Inactives', value: 'inactive' },
+                        { label: 'Toutes', value: 'all' },
+                    ],
+                }}
+            />
 
             <DataTable<Habit>
                 rows={habits.data ?? []}

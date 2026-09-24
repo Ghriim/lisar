@@ -29,13 +29,17 @@ final class HabitRepository extends ServiceEntityRepository implements HabitProv
     }
 
     /** @return list<HabitDataModel> */
-    public function findAllForAdminList(): array
+    public function findAllForAdminList(?bool $isActive): array
     {
-        return $this->createQueryBuilder('habit')
-            ->orderBy('habit.createdAt', 'DESC')
-            ->addOrderBy('habit.id', 'DESC')
-            ->getQuery()
-            ->getResult();
+        $queryBuilder = $this->createQueryBuilder('habit')
+            ->orderBy('habit.name', 'ASC')
+            ->addOrderBy('habit.id', 'ASC');
+
+        if (null !== $isActive) {
+            $queryBuilder->andWhere('habit.isActive = :active')->setParameter('active', $isActive);
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /** @return list<HabitDataModel> */

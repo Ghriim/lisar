@@ -21,8 +21,8 @@ final readonly class ListHabitsForAdminUseCase implements UseCaseInterface
     /**
      * @return list<HabitAdminDataOutput>
      */
-    public function execute(): array
+    public function execute(?bool $isActive = null): array
     {
-        return $this->outputFactory->buildMany($this->habitProviderGateway->findAllForAdminList());
+        return $this->outputFactory->buildMany($this->habitProviderGateway->findAllForAdminList($isActive));
     }
 }

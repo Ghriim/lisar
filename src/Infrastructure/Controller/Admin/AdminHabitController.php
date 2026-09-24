@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Controller\Admin;
 
+use App\Domain\DTO\Input\Admin\ListHabitsForAdminDataInput;
 use App\Domain\DTO\Input\Habit\CreateHabitDataInput;
 use App\Domain\DTO\Input\Habit\UpdateHabitDataInput;
 use App\Domain\DTO\Output\Habit\HabitAdminDataOutput;
@@ -32,14 +33,17 @@ use Symfony\Component\Routing\Attribute\Route;
 final class AdminHabitController extends AbstractController
 {
     #[Route('/api/admin/habits', methods: Request::METHOD_GET)]
+    #[OA\Parameter(name: 'isActive', in: 'query', required: false, schema: new OA\Schema(type: 'boolean'))]
     #[OA\Response(
         response: Response::HTTP_OK,
-        description: 'The whole catalogue, active and retired, newest first.',
+        description: 'The catalogue by name; the optional isActive filter narrows it to the offered or the retired.',
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: HabitAdminDataOutput::class))),
     )]
-    public function listHabits(ListHabitsForAdminUseCase $useCase): JsonResponse
-    {
-        return new JsonResponse($useCase->execute());
+    public function listHabits(
+        #[MapDataInput] ListHabitsForAdminDataInput $input,
+        ListHabitsForAdminUseCase $useCase,
+    ): JsonResponse {
+        return new JsonResponse($useCase->execute($input->isActive));
     }
 
     #[Route('/api/admin/habits', methods: Request::METHOD_POST)]

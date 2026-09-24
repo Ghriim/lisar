@@ -127,8 +127,10 @@ export function updateHydrationPreset(
     return request<HydrationPreset>(`/api/admin/hydration/presets/${id}`, { method: 'PUT', body: payload })
 }
 
-export function fetchHabits(): Promise<Habit[]> {
-    return request<Habit[]>('/api/admin/habits')
+export function fetchHabits(isActive?: boolean): Promise<Habit[]> {
+    const query = isActive === undefined ? '' : `?isActive=${isActive ? 'true' : 'false'}`
+
+    return request<Habit[]>(`/api/admin/habits${query}`)
 }
 
 export function createHabit(payload: HabitPayload): Promise<Habit> {

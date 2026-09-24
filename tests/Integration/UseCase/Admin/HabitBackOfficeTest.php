@@ -54,6 +54,16 @@ final class HabitBackOfficeTest extends KernelTestCase
         self::assertCount(5, $this->list->execute());
     }
 
+    public function testTheListFiltersByStatus(): void
+    {
+        $this->loadFixtures(HabitFixtures::class);
+
+        // Four active seeded habits, one retired.
+        self::assertCount(5, $this->list->execute(null));
+        self::assertCount(4, $this->list->execute(true));
+        self::assertCount(1, $this->list->execute(false));
+    }
+
     public function testItCreatesAManualHabit(): void
     {
         $output = $this->create->execute(

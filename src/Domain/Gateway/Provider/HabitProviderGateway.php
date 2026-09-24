@@ -11,11 +11,12 @@ interface HabitProviderGateway
     public function findOneById(int $id): ?HabitDataModel;
 
     /**
-     * The whole catalogue, active and retired alike, newest first — the back-office list.
+     * The catalogue for the back-office, by name. `$isActive` narrows it: true for the offered
+     * ones, false for the retired ones, null for both.
      *
      * @return list<HabitDataModel>
      */
-    public function findAllForAdminList(): array;
+    public function findAllForAdminList(?bool $isActive): array;
 
     /**
      * The catalogue people can subscribe to: the active habits, by name.
