@@ -17,7 +17,7 @@ use Doctrine\ORM\Mapping as ORM;
  * written idempotently — see UseCase\Step\SaveStepDayUseCase.
  *
  * The goal is frozen into the row the first time the day is written, exactly as the hydration day
- * freezes its own: raising the goal from 10000 to 12000 must not retroactively turn a day that was
+ * freezes its own: raising the goal from 5000 to 12000 must not retroactively turn a day that was
  * reached into a day that was missed.
  */
 #[ORM\Table(name: 'step_day')]

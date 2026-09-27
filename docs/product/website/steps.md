@@ -1,6 +1,6 @@
 # Website · Steps
 
-A widget on the quest log, beside hydration, weight and sleep: the day's steps against the day's
+A widget on the dashboard, beside hydration, weight and sleep: the day's steps against the day's
 goal, glanced at rather than opened.
 
 ## The widget

@@ -24,7 +24,8 @@ src/
 ├── api/          # the contract: types, the fetch client, the endpoints, the wording of errors
 ├── auth/         # the session: silent restore on load, sign in, sign out
 ├── components/   # the panel, the fields — the pieces every page is built from
-├── features/     # the todo list: queries, the composer, a task row
+├── features/     # one folder per feature: its queries, its panels, its windows
+├── layout/       # the signed-in frame: the side menu and the routes it leads to
 ├── pages/        # one per screen
 └── styles/       # tokens first, then the global sheet
 ```

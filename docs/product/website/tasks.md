@@ -1,6 +1,8 @@
 # Website · Quest log
 
-`/` — the screen the app is for: the person's tasks, and everything they do to them.
+`/todo` — the person's tasks, and everything they do to them. The same log also sits on the
+[dashboard](dashboard.md), beside the trackers; it is one component in both places, so the two
+cannot drift apart. Filters will come to `/todo` only.
 
 Gamification (XP, rewards, penalties) is **out of scope**. It will be plugged onto this page
 later without calling any of it into question.

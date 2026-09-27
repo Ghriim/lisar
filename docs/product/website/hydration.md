@@ -1,6 +1,6 @@
 # Website · Hydration
 
-A widget on the quest log, not a screen of its own: drinking is noted in passing, several times a
+A widget on the dashboard, not a screen of its own: drinking is noted in passing, several times a
 day, and sending someone to another page for it would mean they stop noting it.
 
 ## The widget

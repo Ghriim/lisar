@@ -32,7 +32,7 @@ final class HabitFixtures extends Fixture
     {
         $this->addReference(self::READING, $this->manual('Lire', HabitIconRegistry::BOOK));
         $this->addReference(self::MEDITATE, $this->manual('Méditer', HabitIconRegistry::MOON));
-        $this->addReference(self::WALK, $this->tracker('Marcher 10 000 pas', HabitIconRegistry::RUN, HabitTrackerRegistry::STEPS, 10000));
+        $this->addReference(self::WALK, $this->tracker('Marcher 5000 pas', HabitIconRegistry::RUN, HabitTrackerRegistry::STEPS, 5000));
         $this->addReference(self::DRINK, $this->tracker('Boire 1,5 L', HabitIconRegistry::DROPLET, HabitTrackerRegistry::HYDRATION, 1500));
         $this->addReference(self::RETIRED, $this->retired('Ancienne habitude', HabitIconRegistry::HEART));
     }

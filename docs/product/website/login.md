@@ -6,7 +6,7 @@
 
 E-mail and password, nothing else. The e-mail is the sign-in identifier; the username is not.
 
-On success the person lands on their quest log. There is a link to the sign-up page for whoever
+On success the person lands on their dashboard. There is a link to the sign-up page for whoever
 has no account yet.
 
 ## Sessions
@@ -42,7 +42,7 @@ every live session of that account goes down and everyone signs in again.
 
 ## Signing out
 
-Signing out is offered from the quest log, not from here, and it **signs the account out
+Signing out is offered at the bottom of the side menu, not from here, and it **signs the account out
 everywhere** — not just the device that asked. Signing out is what someone does when they suspect
 they should, so it errs on the side of dropping too much.
 

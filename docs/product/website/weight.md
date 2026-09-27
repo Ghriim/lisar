@@ -1,6 +1,6 @@
 # Website · Weight
 
-A widget on the quest log, beside the hydration one. Weighing yourself is a once-a-day gesture
+A widget on the dashboard, beside the hydration one. Weighing yourself is a once-a-day gesture
 that takes a single number: it does not deserve a screen, and a screen would only make it a
 chore.
 

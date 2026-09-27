@@ -1,6 +1,6 @@
 # Website · Sleep
 
-A widget on the quest log, beside hydration and weight. Two times and, if one feels like it, a
+A widget on the dashboard, beside hydration and weight. Two times and, if one feels like it, a
 face: that is the whole of it.
 
 ## Which day a night belongs to

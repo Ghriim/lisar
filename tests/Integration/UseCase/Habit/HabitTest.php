@@ -142,14 +142,14 @@ final class HabitTest extends KernelTestCase
 
     public function testTheStepTrackerKeepsItsHabitWhenItCrossesTheMark(): void
     {
-        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(10000));
+        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(5000));
 
         self::assertTrue($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);
     }
 
     public function testTheStepTrackerUnkeepsWhenCorrectedBelowTheMark(): void
     {
-        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(10000));
+        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(5000));
         $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(5000));
 
         self::assertFalse($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);

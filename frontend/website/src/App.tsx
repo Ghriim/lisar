@@ -1,9 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/useAuth'
 import { Loader } from './components'
+import { SignedInLayout } from './layout/SignedInLayout'
+import { ComingSoonPage } from './pages/ComingSoonPage'
+import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
-import { TasksPage } from './pages/TasksPage'
+import { TodoPage } from './pages/TodoPage'
 
 export function App() {
     const { status } = useAuth()
@@ -26,7 +29,15 @@ export function App() {
 
     return (
         <Routes>
-            <Route path="/" element={<TasksPage />} />
+            <Route element={<SignedInLayout />}>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/todo" element={<TodoPage />} />
+                <Route path="/workout" element={<ComingSoonPage title="Workout" />} />
+                <Route path="/statistiques" element={<ComingSoonPage title="Statistiques" />} />
+                <Route path="/messages" element={<ComingSoonPage title="Messages" />} />
+                <Route path="/amis" element={<ComingSoonPage title="Amis" />} />
+                <Route path="/reglages" element={<ComingSoonPage title="Réglages" />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     )

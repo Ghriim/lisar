@@ -1,0 +1,185 @@
+/*
+ * The frame of a signed-in screen: the menu down the left edge, the screen beside it.
+ */
+.app-frame {
+    display: flex;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.app-frame > .app-shell {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ----------------------------------------------------------------- the menu */
+
+/*
+ * Sticky rather than fixed, so the screen beside it never has to know how wide it is. No
+ * `overflow: hidden` anywhere on it: the tooltips of the folded menu hang outside its edge.
+ */
+.side-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: calc(var(--step) * 3);
+    width: 232px;
+    height: 100vh;
+    padding: calc(var(--step) * 3) calc(var(--step) * 1.5);
+    background: var(--panel);
+    border-right: var(--border);
+    box-shadow: var(--shadow-panel);
+    backdrop-filter: blur(6px);
+    transition: width 0.15s ease;
+}
+
+.side-nav-collapsed {
+    width: 64px;
+    align-items: center;
+}
+
+.side-nav-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--step);
+    padding-bottom: calc(var(--step) * 2);
+    border-bottom: 1px solid rgba(77, 210, 255, 0.16);
+}
+
+.side-nav-collapsed .side-nav-head {
+    flex-direction: column;
+}
+
+.side-nav-brand {
+    padding: 0 var(--step);
+    white-space: nowrap;
+}
+
+.side-nav-brand:hover {
+    text-decoration: none;
+}
+
+.side-nav-collapsed .side-nav-brand {
+    padding: 0;
+}
+
+.side-nav-collapsed .side-nav-brand .wordmark {
+    letter-spacing: 0;
+}
+
+.side-nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* The bottom group is pushed down by the space, not by a count of what sits above it. */
+.side-nav-bottom {
+    margin-top: auto;
+}
+
+.side-nav-item {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 1.5);
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-left: 2px solid transparent;
+    border-radius: var(--radius);
+    color: var(--text-dim);
+    font-family: var(--font-system);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.side-nav-item:hover {
+    background: rgba(143, 176, 216, 0.1);
+    color: var(--text);
+    text-decoration: none;
+}
+
+/* Where the person is: the accent, and the same left edge a list row carries. */
+.side-nav-item.active {
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+    color: var(--accent);
+    box-shadow: var(--shadow-glow);
+}
+
+.side-nav-item svg {
+    flex-shrink: 0;
+}
+
+.side-nav-collapsed .side-nav-item,
+.side-nav-icon-only {
+    justify-content: center;
+    width: 40px;
+    padding: 10px 0;
+}
+
+.side-nav-collapsed .side-nav-label {
+    display: none;
+}
+
+/* --------------------------------------------------- the tooltip of the menu */
+
+/*
+ * The same tooltip as `.tooltip-host`, set to the right: above an icon, it would sit on the
+ * icon before. It shows only once the labels are gone — unfolded, the label already says it —
+ * except on a control that never had a label.
+ */
+.side-nav-tip {
+    position: relative;
+}
+
+.side-nav-tip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 10px);
+    z-index: 60;
+    transform: translateY(-50%);
+    padding: 4px 8px;
+    width: max-content;
+    background: var(--panel-solid);
+    border: 1px solid var(--accent-line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-glow);
+    color: var(--text);
+    font-family: var(--font-system);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+}
+
+.side-nav:not(.side-nav-collapsed) .side-nav-tip:not(.side-nav-icon-only)::after {
+    display: none;
+}
+
+.side-nav-tip:hover::after,
+.side-nav-tip:focus-visible::after {
+    opacity: 1;
+}
+
+@media (max-width: 720px) {
+    .app-frame > .app-shell {
+        padding-left: calc(var(--step) * 1.5);
+        padding-right: calc(var(--step) * 1.5);
+    }
+}

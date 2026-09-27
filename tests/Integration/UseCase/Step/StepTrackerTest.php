@@ -26,7 +26,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class StepTrackerTest extends KernelTestCase
 {
     use LoadFixturesTrait;
-    private const int DEFAULT_GOAL_IN_STEPS = 10000;
+    private const int DEFAULT_GOAL_IN_STEPS = 5000;
 
     private GetStepDayUseCase $getToday;
     private SaveStepDayUseCase $save;

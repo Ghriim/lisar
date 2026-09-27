@@ -1,6 +1,6 @@
 # Website · Habits
 
-A panel on the quest log: the habits the person has taken on, each with the last week at a glance
+A panel on the dashboard: the habits the person has taken on, each with the last week at a glance
 and — when it is theirs to tick — a button to mark today done.
 
 Habits are not quests. A quest is done once and gone; a habit is never done, it is kept, one day

@@ -1,29 +1,13 @@
 import { FolderCog, Plus } from 'lucide-react'
 import { useState } from 'react'
-import type { Task } from '../api/types'
-import { useAuth } from '../auth/useAuth'
-import {
-    DataList,
-    IconButton,
-    Modal,
-    PageShell,
-    Row,
-    SystemPanel,
-    Tabs,
-    useReloadOnDayChange,
-} from '../components'
-import { HabitPanel } from '../features/habits/HabitPanel'
-import { HydrationWidget } from '../features/hydration/HydrationWidget'
-import { useHydrationToday } from '../features/hydration/queries'
-import { SleepWidget } from '../features/sleep/SleepWidget'
-import { StepWidget } from '../features/steps/StepWidget'
-import { WeightWidget } from '../features/weight/WeightWidget'
-import { CategoryManager } from '../features/tasks/CategoryManager'
-import { TaskComposer } from '../features/tasks/TaskComposer'
-import { TaskDetail } from '../features/tasks/TaskDetail'
-import { TaskItem } from '../features/tasks/TaskItem'
-import { useTasks } from '../features/tasks/queries'
-import { groupByCategory } from '../features/tasks/taskDisplay'
+import type { Task } from '../../api/types'
+import { DataList, IconButton, Modal, Row, SystemPanel, Tabs } from '../../components'
+import { CategoryManager } from './CategoryManager'
+import { TaskComposer } from './TaskComposer'
+import { TaskDetail } from './TaskDetail'
+import { TaskItem } from './TaskItem'
+import { useTasks } from './queries'
+import { groupByCategory } from './taskDisplay'
 
 /**
  * What the window above the list is currently for. Closed means there is no window.
@@ -39,8 +23,11 @@ type Panel =
 
 type View = 'open' | 'done'
 
-export function TasksPage() {
-    const { user, signOut } = useAuth()
+/**
+ * The quest log, with every window it opens. Shown on the dashboard and, alone, on the todo
+ * page — one component, so the two can never drift apart.
+ */
+export function QuestLog() {
     const [view, setView] = useState<View>('open')
     const [panel, setPanel] = useState<Panel>(null)
     const [managingCategories, setManagingCategories] = useState(false)
@@ -48,29 +35,12 @@ export function TasksPage() {
     const tasks = useTasks(view === 'done')
     const groups = groupByCategory(tasks.data ?? [])
 
-    // When the day turns under a page left open, the whole screen is stale, not one widget: the
-    // day's totals, its goal, its entries. So the page is what watches for it — and the day
-    // comes from the API, never from the browser, because the timezone days are counted in is a
-    // back-end decision and computing it here is how the two start disagreeing.
-    //
-    // This reads the same cached query the hydration widget does, so it costs no extra request.
-    const hydration = useHydrationToday()
-    useReloadOnDayChange(hydration.data?.day, hydration.refetch)
-
     const close = () => setPanel(null)
 
     return (
-        <PageShell username={user?.username} onSignOut={() => void signOut()}>
-            <div className="tracker-row" style={{ marginBottom: 'calc(var(--step) * 3)' }}>
-                <HydrationWidget />
-                <StepWidget />
-                <SleepWidget />
-                <WeightWidget />
-            </div>
-
-            <div className="main-columns">
-                <SystemPanel
-                    title="Journal de quêtes"
+        <>
+            <SystemPanel
+                title="Journal de quêtes"
                 actions={
                     <Row style={{ gap: 6 }}>
                         <IconButton
@@ -107,9 +77,6 @@ export function TasksPage() {
                 />
             </SystemPanel>
 
-                <HabitPanel />
-            </div>
-
             {managingCategories && (
                 <Modal title="Catégories" onClose={() => setManagingCategories(false)}>
                     <CategoryManager />
@@ -134,7 +101,7 @@ export function TasksPage() {
                     )}
                 </Modal>
             )}
-        </PageShell>
+        </>
     )
 }
 

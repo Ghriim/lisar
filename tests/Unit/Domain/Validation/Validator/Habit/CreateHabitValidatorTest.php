@@ -42,7 +42,7 @@ final class CreateHabitValidatorTest extends TestCase
             HabitIconRegistry::RUN,
             HabitSourceRegistry::TRACKER,
             HabitTrackerRegistry::STEPS,
-            10000,
+            5000,
         ));
 
         $this->expectNotToPerformAssertions();

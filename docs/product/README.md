@@ -5,14 +5,14 @@ what it shows, and the rules it enforces — because a rule is easiest to find w
 it.
 
 ```
-website/   what people use          login · register · tasks · hydration · weight · sleep · steps
-                                    habits
+website/   what people use          login · register · navigation · dashboard · tasks · hydration
+                                    weight · sleep · steps · habits
 admin/     the back-office          login · dashboard · accounts · priorities · categories
                                     hydration-presets · habits · icons
 ```
 
 A surface that lives inside another page but carries its own rules — the hydration, weight, sleep
-and steps widgets and the habits panel, on the quest log — gets its own file all the same. Burying
+and steps widgets and the habits panel, on the dashboard — gets its own file all the same. Burying
 it in its host page would hide it from whoever goes looking for it.
 
 A tracker with no reference data has no back-office page, and that is not an omission: a weight
