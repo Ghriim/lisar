@@ -66,9 +66,9 @@ final class HabitTest extends KernelTestCase
         $habits = $this->list->execute($this->idOf($this->alice));
 
         self::assertCount(2, $habits);
-        // By habit name: "Lire" before "Marcher 10 000 pas".
+        // By habit name: "Lire" before "Marcher 5000 pas".
         self::assertSame('Lire', $habits[0]->name);
-        self::assertSame('Marcher 10 000 pas', $habits[1]->name);
+        self::assertSame('Marcher 5000 pas', $habits[1]->name);
         self::assertCount(HabitOutputFactory::WINDOW_IN_DAYS, $habits[0]->days);
         self::assertFalse($habits[0]->isCompletedToday);
     }
@@ -149,8 +149,9 @@ final class HabitTest extends KernelTestCase
 
     public function testTheStepTrackerUnkeepsWhenCorrectedBelowTheMark(): void
     {
-        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(5000));
-        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(5000));
+        // Over the 5000-step mark first, then corrected under it.
+        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(6000));
+        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(4000));
 
         self::assertFalse($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);
     }
@@ -180,7 +181,7 @@ final class HabitTest extends KernelTestCase
         }
 
         self::assertTrue($subscribed['Lire']);
-        self::assertTrue($subscribed['Marcher 10 000 pas']);
+        self::assertTrue($subscribed['Marcher 5000 pas']);
         self::assertFalse($subscribed['Méditer']);
         // The retired habit is not offered.
         self::assertArrayNotHasKey('Ancienne habitude', $subscribed);

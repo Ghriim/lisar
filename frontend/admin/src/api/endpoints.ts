@@ -1,10 +1,15 @@
 import { request, setAccessToken } from './client'
 import type {
     Category,
+    Equipment,
+    EquipmentPayload,
     Habit,
     HabitPayload,
     HydrationPreset,
     HydrationPresetPayload,
+    Muscle,
+    MuscleGroup,
+    MusclePayload,
     Page,
     Priority,
     PriorityPayload,
@@ -152,4 +157,80 @@ export function deactivateHabit(id: number): Promise<Habit> {
 
 export function deleteHydrationPreset(id: number): Promise<void> {
     return request<void>(`/api/admin/hydration/presets/${id}`, { method: 'DELETE' })
+}
+
+function activeQuery(isActive: boolean | undefined): string {
+    return isActive === undefined ? '' : `?isActive=${isActive ? 'true' : 'false'}`
+}
+
+export function fetchEquipments(isActive?: boolean): Promise<Equipment[]> {
+    return request<Equipment[]>(`/api/admin/workout/equipments${activeQuery(isActive)}`)
+}
+
+export function createEquipment(payload: EquipmentPayload): Promise<Equipment> {
+    return request<Equipment>('/api/admin/workout/equipments', { method: 'POST', body: payload })
+}
+
+export function updateEquipment(id: number, payload: EquipmentPayload): Promise<Equipment> {
+    return request<Equipment>(`/api/admin/workout/equipments/${id}`, { method: 'PUT', body: payload })
+}
+
+export function activateEquipment(id: number): Promise<Equipment> {
+    return request<Equipment>(`/api/admin/workout/equipments/${id}/activate`, { method: 'POST' })
+}
+
+export function deactivateEquipment(id: number): Promise<Equipment> {
+    return request<Equipment>(`/api/admin/workout/equipments/${id}/deactivate`, { method: 'POST' })
+}
+
+export function deleteEquipment(id: number): Promise<void> {
+    return request<void>(`/api/admin/workout/equipments/${id}`, { method: 'DELETE' })
+}
+
+export function fetchMuscleGroups(): Promise<MuscleGroup[]> {
+    return request<MuscleGroup[]>('/api/admin/workout/muscle-groups')
+}
+
+export function createMuscleGroup(name: string): Promise<MuscleGroup> {
+    return request<MuscleGroup>('/api/admin/workout/muscle-groups', { method: 'POST', body: { name } })
+}
+
+export function updateMuscleGroup(id: number, name: string): Promise<MuscleGroup> {
+    return request<MuscleGroup>(`/api/admin/workout/muscle-groups/${id}`, { method: 'PUT', body: { name } })
+}
+
+export function activateMuscleGroup(id: number): Promise<MuscleGroup> {
+    return request<MuscleGroup>(`/api/admin/workout/muscle-groups/${id}/activate`, { method: 'POST' })
+}
+
+export function deactivateMuscleGroup(id: number): Promise<MuscleGroup> {
+    return request<MuscleGroup>(`/api/admin/workout/muscle-groups/${id}/deactivate`, { method: 'POST' })
+}
+
+export function deleteMuscleGroup(id: number): Promise<void> {
+    return request<void>(`/api/admin/workout/muscle-groups/${id}`, { method: 'DELETE' })
+}
+
+export function fetchMuscles(isActive?: boolean): Promise<Muscle[]> {
+    return request<Muscle[]>(`/api/admin/workout/muscles${activeQuery(isActive)}`)
+}
+
+export function createMuscle(payload: MusclePayload): Promise<Muscle> {
+    return request<Muscle>('/api/admin/workout/muscles', { method: 'POST', body: payload })
+}
+
+export function updateMuscle(id: number, payload: MusclePayload): Promise<Muscle> {
+    return request<Muscle>(`/api/admin/workout/muscles/${id}`, { method: 'PUT', body: payload })
+}
+
+export function activateMuscle(id: number): Promise<Muscle> {
+    return request<Muscle>(`/api/admin/workout/muscles/${id}/activate`, { method: 'POST' })
+}
+
+export function deactivateMuscle(id: number): Promise<Muscle> {
+    return request<Muscle>(`/api/admin/workout/muscles/${id}/deactivate`, { method: 'POST' })
+}
+
+export function deleteMuscle(id: number): Promise<void> {
+    return request<void>(`/api/admin/workout/muscles/${id}`, { method: 'DELETE' })
 }

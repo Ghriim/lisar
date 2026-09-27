@@ -22,6 +22,14 @@ const MESSAGES: Record<string, string> = {
     password_required: 'Un mot de passe est requis.',
     icon_unknown: 'Cette icône n’existe pas.',
     volume_invalid: 'Volume attendu entre 1 et 5000 mL.',
+    name_required: 'Un nom est requis.',
+    name_too_long: '128 caractères maximum.',
+    equipment_name_already_used: 'Un équipement porte déjà ce nom.',
+    muscle_group_name_already_used: 'Un groupe porte déjà ce nom.',
+    muscle_name_already_used: 'Un muscle porte déjà ce nom, dans ce groupe ou un autre.',
+    muscle_group_not_found: 'Ce groupe n’existe pas.',
+    muscle_group_inactive: 'Ce groupe est désactivé : il ne reçoit pas de nouveau muscle.',
+    muscle_group_in_use: 'Des muscles sont encore dans ce groupe.',
 }
 
 export function humanise(code: string): string {

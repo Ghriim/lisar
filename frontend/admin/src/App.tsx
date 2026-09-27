@@ -5,9 +5,11 @@ import { FullPageLoader, PlainShell } from './components'
 import { AdminLayout } from './layout/AdminLayout'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { EquipmentsPage } from './pages/EquipmentsPage'
 import { HabitsPage } from './pages/HabitsPage'
 import { HydrationPresetsPage } from './pages/HydrationPresetsPage'
 import { LoginPage } from './pages/LoginPage'
+import { MusclesPage } from './pages/MusclesPage'
 import { PrioritiesPage } from './pages/PrioritiesPage'
 import { UsersPage } from './pages/UsersPage'
 
@@ -46,6 +48,8 @@ export function App() {
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/hydratation/raccourcis" element={<HydrationPresetsPage />} />
                 <Route path="/habitudes/catalogue" element={<HabitsPage />} />
+                <Route path="/workout/equipements" element={<EquipmentsPage />} />
+                <Route path="/workout/muscles" element={<MusclesPage />} />
                 <Route
                     path="/developpeurs/icones"
                     element={

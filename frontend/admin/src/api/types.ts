@@ -93,6 +93,41 @@ export interface HabitPayload {
     trackerThreshold: number | null
 }
 
+export interface Equipment {
+    id: number
+    name: string
+    hasWeight: boolean
+    hasDistance: boolean
+    isActive: boolean
+}
+
+export interface EquipmentPayload {
+    name: string
+    hasWeight: boolean
+    hasDistance: boolean
+}
+
+export interface MuscleGroup {
+    id: number
+    name: string
+    isActive: boolean
+}
+
+export interface Muscle {
+    id: number
+    name: string
+    isActive: boolean
+    muscleGroupId: number
+    muscleGroupName: string
+    /** A muscle is offered to new movements only when its group is active too. */
+    muscleGroupIsActive: boolean
+}
+
+export interface MusclePayload {
+    name: string
+    muscleGroupId: number
+}
+
 export type Violations = Record<string, string[]>
 
 export const HYDRATION_ICONS = ['glass', 'bottle', 'mug', 'can', 'carafe', 'soda_cup'] as const
