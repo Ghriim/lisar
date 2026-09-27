@@ -4,8 +4,8 @@
 both: a group is only a name, so it is managed from a panel on this page rather than a page of its
 own.
 
-A movement will target **one primary muscle and any number of secondary ones**; that is the
-movement's business, and nothing here changes because of it.
+A movement targets **one primary muscle and any number of secondary ones**; that is the
+movement's business — see `movements.md` — and nothing here changes because of it.
 
 ## A muscle group
 
@@ -15,7 +15,7 @@ movement's business, and nothing here changes because of it.
 | active | see below |
 
 The groups serve to sort the muscles here and, later, to add statistics up by group. `Other`
-holds what is not a muscle group as such — `Cardio`, today.
+holds what is not a muscle group as such — `Cardio` and `Full body`, today.
 
 - **Deactivating a group** withdraws every muscle in it from new movements **without touching the
   muscles' own status**: reactivating the group gives them back exactly as they were.
@@ -39,8 +39,8 @@ Unique across every group rather than within its own: a movement lists its muscl
 says so on the row: a muscle in an inactive group carries a "Groupe désactivé" tag next to its
 group. The active / inactive filter reads the muscle's own status only.
 
-Deleting a muscle is final and asks first. As with equipment, **once movements exist, deleting one
-a movement targets will be refused**.
+Deleting a muscle is final and asks first. As with equipment, **it is refused while a movement
+targets the muscle**, as primary or secondary (`muscle_in_use`) — deactivate it instead.
 
 ## The list
 
@@ -65,4 +65,4 @@ minor. Neck is left out for now.
 | Core | Abs · Obliques |
 | Legs | Quadriceps · Hamstrings · Adductors · Abductors · Calves · Hip flexors |
 | Glutes | Glutes |
-| Other | Cardio |
+| Other | Cardio · Full body |

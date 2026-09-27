@@ -41,9 +41,9 @@ help: ## List the available targets
 setup: ## One-off local setup: git hooks
 	git config core.hooksPath .git-hooks/
 	@echo "Hooks path set to .git-hooks/"
-
-build: ## Full rebuild, all containers up, migrations on the dev database
 	$(DOCKER_COMPOSE) build
+
+build:
 	$(DOCKER_COMPOSE) up --detach --wait
 	$(APP) composer install
 	$(MAKE) migrate

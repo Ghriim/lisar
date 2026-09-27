@@ -17,15 +17,15 @@ final readonly class MovementFamilyUsableConstraint
     public const string MOVEMENT_FAMILY_INACTIVE = 'movement_family_inactive';
 
     /**
-     * @param MovementFamilyDataModel|null $movementFamily the family asked for, null when none has that id
-     * @param int|null                     $currentGroupId the family the movement sits in today; null on a creation
+     * @param MovementFamilyDataModel|null $movementFamily  the family asked for, null when none has that id
+     * @param int|null                     $currentFamilyId the family the movement sits in today; null on a creation
      * @param array<string, list<string>>  $violations
      *
      * @return array<string, list<string>>
      */
     public static function validate(
         ?MovementFamilyDataModel $movementFamily,
-        ?int $currentGroupId = null,
+        ?int $currentFamilyId = null,
         array $violations = [],
     ): array {
         if (null === $movementFamily) {
@@ -34,7 +34,7 @@ final readonly class MovementFamilyUsableConstraint
             return $violations;
         }
 
-        if (false === $movementFamily->isActive && (null === $currentGroupId || $movementFamily->id !== $currentGroupId)) {
+        if (false === $movementFamily->isActive && (null === $currentFamilyId || $movementFamily->id !== $currentFamilyId)) {
             $violations['movementFamilyId'][] = self::MOVEMENT_FAMILY_INACTIVE;
         }
 

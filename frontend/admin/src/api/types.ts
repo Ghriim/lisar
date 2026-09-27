@@ -128,6 +128,52 @@ export interface MusclePayload {
     muscleGroupId: number
 }
 
+export interface MovementFamily {
+    id: number
+    name: string
+    isActive: boolean
+}
+
+/**
+ * A common movement. Its family, muscles and equipments each carry their own status: a movement
+ * keeps what was retired after it took it on, and the list has to be able to say so.
+ */
+export interface Movement {
+    id: number
+    name: string
+    description: string | null
+    videoUrl: string | null
+    movementFamilyId: number
+    movementFamilyName: string
+    movementFamilyIsActive: boolean
+    primaryMuscle: Muscle
+    /** By name. */
+    secondaryMuscles: Muscle[]
+    /** By name; empty for a bodyweight movement. */
+    equipments: Equipment[]
+    tracksReps: boolean
+    tracksWeight: boolean
+    tracksDuration: boolean
+    tracksDistance: boolean
+    isUnilateral: boolean
+    isActive: boolean
+}
+
+export interface MovementPayload {
+    name: string
+    description: string | null
+    videoUrl: string | null
+    movementFamilyId: number
+    primaryMuscleId: number
+    secondaryMuscleIds: number[]
+    equipmentIds: number[]
+    tracksReps: boolean
+    tracksWeight: boolean
+    tracksDuration: boolean
+    tracksDistance: boolean
+    isUnilateral: boolean
+}
+
 export type Violations = Record<string, string[]>
 
 export const HYDRATION_ICONS = ['glass', 'bottle', 'mug', 'can', 'carafe', 'soda_cup'] as const

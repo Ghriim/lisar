@@ -9,6 +9,7 @@ import { EquipmentsPage } from './pages/EquipmentsPage'
 import { HabitsPage } from './pages/HabitsPage'
 import { HydrationPresetsPage } from './pages/HydrationPresetsPage'
 import { LoginPage } from './pages/LoginPage'
+import { MovementsPage } from './pages/MovementsPage'
 import { MusclesPage } from './pages/MusclesPage'
 import { PrioritiesPage } from './pages/PrioritiesPage'
 import { UsersPage } from './pages/UsersPage'
@@ -50,6 +51,7 @@ export function App() {
                 <Route path="/habitudes/catalogue" element={<HabitsPage />} />
                 <Route path="/workout/equipements" element={<EquipmentsPage />} />
                 <Route path="/workout/muscles" element={<MusclesPage />} />
+                <Route path="/workout/mouvements" element={<MovementsPage />} />
                 <Route
                     path="/developpeurs/icones"
                     element={

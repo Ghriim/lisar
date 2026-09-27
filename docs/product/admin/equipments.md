@@ -36,8 +36,8 @@ A window creates or edits a row.
 
 - **Deactivating** takes an equipment out of what new movements are offered; the movements already
   done with it keep it. One click, one click back: it asks nothing.
-- **Deleting** is final and asks first. Nothing refers to an equipment yet; **once movements exist,
-  deleting one a movement uses will be refused** — deactivating is the way to retire it.
+- **Deleting** is final and asks first, and **is refused while a movement uses the equipment**
+  (`equipment_in_use`) — deactivating is the way to retire it.
 
 The list is **not paginated**: a few dozen rows, and the search narrows them faster than pages
 would.

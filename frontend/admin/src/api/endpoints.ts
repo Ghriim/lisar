@@ -7,6 +7,9 @@ import type {
     HabitPayload,
     HydrationPreset,
     HydrationPresetPayload,
+    Movement,
+    MovementFamily,
+    MovementPayload,
     Muscle,
     MuscleGroup,
     MusclePayload,
@@ -256,4 +259,61 @@ export function deactivateMuscle(id: number): Promise<Muscle> {
 
 export function deleteMuscle(id: number): Promise<void> {
     return request<void>(`/api/admin/workout/muscles/${id}`, { method: 'DELETE' })
+}
+
+export function fetchMovementFamilies(): Promise<MovementFamily[]> {
+    return request<MovementFamily[]>('/api/admin/workout/movement-families')
+}
+
+export function createMovementFamily(name: string): Promise<MovementFamily> {
+    return request<MovementFamily>('/api/admin/workout/movement-families', { method: 'POST', body: { name } })
+}
+
+export function updateMovementFamily(id: number, name: string): Promise<MovementFamily> {
+    return request<MovementFamily>(`/api/admin/workout/movement-families/${id}`, { method: 'PUT', body: { name } })
+}
+
+export function activateMovementFamily(id: number): Promise<MovementFamily> {
+    return request<MovementFamily>(`/api/admin/workout/movement-families/${id}/activate`, { method: 'POST' })
+}
+
+export function deactivateMovementFamily(id: number): Promise<MovementFamily> {
+    return request<MovementFamily>(`/api/admin/workout/movement-families/${id}/deactivate`, { method: 'POST' })
+}
+
+export function deleteMovementFamily(id: number): Promise<void> {
+    return request<void>(`/api/admin/workout/movement-families/${id}`, { method: 'DELETE' })
+}
+
+// A type rather than an interface, for the same reason as EquipmentFilters.
+export type MovementFilters = {
+    isActive?: boolean
+    movementFamilyId?: number
+    muscleGroupId?: number
+    muscleId?: number
+    equipmentId?: number
+}
+
+export function fetchMovements(filters: MovementFilters): Promise<Movement[]> {
+    return request<Movement[]>(`/api/admin/workout/movements${filterQuery(filters)}`)
+}
+
+export function createMovement(payload: MovementPayload): Promise<Movement> {
+    return request<Movement>('/api/admin/workout/movements', { method: 'POST', body: payload })
+}
+
+export function updateMovement(id: number, payload: MovementPayload): Promise<Movement> {
+    return request<Movement>(`/api/admin/workout/movements/${id}`, { method: 'PUT', body: payload })
+}
+
+export function activateMovement(id: number): Promise<Movement> {
+    return request<Movement>(`/api/admin/workout/movements/${id}/activate`, { method: 'POST' })
+}
+
+export function deactivateMovement(id: number): Promise<Movement> {
+    return request<Movement>(`/api/admin/workout/movements/${id}/deactivate`, { method: 'POST' })
+}
+
+export function deleteMovement(id: number): Promise<void> {
+    return request<void>(`/api/admin/workout/movements/${id}`, { method: 'DELETE' })
 }

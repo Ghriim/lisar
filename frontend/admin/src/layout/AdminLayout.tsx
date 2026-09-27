@@ -41,6 +41,7 @@ const SECTIONS: Section[] = [
         children: [
             { key: '/workout/equipements', label: 'Équipements' },
             { key: '/workout/muscles', label: 'Muscles' },
+            { key: '/workout/mouvements', label: 'Mouvements' },
         ],
     },
     {

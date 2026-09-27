@@ -1,7 +1,7 @@
 import { Modal } from 'antd'
 import type { ReactNode } from 'react'
 import { Button } from './Button'
-import { Form, FormActions } from './Form'
+import { Form, FormActions, type ValuesChangeHandler } from './Form'
 
 interface FormModalProps<TValues extends object> {
     title: string
@@ -11,6 +11,7 @@ interface FormModalProps<TValues extends object> {
     pending?: boolean
     onCancel: () => void
     onSubmit: (values: TValues) => void
+    onValuesChange?: ValuesChangeHandler<TValues>
     children: ReactNode
 }
 
@@ -28,11 +29,12 @@ export function FormModal<TValues extends object>({
     pending = false,
     onCancel,
     onSubmit,
+    onValuesChange,
     children,
 }: FormModalProps<TValues>) {
     return (
         <Modal open title={title} footer={null} onCancel={onCancel}>
-            <Form<TValues> initialValues={initialValues} onSubmit={onSubmit}>
+            <Form<TValues> initialValues={initialValues} onSubmit={onSubmit} onValuesChange={onValuesChange}>
                 {children}
 
                 <FormActions>

@@ -25,8 +25,11 @@ export {
     SelectField,
     SwitchField,
     TextArea,
+    TextAreaField,
     TextField,
     type SelectOption,
+    type SelectOptionGroup,
+    type ValuesChangeHandler,
 } from './Form'
 export { FilterSelect } from './FilterSelect'
 export { FormModal } from './FormModal'

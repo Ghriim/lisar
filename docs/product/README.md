@@ -8,7 +8,8 @@ it.
 website/   what people use          login · register · navigation · dashboard · tasks · hydration
                                     weight · sleep · steps · habits
 admin/     the back-office          login · dashboard · accounts · priorities · categories
-                                    hydration-presets · habits · equipments · muscles · icons
+                                    hydration-presets · habits · equipments · muscles · movements
+                                    icons
 ```
 
 A surface that lives inside another page but carries its own rules — the hydration, weight, sleep
