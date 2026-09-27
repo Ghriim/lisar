@@ -1833,6 +1833,9 @@ Rules:
 - `final`, one class per aggregate, named `<Noun>Fixtures`.
 - Reference keys are `public const string` on the fixture that creates the row — that constant is
   the contract other fixtures and tests use.
+- A constant **only a test reads** — how many rows were seeded, an expected total — lives in the
+  test, not on the fixture. The fixture carries what it uses itself to build its rows, and its
+  reference keys; nothing else.
 - Group them with `FixtureGroupInterface` when the dev environment needs a subset
   (`doctrine:fixtures:load --group=demo`).
 - They are autoconfigured (`doctrine.fixture.orm`); no `services.yaml` entry.

@@ -21,9 +21,6 @@ final class EquipmentFixtures extends Fixture
     public const string BENCH = 'equipment-bench';
     public const string TREADMILL = 'equipment-treadmill';
 
-    /** How many rows this fixture seeds, for the tests that count them. */
-    public const int COUNT = 43;
-
     private const array WITH_WEIGHT = [
         'Barbell', 'Dumbbell', 'Kettlebell', 'EZ bar', 'Trap bar', 'Weight plate', 'Cable machine',
         'Smith machine', 'Leg press machine', 'Medicine ball', 'Weighted vest', 'Sandbag',

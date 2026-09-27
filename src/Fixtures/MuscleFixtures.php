@@ -22,9 +22,9 @@ final class MuscleFixtures extends Fixture implements DependentFixtureInterface
     public const string QUADRICEPS = 'muscle-quadriceps';
     public const string CARDIO = 'muscle-cardio';
 
-    /** How many rows this fixture seeds, for the tests that count them. */
-    public const int COUNT = 24;
-
+    /**
+     * @var array<string, array<string>>
+     */
     private const array MUSCLES = [
         MuscleGroupFixtures::CHEST => ['Upper chest', 'Mid chest', 'Lower chest'],
         MuscleGroupFixtures::BACK => ['Lats', 'Traps', 'Upper back', 'Mid back', 'Lower back'],

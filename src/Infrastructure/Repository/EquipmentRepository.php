@@ -39,7 +39,7 @@ final class EquipmentRepository extends ServiceEntityRepository implements Equip
     }
 
     /** @return list<EquipmentDataModel> */
-    public function findAllForAdminList(?bool $isActive): array
+    public function findAllForAdminList(?bool $isActive, ?bool $hasWeight, ?bool $hasDistance): array
     {
         $queryBuilder = $this->createQueryBuilder('equipment')
             ->orderBy('equipment.name', 'ASC')
@@ -47,6 +47,12 @@ final class EquipmentRepository extends ServiceEntityRepository implements Equip
 
         if (null !== $isActive) {
             $queryBuilder->andWhere('equipment.isActive = :active')->setParameter('active', $isActive);
+        }
+        if (null !== $hasWeight) {
+            $queryBuilder->andWhere('equipment.hasWeight = :hasWeight')->setParameter('hasWeight', $hasWeight);
+        }
+        if (null !== $hasDistance) {
+            $queryBuilder->andWhere('equipment.hasDistance = :hasDistance')->setParameter('hasDistance', $hasDistance);
         }
 
         return $queryBuilder->getQuery()->getResult();

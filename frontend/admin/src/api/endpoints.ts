@@ -159,12 +159,29 @@ export function deleteHydrationPreset(id: number): Promise<void> {
     return request<void>(`/api/admin/hydration/presets/${id}`, { method: 'DELETE' })
 }
 
-function activeQuery(isActive: boolean | undefined): string {
-    return isActive === undefined ? '' : `?isActive=${isActive ? 'true' : 'false'}`
+/** Every filter that is set, as a query string; an unset one is left out rather than sent empty. */
+function filterQuery(filters: Record<string, boolean | number | undefined>): string {
+    const query = new URLSearchParams()
+    for (const [name, value] of Object.entries(filters)) {
+        if (value !== undefined) {
+            query.set(name, String(value))
+        }
+    }
+
+    const encoded = query.toString()
+
+    return encoded === '' ? '' : `?${encoded}`
 }
 
-export function fetchEquipments(isActive?: boolean): Promise<Equipment[]> {
-    return request<Equipment[]>(`/api/admin/workout/equipments${activeQuery(isActive)}`)
+// A type rather than an interface: only a type fits filterQuery's record.
+export type EquipmentFilters = {
+    isActive?: boolean
+    hasWeight?: boolean
+    hasDistance?: boolean
+}
+
+export function fetchEquipments(filters: EquipmentFilters): Promise<Equipment[]> {
+    return request<Equipment[]>(`/api/admin/workout/equipments${filterQuery(filters)}`)
 }
 
 export function createEquipment(payload: EquipmentPayload): Promise<Equipment> {
@@ -211,8 +228,14 @@ export function deleteMuscleGroup(id: number): Promise<void> {
     return request<void>(`/api/admin/workout/muscle-groups/${id}`, { method: 'DELETE' })
 }
 
-export function fetchMuscles(isActive?: boolean): Promise<Muscle[]> {
-    return request<Muscle[]>(`/api/admin/workout/muscles${activeQuery(isActive)}`)
+// A type rather than an interface, for the same reason as EquipmentFilters.
+export type MuscleFilters = {
+    isActive?: boolean
+    muscleGroupId?: number
+}
+
+export function fetchMuscles(filters: MuscleFilters): Promise<Muscle[]> {
+    return request<Muscle[]>(`/api/admin/workout/muscles${filterQuery(filters)}`)
 }
 
 export function createMuscle(payload: MusclePayload): Promise<Muscle> {

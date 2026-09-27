@@ -134,6 +134,13 @@ nothing else: the order, the labels (`gender="feminine"` for the second set) and
 there, so a screen cannot get them wrong. The hook also hands back `isActive`, the API's reading
 of it — `undefined` for all.
 
+## 4.2 Any other filter
+
+Every other list filter opens **empty, meaning no filter**, and a cross takes it back there — a load
+filter offers `Avec charge / Sans charge`, and choosing neither is the whole list. In the
+back-office this is **`FilterSelect`**; it sits in `ListToolbar` after the active filter, and several
+of them combine.
+
 ## 5. A page draws with components, never with the library
 
 Both front ends keep everything they draw with in `src/components/`, re-exported from one

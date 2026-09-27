@@ -8,11 +8,11 @@ interface ListToolbarProps {
     onSearch?: (term: string) => void
     /** Filters on every keystroke rather than on Enter: for a list held whole in memory. */
     searchAsYouType?: boolean
-    /** The filter, if any: an ActiveFilter for an active/inactive one. */
+    /** The filters, if any: an ActiveFilter for an active/inactive one, then FilterSelects. */
     children?: ReactNode
 }
 
-/** What sits above a list: an optional search box, and at most one filter. */
+/** What sits above a list: an optional search box, then its filters. */
 export function ListToolbar({ searchPlaceholder, onSearch, searchAsYouType = false, children }: ListToolbarProps) {
     return (
         <Row gap={16} wrap style={{ marginBottom: 16 }}>

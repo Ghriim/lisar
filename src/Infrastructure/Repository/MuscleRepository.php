@@ -41,7 +41,7 @@ final class MuscleRepository extends ServiceEntityRepository implements MusclePr
     }
 
     /** @return list<MuscleDataModel> */
-    public function findAllForAdminList(?bool $isActive): array
+    public function findAllForAdminList(?bool $isActive, ?int $muscleGroupId): array
     {
         $queryBuilder = $this->withGroup()
             ->orderBy('muscleGroup.name', 'ASC')
@@ -50,6 +50,9 @@ final class MuscleRepository extends ServiceEntityRepository implements MusclePr
 
         if (null !== $isActive) {
             $queryBuilder->andWhere('muscle.isActive = :active')->setParameter('active', $isActive);
+        }
+        if (null !== $muscleGroupId) {
+            $queryBuilder->andWhere('muscleGroup.id = :muscleGroupId')->setParameter('muscleGroupId', $muscleGroupId);
         }
 
         return $queryBuilder->getQuery()->getResult();

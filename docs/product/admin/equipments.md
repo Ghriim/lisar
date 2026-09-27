@@ -26,8 +26,13 @@ number to log.
 
 ## Managing it
 
-A list filtered active / inactive / all (opening on active), with a search on the name, and a
-window to create or edit a row.
+A list with a search on the name and three filters that combine:
+
+- active / inactive / all, opening on active;
+- **load** — with, without, or either (the default);
+- **distance** — with, without, or either (the default).
+
+A window creates or edits a row.
 
 - **Deactivating** takes an equipment out of what new movements are offered; the movements already
   done with it keep it. One click, one click back: it asks nothing.

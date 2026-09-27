@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCase\Admin;
 
+use App\Domain\DTO\Input\Admin\ListMusclesForAdminDataInput;
 use App\Domain\DTO\Output\Workout\MuscleDataOutput;
 use App\Domain\Factory\OutputFactory\MuscleOutputFactory;
 use App\Domain\Gateway\Provider\MuscleProviderGateway;
@@ -21,8 +22,10 @@ final readonly class ListMusclesForAdminUseCase implements UseCaseInterface
     /**
      * @return list<MuscleDataOutput>
      */
-    public function execute(?bool $isActive = null): array
+    public function execute(ListMusclesForAdminDataInput $input = new ListMusclesForAdminDataInput()): array
     {
-        return $this->outputFactory->buildMany($this->muscleProviderGateway->findAllForAdminList($isActive));
+        return $this->outputFactory->buildMany($this->muscleProviderGateway->findAllForAdminList(
+            $input->isActive, $input->muscleGroupId,
+        ));
     }
 }

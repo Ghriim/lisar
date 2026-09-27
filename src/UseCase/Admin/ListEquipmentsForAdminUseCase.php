@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCase\Admin;
 
+use App\Domain\DTO\Input\Admin\ListEquipmentsForAdminDataInput;
 use App\Domain\DTO\Output\Workout\EquipmentDataOutput;
 use App\Domain\Factory\OutputFactory\EquipmentOutputFactory;
 use App\Domain\Gateway\Provider\EquipmentProviderGateway;
@@ -21,8 +22,10 @@ final readonly class ListEquipmentsForAdminUseCase implements UseCaseInterface
     /**
      * @return list<EquipmentDataOutput>
      */
-    public function execute(?bool $isActive = null): array
+    public function execute(ListEquipmentsForAdminDataInput $input = new ListEquipmentsForAdminDataInput()): array
     {
-        return $this->outputFactory->buildMany($this->equipmentProviderGateway->findAllForAdminList($isActive));
+        return $this->outputFactory->buildMany($this->equipmentProviderGateway->findAllForAdminList(
+            $input->isActive, $input->hasWeight, $input->hasDistance,
+        ));
     }
 }

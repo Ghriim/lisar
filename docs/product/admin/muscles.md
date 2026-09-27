@@ -44,8 +44,12 @@ a movement targets will be refused**.
 
 ## The list
 
-By group, then by name; filtered active / inactive / all (opening on active); a search that matches
-the muscle's name or its group's. **Not paginated**, for the same reason as the equipment list.
+By group, then by name, with a search that matches the muscle's name or its group's, and two
+filters that combine:
+
+- active / inactive / all, opening on active — the muscle's own status;
+- **group** — any (the default), or one of them, inactive groups included: the filter narrows the
+  list, it assigns nothing, so it offers every group there is. **Not paginated**, for the same reason as the equipment list.
 
 ## Seeded
 

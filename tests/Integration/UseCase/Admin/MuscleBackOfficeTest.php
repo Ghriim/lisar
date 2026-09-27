@@ -6,6 +6,7 @@ namespace App\Tests\Integration\UseCase\Admin;
 
 use App\Domain\DTO\DataModel\MuscleDataModel;
 use App\Domain\DTO\DataModel\MuscleGroupDataModel;
+use App\Domain\DTO\Input\Admin\ListMusclesForAdminDataInput;
 use App\Domain\DTO\Input\Workout\CreateMuscleDataInput;
 use App\Domain\DTO\Input\Workout\CreateMuscleGroupDataInput;
 use App\Domain\DTO\Input\Workout\UpdateMuscleDataInput;
@@ -43,6 +44,9 @@ use function array_slice;
 final class MuscleBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+
+    /** How many muscles MuscleFixtures seeds. */
+    private const int SEEDED_MUSCLES = 24;
 
     private MuscleProviderGateway $muscleProviderGateway;
     private MuscleGroupProviderGateway $muscleGroupProviderGateway;
@@ -147,7 +151,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     {
         $muscles = $this->listMuscles()->execute();
 
-        self::assertCount(MuscleFixtures::COUNT, $muscles);
+        self::assertCount(self::SEEDED_MUSCLES, $muscles);
         // Arms first, and within it Biceps before Forearms before Triceps.
         self::assertSame(['Biceps', 'Forearms', 'Triceps'], array_map(static fn ($muscle) => $muscle->name, array_slice($muscles, 0, 3)));
         self::assertSame('Arms', $muscles[0]->muscleGroupName);
@@ -159,8 +163,34 @@ final class MuscleBackOfficeTest extends KernelTestCase
         // A deactivated group does not make its muscles inactive in this filter.
         self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($this->group(MuscleGroupFixtures::CHEST)->id ?? 0);
 
-        self::assertCount(MuscleFixtures::COUNT - 1, $this->listMuscles()->execute(true));
-        self::assertSame(['Lats'], array_map(static fn ($muscle) => $muscle->name, $this->listMuscles()->execute(false)));
+        self::assertCount(self::SEEDED_MUSCLES - 1, $this->listMuscles()->execute(new ListMusclesForAdminDataInput(isActive: true)));
+        self::assertSame(['Lats'], $this->muscleNames(new ListMusclesForAdminDataInput(isActive: false)));
+    }
+
+    public function testTheMuscleListFiltersByGroup(): void
+    {
+        $chest = $this->group(MuscleGroupFixtures::CHEST);
+
+        self::assertSame(
+            ['Lower chest', 'Mid chest', 'Upper chest'],
+            $this->muscleNames(new ListMusclesForAdminDataInput(muscleGroupId: $chest->id)),
+        );
+    }
+
+    public function testTheGroupFilterCombinesWithTheStatusOne(): void
+    {
+        self::getContainer()->get(DeactivateMuscleUseCase::class)->execute($this->muscle(MuscleFixtures::UPPER_CHEST)->id ?? 0);
+
+        self::assertSame(
+            ['Lower chest', 'Mid chest'],
+            $this->muscleNames(new ListMusclesForAdminDataInput(isActive: true, muscleGroupId: $this->group(MuscleGroupFixtures::CHEST)->id)),
+        );
+    }
+
+    /** An unknown group is a filter matching nothing, not an error. */
+    public function testAnUnknownGroupFilterMatchesNothing(): void
+    {
+        self::assertSame([], $this->listMuscles()->execute(new ListMusclesForAdminDataInput(muscleGroupId: 123456789)));
     }
 
     public function testItCreatesAMuscleInAGroup(): void
@@ -276,6 +306,12 @@ final class MuscleBackOfficeTest extends KernelTestCase
     private function listMuscles(): ListMusclesForAdminUseCase
     {
         return self::getContainer()->get(ListMusclesForAdminUseCase::class);
+    }
+
+    /** @return list<string> */
+    private function muscleNames(ListMusclesForAdminDataInput $input): array
+    {
+        return array_map(static fn ($muscle) => $muscle->name, $this->listMuscles()->execute($input));
     }
 
     private function group(string $reference): MuscleGroupDataModel

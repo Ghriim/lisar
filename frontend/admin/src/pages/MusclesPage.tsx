@@ -8,6 +8,7 @@ import {
     ConfirmButton,
     DataTable,
     DetailDrawer,
+    FilterSelect,
     FormModal,
     ListToolbar,
     Page,
@@ -32,10 +33,12 @@ export function MusclesPage() {
     const [managingGroups, setManagingGroups] = useState(false)
     const [search, setSearch] = useState('')
     const status = useActiveFilter()
+    const [muscleGroupId, setMuscleGroupId] = useState<number | undefined>(undefined)
 
+    const filters = { isActive: status.isActive, muscleGroupId }
     const muscles = useQuery({
-        queryKey: ['muscles', status.status],
-        queryFn: () => api.fetchMuscles(status.isActive),
+        queryKey: ['muscles', filters],
+        queryFn: () => api.fetchMuscles(filters),
     })
     const groups = useQuery({ queryKey: ['muscle-groups'], queryFn: api.fetchMuscleGroups })
 
@@ -95,6 +98,13 @@ export function MusclesPage() {
         >
             <ListToolbar searchPlaceholder="Rechercher un muscle ou un groupe" onSearch={setSearch} searchAsYouType>
                 <ActiveFilter value={status.status} onChange={status.setStatus} />
+                {/* Every group, inactive ones included: this narrows the list, it assigns nothing. */}
+                <FilterSelect<number>
+                    placeholder="Groupe"
+                    value={muscleGroupId}
+                    onChange={setMuscleGroupId}
+                    options={(groups.data ?? []).map((group) => ({ value: group.id, label: group.name }))}
+                />
             </ListToolbar>
 
             <DataTable<Muscle>

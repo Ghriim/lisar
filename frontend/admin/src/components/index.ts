@@ -28,6 +28,7 @@ export {
     TextField,
     type SelectOption,
 } from './Form'
+export { FilterSelect } from './FilterSelect'
 export { FormModal } from './FormModal'
 export { HabitIcon } from './HabitIcon'
 export { HydrationIcon } from './HydrationIcon'

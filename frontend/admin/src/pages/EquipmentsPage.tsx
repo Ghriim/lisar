@@ -7,6 +7,7 @@ import {
     Button,
     ConfirmButton,
     DataTable,
+    FilterSelect,
     FormModal,
     ListToolbar,
     Page,
@@ -17,6 +18,13 @@ import {
     useActiveFilter,
     useNotifier,
 } from '../components'
+
+/** A flag filter's two choices; no choice at all is the unfiltered list. */
+type Presence = 'with' | 'without'
+
+function asFlag(presence: Presence | undefined): boolean | undefined {
+    return presence === undefined ? undefined : presence === 'with'
+}
 
 /**
  * The equipment movements are done with. What a movement tracks when it is logged — a load, a
@@ -29,10 +37,13 @@ export function EquipmentsPage() {
     const [editing, setEditing] = useState<Equipment | null | undefined>(undefined)
     const [search, setSearch] = useState('')
     const status = useActiveFilter()
+    const [hasWeight, setHasWeight] = useState<Presence | undefined>(undefined)
+    const [hasDistance, setHasDistance] = useState<Presence | undefined>(undefined)
 
+    const filters = { isActive: status.isActive, hasWeight: asFlag(hasWeight), hasDistance: asFlag(hasDistance) }
     const equipments = useQuery({
-        queryKey: ['equipments', status.status],
-        queryFn: () => api.fetchEquipments(status.isActive),
+        queryKey: ['equipments', filters],
+        queryFn: () => api.fetchEquipments(filters),
     })
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ['equipments'] })
@@ -81,6 +92,24 @@ export function EquipmentsPage() {
         >
             <ListToolbar searchPlaceholder="Rechercher un équipement" onSearch={setSearch} searchAsYouType>
                 <ActiveFilter value={status.status} onChange={status.setStatus} />
+                <FilterSelect<Presence>
+                    placeholder="Charge"
+                    value={hasWeight}
+                    onChange={setHasWeight}
+                    options={[
+                        { value: 'with', label: 'Avec charge' },
+                        { value: 'without', label: 'Sans charge' },
+                    ]}
+                />
+                <FilterSelect<Presence>
+                    placeholder="Distance"
+                    value={hasDistance}
+                    onChange={setHasDistance}
+                    options={[
+                        { value: 'with', label: 'Avec distance' },
+                        { value: 'without', label: 'Sans distance' },
+                    ]}
+                />
             </ListToolbar>
 
             <DataTable<Equipment>

@@ -17,11 +17,11 @@ interface MuscleProviderGateway
 
     /**
      * Every muscle for the back-office, by group name then by name, group joined and selected.
-     * `$isActive` narrows on the muscle's own flag, not its group's.
+     * `$isActive` narrows on the muscle's own flag, not its group's; `$muscleGroupId` to one group.
      *
      * @return list<MuscleDataModel>
      */
-    public function findAllForAdminList(?bool $isActive): array;
+    public function findAllForAdminList(?bool $isActive, ?int $muscleGroupId): array;
 
     /** Every muscle in the group, active or not. */
     public function countForMuscleGroup(MuscleGroupDataModel $muscleGroup): int;

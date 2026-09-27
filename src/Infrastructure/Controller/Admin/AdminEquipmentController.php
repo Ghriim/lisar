@@ -32,16 +32,18 @@ final class AdminEquipmentController extends AbstractController
 {
     #[Route('/api/admin/workout/equipments', methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'isActive', in: 'query', required: false, schema: new OA\Schema(type: 'boolean'))]
+    #[OA\Parameter(name: 'hasWeight', in: 'query', required: false, schema: new OA\Schema(type: 'boolean'))]
+    #[OA\Parameter(name: 'hasDistance', in: 'query', required: false, schema: new OA\Schema(type: 'boolean'))]
     #[OA\Response(
         response: Response::HTTP_OK,
-        description: 'Every equipment by name; the optional isActive filter narrows it to the offered or the retired.',
+        description: 'Every equipment by name; the optional isActive, hasWeight and hasDistance filters combine.',
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: EquipmentDataOutput::class))),
     )]
     public function listEquipments(
         #[MapDataInput] ListEquipmentsForAdminDataInput $input,
         ListEquipmentsForAdminUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input->isActive));
+        return new JsonResponse($useCase->execute($input));
     }
 
     #[Route('/api/admin/workout/equipments', methods: Request::METHOD_POST)]

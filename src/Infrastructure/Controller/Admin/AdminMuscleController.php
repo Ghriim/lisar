@@ -32,16 +32,17 @@ final class AdminMuscleController extends AbstractController
 {
     #[Route('/api/admin/workout/muscles', methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'isActive', in: 'query', required: false, schema: new OA\Schema(type: 'boolean'))]
+    #[OA\Parameter(name: 'muscleGroupId', in: 'query', required: false, schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(
         response: Response::HTTP_OK,
-        description: "Every muscle by group then name; the optional isActive filter narrows on the muscle's own flag.",
+        description: "Every muscle by group then name; the optional isActive (the muscle's own flag) and muscleGroupId filters combine.",
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: MuscleDataOutput::class))),
     )]
     public function listMuscles(
         #[MapDataInput] ListMusclesForAdminDataInput $input,
         ListMusclesForAdminUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input->isActive));
+        return new JsonResponse($useCase->execute($input));
     }
 
     #[Route('/api/admin/workout/muscles', methods: Request::METHOD_POST)]

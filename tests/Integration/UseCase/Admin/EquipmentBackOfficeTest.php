@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Admin;
 
 use App\Domain\DTO\DataModel\EquipmentDataModel;
+use App\Domain\DTO\Input\Admin\ListEquipmentsForAdminDataInput;
 use App\Domain\DTO\Input\Workout\CreateEquipmentDataInput;
 use App\Domain\DTO\Input\Workout\UpdateEquipmentDataInput;
 use App\Domain\Exception\ValidationException;
@@ -27,6 +28,10 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class EquipmentBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+
+    /** How many equipments EquipmentFixtures seeds, and how many of them carry a load. */
+    private const int SEEDED = 43;
+    private const int SEEDED_WITH_WEIGHT = 28;
 
     private ListEquipmentsForAdminUseCase $list;
     private CreateEquipmentUseCase $create;
@@ -55,7 +60,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     {
         $names = array_map(static fn ($equipment) => $equipment->name, $this->list->execute());
 
-        self::assertCount(EquipmentFixtures::COUNT, $names);
+        self::assertCount(self::SEEDED, $names);
         self::assertSame('Ab crunch machine', $names[0]);
     }
 
@@ -63,9 +68,33 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     {
         $this->deactivate->execute($this->barbell()->id ?? 0);
 
-        self::assertCount(EquipmentFixtures::COUNT, $this->list->execute(null));
-        self::assertCount(EquipmentFixtures::COUNT - 1, $this->list->execute(true));
-        self::assertSame(['Barbell'], array_map(static fn ($equipment) => $equipment->name, $this->list->execute(false)));
+        self::assertCount(self::SEEDED, $this->list->execute(new ListEquipmentsForAdminDataInput()));
+        self::assertCount(self::SEEDED - 1, $this->list->execute(new ListEquipmentsForAdminDataInput(isActive: true)));
+        self::assertSame(['Barbell'], $this->names(new ListEquipmentsForAdminDataInput(isActive: false)));
+    }
+
+    public function testTheListFiltersByLoadAndByDistance(): void
+    {
+        self::assertCount(self::SEEDED_WITH_WEIGHT, $this->list->execute(new ListEquipmentsForAdminDataInput(hasWeight: true)));
+        self::assertCount(
+            self::SEEDED - self::SEEDED_WITH_WEIGHT,
+            $this->list->execute(new ListEquipmentsForAdminDataInput(hasWeight: false)),
+        );
+        self::assertSame(
+            ['Rowing machine', 'Stationary bike', 'Treadmill'],
+            $this->names(new ListEquipmentsForAdminDataInput(hasDistance: true)),
+        );
+    }
+
+    /** The filters combine: every one of them has to hold. */
+    public function testTheFiltersCombine(): void
+    {
+        $this->deactivate->execute($this->getReference(EquipmentFixtures::TREADMILL, EquipmentDataModel::class)->id ?? 0);
+
+        self::assertSame(
+            ['Rowing machine', 'Stationary bike'],
+            $this->names(new ListEquipmentsForAdminDataInput(isActive: true, hasWeight: false, hasDistance: true)),
+        );
     }
 
     public function testItCreatesAnEquipment(): void
@@ -151,6 +180,12 @@ final class EquipmentBackOfficeTest extends KernelTestCase
         $this->expectException(DataModelNotFoundException::class);
 
         $this->update->execute(123456789, new UpdateEquipmentDataInput('Ghost', false, false));
+    }
+
+    /** @return list<string> */
+    private function names(ListEquipmentsForAdminDataInput $input): array
+    {
+        return array_map(static fn ($equipment) => $equipment->name, $this->list->execute($input));
     }
 
     private function barbell(): EquipmentDataModel

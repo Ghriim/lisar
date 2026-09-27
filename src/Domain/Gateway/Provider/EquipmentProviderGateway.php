@@ -14,10 +14,10 @@ interface EquipmentProviderGateway
     public function findOneByName(string $name): ?EquipmentDataModel;
 
     /**
-     * Every equipment for the back-office, by name. `$isActive` narrows it: true for the offered
-     * ones, false for the retired ones, null for both.
+     * Every equipment for the back-office, by name. Each flag narrows it when it is not null —
+     * `$isActive` true for the offered ones, false for the retired ones — and they combine.
      *
      * @return list<EquipmentDataModel>
      */
-    public function findAllForAdminList(?bool $isActive): array;
+    public function findAllForAdminList(?bool $isActive, ?bool $hasWeight, ?bool $hasDistance): array;
 }
