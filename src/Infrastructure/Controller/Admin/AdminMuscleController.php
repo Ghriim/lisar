@@ -92,6 +92,7 @@ final class AdminMuscleController extends AbstractController
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'Deleted.')]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such muscle.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A movement targets it.')]
     public function deleteMuscle(int $id, DeleteMuscleUseCase $useCase): JsonResponse
     {
         $useCase->execute($id);

@@ -93,6 +93,7 @@ final class AdminEquipmentController extends AbstractController
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'Deleted.')]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such equipment.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A movement is done with it.')]
     public function deleteEquipment(int $id, DeleteEquipmentUseCase $useCase): JsonResponse
     {
         $useCase->execute($id);

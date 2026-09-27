@@ -12,6 +12,16 @@ interface MuscleProviderGateway
     /** Its group joined and selected. */
     public function findOneById(int $id): ?MuscleDataModel;
 
+    /**
+     * The muscles among these ids, group joined and selected; an id matching none is simply
+     * absent from the result.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<MuscleDataModel>
+     */
+    public function findByIds(array $ids): array;
+
     /** Ignoring case, across every group: the column's collation does the comparing. */
     public function findOneByName(string $name): ?MuscleDataModel;
 

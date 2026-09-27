@@ -10,8 +10,8 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
 /**
- * The muscle groups, all active. "Other" holds what is not a muscle group as such — cardio, for
- * now.
+ * The muscle groups, all active. "Other" holds what is not a muscle group as such — cardio, and the
+ * whole body for the movements that work it all at once.
  */
 final class MuscleGroupFixtures extends Fixture
 {

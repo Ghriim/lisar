@@ -33,7 +33,7 @@ final class MuscleFixtures extends Fixture implements DependentFixtureInterface
         MuscleGroupFixtures::CORE => ['Abs', 'Obliques'],
         MuscleGroupFixtures::LEGS => ['Quadriceps', 'Hamstrings', 'Adductors', 'Abductors', 'Calves', 'Hip flexors'],
         MuscleGroupFixtures::GLUTES => ['Glutes'],
-        MuscleGroupFixtures::OTHER => ['Cardio'],
+        MuscleGroupFixtures::OTHER => ['Cardio', 'Full body'],
     ];
 
     private const array REFERENCES = [

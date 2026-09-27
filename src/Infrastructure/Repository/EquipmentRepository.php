@@ -28,6 +28,20 @@ final class EquipmentRepository extends ServiceEntityRepository implements Equip
             ->getOneOrNullResult();
     }
 
+    /** @return list<EquipmentDataModel> */
+    public function findByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('equipment')
+            ->andWhere('equipment.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findOneByName(string $name): ?EquipmentDataModel
     {
         return $this->createQueryBuilder('equipment')

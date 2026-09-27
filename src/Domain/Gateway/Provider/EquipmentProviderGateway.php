@@ -10,6 +10,15 @@ interface EquipmentProviderGateway
 {
     public function findOneById(int $id): ?EquipmentDataModel;
 
+    /**
+     * The equipments among these ids; an id matching none is simply absent from the result.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<EquipmentDataModel>
+     */
+    public function findByIds(array $ids): array;
+
     /** Ignoring case: the column's collation does the comparing. */
     public function findOneByName(string $name): ?EquipmentDataModel;
 

@@ -46,7 +46,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     use LoadFixturesTrait;
 
     /** How many muscles MuscleFixtures seeds. */
-    private const int SEEDED_MUSCLES = 24;
+    private const int SEEDED_MUSCLES = 25;
 
     private MuscleProviderGateway $muscleProviderGateway;
     private MuscleGroupProviderGateway $muscleGroupProviderGateway;

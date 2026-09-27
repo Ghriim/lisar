@@ -30,6 +30,20 @@ final class MuscleRepository extends ServiceEntityRepository implements MusclePr
             ->getOneOrNullResult();
     }
 
+    /** @return list<MuscleDataModel> */
+    public function findByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->withGroup()
+            ->andWhere('muscle.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findOneByName(string $name): ?MuscleDataModel
     {
         return $this->withGroup()
