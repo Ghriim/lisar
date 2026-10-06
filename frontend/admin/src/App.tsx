@@ -12,6 +12,7 @@ import { LoginPage } from './pages/LoginPage'
 import { MovementsPage } from './pages/MovementsPage'
 import { MusclesPage } from './pages/MusclesPage'
 import { PrioritiesPage } from './pages/PrioritiesPage'
+import { SetTypesPage } from './pages/SetTypesPage'
 import { UsersPage } from './pages/UsersPage'
 
 // Loaded on demand: it pulls in every lucide icon, which no other screen needs to download.
@@ -52,6 +53,7 @@ export function App() {
                 <Route path="/workout/equipements" element={<EquipmentsPage />} />
                 <Route path="/workout/muscles" element={<MusclesPage />} />
                 <Route path="/workout/mouvements" element={<MovementsPage />} />
+                <Route path="/workout/types-de-serie" element={<SetTypesPage />} />
                 <Route
                     path="/developpeurs/icones"
                     element={

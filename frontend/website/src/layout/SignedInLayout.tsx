@@ -7,7 +7,7 @@ import { PageShell, SideNav, type NavItem } from '../components'
 const PRIMARY: NavItem[] = [
     { to: '/', label: 'Dashboard', icon: House },
     { to: '/todo', label: 'Todo', icon: ListChecks },
-    { to: '/workout', label: 'Workout', icon: Dumbbell },
+    { to: '/workouts', label: 'Workouts', icon: Dumbbell },
     { to: '/statistiques', label: 'Statistiques', icon: ChartColumn },
 ]
 

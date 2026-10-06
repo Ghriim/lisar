@@ -11,10 +11,11 @@ A row in the catalogue carries:
 - **a name and an icon** — the icon a code from a fixed vocabulary, drawn its own way by each
   front end (as the hydration shortcut icons are);
 - **how it is kept**: either **manual** (the person ticks it) or **fed by a tracker** — Steps,
-  Hydration — which keeps it on their behalf;
+  Hydration, Workouts — which keeps it on their behalf;
 - **for a tracker-fed habit, the mark to cross**: the value the tracker must reach that day for the
-  habit to count as kept — 10000 steps, 1500 mL. Below the mark the day is not kept; at or above
-  it, it is.
+  habit to count as kept — 10000 steps, 1500 mL, 1 workout. Below the mark the day is not kept; at
+  or above it, it is. The workout tracker's figure is **how many workouts were finished that day**:
+  one in progress does not count yet.
 
 Every habit is **daily** for now: kept, or not, each day. Schedules other than daily are a later
 addition.

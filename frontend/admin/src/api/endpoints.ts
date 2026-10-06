@@ -17,6 +17,8 @@ import type {
     Priority,
     PriorityPayload,
     Session,
+    SetType,
+    SetTypePayload,
     User,
     UserComment,
 } from './types'
@@ -205,6 +207,35 @@ export function deactivateEquipment(id: number): Promise<Equipment> {
 
 export function deleteEquipment(id: number): Promise<void> {
     return request<void>(`/api/admin/workout/equipments/${id}`, { method: 'DELETE' })
+}
+
+// A type rather than an interface, for the same reason as EquipmentFilters.
+export type SetTypeFilters = {
+    isActive?: boolean
+}
+
+export function fetchSetTypes(filters: SetTypeFilters): Promise<SetType[]> {
+    return request<SetType[]>(`/api/admin/workout/set-types${filterQuery(filters)}`)
+}
+
+export function createSetType(payload: SetTypePayload): Promise<SetType> {
+    return request<SetType>('/api/admin/workout/set-types', { method: 'POST', body: payload })
+}
+
+export function updateSetType(id: number, payload: SetTypePayload): Promise<SetType> {
+    return request<SetType>(`/api/admin/workout/set-types/${id}`, { method: 'PUT', body: payload })
+}
+
+export function activateSetType(id: number): Promise<SetType> {
+    return request<SetType>(`/api/admin/workout/set-types/${id}/activate`, { method: 'POST' })
+}
+
+export function deactivateSetType(id: number): Promise<SetType> {
+    return request<SetType>(`/api/admin/workout/set-types/${id}/deactivate`, { method: 'POST' })
+}
+
+export function deleteSetType(id: number): Promise<void> {
+    return request<void>(`/api/admin/workout/set-types/${id}`, { method: 'DELETE' })
 }
 
 export function fetchMuscleGroups(): Promise<MuscleGroup[]> {

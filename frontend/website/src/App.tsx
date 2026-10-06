@@ -7,6 +7,9 @@ import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { TodoPage } from './pages/TodoPage'
+import { WorkoutCompletePage } from './pages/WorkoutCompletePage'
+import { WorkoutPage } from './pages/WorkoutPage'
+import { WorkoutsPage } from './pages/WorkoutsPage'
 
 export function App() {
     const { status } = useAuth()
@@ -32,7 +35,9 @@ export function App() {
             <Route element={<SignedInLayout />}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/todo" element={<TodoPage />} />
-                <Route path="/workout" element={<ComingSoonPage title="Workout" />} />
+                <Route path="/workouts" element={<WorkoutsPage />} />
+                <Route path="/workouts/:id" element={<WorkoutPage />} />
+                <Route path="/workouts/:id/complete" element={<WorkoutCompletePage />} />
                 <Route path="/statistiques" element={<ComingSoonPage title="Statistiques" />} />
                 <Route path="/messages" element={<ComingSoonPage title="Messages" />} />
                 <Route path="/amis" element={<ComingSoonPage title="Amis" />} />

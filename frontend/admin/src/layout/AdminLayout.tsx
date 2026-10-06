@@ -42,6 +42,7 @@ const SECTIONS: Section[] = [
             { key: '/workout/equipements', label: 'Équipements' },
             { key: '/workout/muscles', label: 'Muscles' },
             { key: '/workout/mouvements', label: 'Mouvements' },
+            { key: '/workout/types-de-serie', label: 'Types de série' },
         ],
     },
     {

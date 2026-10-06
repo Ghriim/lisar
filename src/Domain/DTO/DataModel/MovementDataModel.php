@@ -77,7 +77,8 @@ class MovementDataModel implements DataModelInterface
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     public bool $tracksDistance = false;
 
-    // One side at a time — a lunge, a one-arm row — so each side will be logged on its own.
+    // One side at a time — a lunge, a one-arm row. A logged set still covers both sides, its reps
+    // counted per side: the flag only changes how a set reads.
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     public bool $isUnilateral = false;
 

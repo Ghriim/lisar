@@ -20,6 +20,7 @@ const ICON_WORDS: Record<string, string> = {
 const TRACKER_WORDS: Record<string, string> = {
     steps: 'Pas',
     hydration: 'Hydratation',
+    workout: 'Séances terminées',
 }
 
 export function habitIconWord(code: string): string {

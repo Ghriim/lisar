@@ -30,8 +30,9 @@ One line per subscribed habit:
   no second tick.
 
 A habit **fed by a tracker** carries no button: it is kept on its own the moment the tracker it
-watches crosses its mark (10000 steps, 1500 mL). Its line shows the same seven days, filled in by
-the tracker rather than by a tap.
+watches crosses its mark (10000 steps, 1500 mL, one workout finished). Its line shows the same
+seven days, filled in by the tracker rather than by a tap. Deleting the day's only finished workout
+unkeeps the day again.
 
 ## The rules
 

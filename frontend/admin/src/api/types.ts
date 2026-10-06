@@ -73,7 +73,7 @@ export const HABIT_ICONS = [
     'monitor',
 ] as const
 export const HABIT_SOURCES = ['manual', 'tracker'] as const
-export const HABIT_TRACKERS = ['steps', 'hydration'] as const
+export const HABIT_TRACKERS = ['steps', 'hydration', 'workout'] as const
 
 export interface Habit {
     id: number
@@ -105,6 +105,21 @@ export interface EquipmentPayload {
     name: string
     hasWeight: boolean
     hasDistance: boolean
+}
+
+/** The set-type palette, mirroring the backend's SetTypeColourRegistry. Kept in sync by hand. */
+export const SET_TYPE_COLOURS = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink', 'grey'] as const
+
+export interface SetType {
+    id: number
+    name: string
+    colour: string
+    isActive: boolean
+}
+
+export interface SetTypePayload {
+    name: string
+    colour: string
 }
 
 export interface MuscleGroup {

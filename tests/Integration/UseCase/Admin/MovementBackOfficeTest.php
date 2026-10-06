@@ -9,9 +9,12 @@ use App\Domain\DTO\DataModel\MovementDataModel;
 use App\Domain\DTO\DataModel\MovementFamilyDataModel;
 use App\Domain\DTO\DataModel\MuscleDataModel;
 use App\Domain\DTO\DataModel\MuscleGroupDataModel;
+use App\Domain\DTO\DataModel\UserDataModel;
 use App\Domain\DTO\Input\Admin\ListMovementsForAdminDataInput;
+use App\Domain\DTO\Input\Workout\AddWorkoutBlockDataInput;
 use App\Domain\DTO\Input\Workout\CreateMovementDataInput;
 use App\Domain\DTO\Input\Workout\CreateMovementFamilyDataInput;
+use App\Domain\DTO\Input\Workout\StartWorkoutDataInput;
 use App\Domain\DTO\Input\Workout\UpdateMovementDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\MovementProviderGateway;
@@ -23,6 +26,7 @@ use App\Domain\Validation\Constraint\Workout\MovementFamilyUsableConstraint;
 use App\Domain\Validation\Constraint\Workout\MovementMeasureConstraint;
 use App\Domain\Validation\Constraint\Workout\MovementMusclesConstraint;
 use App\Domain\Validation\Constraint\Workout\MovementNameAvailableConstraint;
+use App\Domain\Validation\Constraint\Workout\MovementUnusedConstraint;
 use App\Domain\Validation\Constraint\Workout\MuscleUnusedConstraint;
 use App\Domain\Validation\Validator\Workout\CreateMovementValidator;
 use App\Domain\Validation\Validator\Workout\UpdateMovementValidator;
@@ -30,6 +34,7 @@ use App\Fixtures\EquipmentFixtures;
 use App\Fixtures\MovementFamilyFixtures;
 use App\Fixtures\MovementFixtures;
 use App\Fixtures\MuscleGroupFixtures;
+use App\Fixtures\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\UseCase\Admin\CreateMovementFamilyUseCase;
@@ -45,6 +50,8 @@ use App\UseCase\Admin\DeleteMuscleUseCase;
 use App\UseCase\Admin\ListMovementFamiliesForAdminUseCase;
 use App\UseCase\Admin\ListMovementsForAdminUseCase;
 use App\UseCase\Admin\UpdateMovementUseCase;
+use App\UseCase\Workout\AddWorkoutBlockUseCase;
+use App\UseCase\Workout\StartWorkoutUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /** The back-office maintaining the common movements and their families — one screen, one test. */
@@ -349,6 +356,25 @@ final class MovementBackOfficeTest extends KernelTestCase
         self::getContainer()->get(DeleteMovementUseCase::class)->execute($id);
 
         self::assertNull($this->movementProviderGateway->findOneCommonById($id));
+    }
+
+    /** A movement a workout logged stays in the history: deleting it is refused, anyone's workout. */
+    public function testItRefusesToDeleteAMovementAWorkoutLogged(): void
+    {
+        $this->loadFixtures(MovementFixtures::class, UserFixtures::class);
+        $id = $this->movement(MovementFixtures::PUSH_UP)->id ?? 0;
+        $aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
+
+        $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($aliceId, new StartWorkoutDataInput());
+        self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($aliceId, $workout->id, new AddWorkoutBlockDataInput([$id]));
+
+        try {
+            self::getContainer()->get(DeleteMovementUseCase::class)->execute($id);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(DeleteMovementUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame([MovementUnusedConstraint::IN_USE], $exception->violations['id']);
+        }
     }
 
     // -------------------------------------------- what movements hold on to

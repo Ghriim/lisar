@@ -6,14 +6,23 @@ import type {
     HabitCatalogItem,
     HydrationDay,
     HydrationPreset,
+    Page,
     Priority,
     Session,
+    SetType,
     SleepNight,
     StepDay,
     Task,
     UpdateTaskPayload,
     User,
     Weight,
+    Workout,
+    WorkoutDetailsPayload,
+    WorkoutMovementChoice,
+    WorkoutPreviousPerformance,
+    WorkoutSetPayload,
+    WorkoutStats,
+    WorkoutSummary,
 } from './types'
 
 export async function signIn(email: string, password: string): Promise<Session> {
@@ -203,4 +212,107 @@ export function saveSleepNight(
         method: 'PUT',
         body: { bedtime, wakeUpTime, moodRating },
     })
+}
+
+/** Finished workouts only, the latest first: the one in progress joins the history when it ends. */
+export function fetchWorkouts(page: number): Promise<Page<WorkoutSummary>> {
+    return request<Page<WorkoutSummary>>(`/api/workouts?page=${page}`)
+}
+
+/** The workout in progress, or null: the API answers 204 when there is none. */
+export async function fetchCurrentWorkout(): Promise<Workout | null> {
+    return (await request<Workout | undefined>('/api/workouts/current')) ?? null
+}
+
+export function fetchWorkout(id: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}`)
+}
+
+export function fetchWorkoutPreviousPerformances(id: number): Promise<WorkoutPreviousPerformance[]> {
+    return request<WorkoutPreviousPerformance[]>(`/api/workouts/${id}/previous-performances`)
+}
+
+export function fetchWorkoutStats(id: number): Promise<WorkoutStats> {
+    return request<WorkoutStats>(`/api/workouts/${id}/stats`)
+}
+
+export function fetchWorkoutMovements(): Promise<WorkoutMovementChoice[]> {
+    return request<WorkoutMovementChoice[]>('/api/workouts/movements')
+}
+
+export function fetchWorkoutSetTypes(): Promise<SetType[]> {
+    return request<SetType[]>('/api/workouts/set-types')
+}
+
+/*
+ * Every write inside a workout — its details, a block, a movement, a set — answers the whole
+ * workout, so the screen redraws from one response.
+ */
+
+export function startWorkout(name: string | null): Promise<Workout> {
+    return request<Workout>('/api/workouts', { method: 'POST', body: { name } })
+}
+
+export function updateWorkout(id: number, payload: WorkoutDetailsPayload): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}`, { method: 'PUT', body: payload })
+}
+
+export function finishWorkout(id: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/finish`, { method: 'POST' })
+}
+
+/** Abandons the one in progress; deletes a finished one. Everything logged in it goes too. */
+export function deleteWorkout(id: number): Promise<void> {
+    return request<void>(`/api/workouts/${id}`, { method: 'DELETE' })
+}
+
+/** Several movements make a superset, in the order given. */
+export function addWorkoutBlock(id: number, movementIds: number[]): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/blocks`, { method: 'POST', body: { movementIds } })
+}
+
+export function reorderWorkoutBlocks(id: number, blockIds: number[]): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/blocks/order`, { method: 'PUT', body: { blockIds } })
+}
+
+export function deleteWorkoutBlock(id: number, blockId: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/blocks/${blockId}`, { method: 'DELETE' })
+}
+
+export function addWorkoutExercise(id: number, blockId: number, movementId: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/blocks/${blockId}/exercises`, {
+        method: 'POST',
+        body: { movementId },
+    })
+}
+
+export function updateWorkoutExercise(id: number, exerciseId: number, note: string | null): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/exercises/${exerciseId}`, { method: 'PUT', body: { note } })
+}
+
+/** Removing a block's last movement removes the block too. */
+export function deleteWorkoutExercise(id: number, exerciseId: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/exercises/${exerciseId}`, { method: 'DELETE' })
+}
+
+export function addWorkoutSet(id: number, exerciseId: number, payload: WorkoutSetPayload): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/exercises/${exerciseId}/sets`, { method: 'POST', body: payload })
+}
+
+export function updateWorkoutSet(id: number, setId: number, payload: WorkoutSetPayload): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/sets/${setId}`, { method: 'PUT', body: payload })
+}
+
+/** Ticks a set of the workout in progress as done. Refused once the workout is finished. */
+export function completeWorkoutSet(id: number, setId: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/sets/${setId}/complete`, { method: 'POST' })
+}
+
+/** Unticks it — the undo of a mis-tap. Refused once the workout is finished. */
+export function uncompleteWorkoutSet(id: number, setId: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/sets/${setId}/complete`, { method: 'DELETE' })
+}
+
+export function deleteWorkoutSet(id: number, setId: number): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/sets/${setId}`, { method: 'DELETE' })
 }

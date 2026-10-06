@@ -26,7 +26,7 @@ Below it, aligned at the top — the screens the app is for:
 | --- | --- | --- | --- |
 | Dashboard | house | `/` | the [dashboard](dashboard.md) |
 | Todo | list with a check | `/todo` | the [quest log](tasks.md) on its own |
-| Workout | dumbbell | `/workout` | empty |
+| Workouts | dumbbell | `/workouts` | the [workouts](workouts.md): the one in progress, the history |
 | Statistiques | chart | `/statistiques` | empty |
 
 At the bottom — everything around them:

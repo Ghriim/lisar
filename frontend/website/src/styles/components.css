@@ -577,3 +577,37 @@ button.chip[aria-pressed='true'] {
         grid-template-columns: 1fr;
     }
 }
+
+/* ------------------------------------------------------------ the workouts */
+
+/* A block's heading line: its label running into the rule, its controls at the end. */
+.workout-block-head {
+    display: flex;
+    align-items: center;
+    gap: var(--step);
+    margin-bottom: calc(var(--step) * 1.5);
+}
+
+.workout-block-head .list-group-heading {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* A family of movements in the picker: its name, then its chips. */
+.movement-family {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* A workout's muscles, one line each: the name, its share as a bar, the figure. */
+.muscle-shares {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--step) calc(var(--step) * 2);
+}
+
+.muscle-share {
+    display: contents;
+}

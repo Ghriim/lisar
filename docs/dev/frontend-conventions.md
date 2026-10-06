@@ -35,11 +35,14 @@ app — the same action never wears two faces, and two actions never wear the sa
 | `Check` | terminer, cocher | |
 | `RotateCcw` | rouvrir | the undo of `Check`, and only that |
 | `Eye` | consulter | opens something read-only |
+| `Play` | reprendre | goes back to something under way, where it carries on |
 | `Pencil` | modifier | |
 | `Plus` | créer, ajouter | |
 | `Trash2` | supprimer | **always `variant="danger"`**, red from the start |
 | `X` | fermer | **closing only** — never deleting |
 | `ChevronRight` / `ChevronDown` | déplier / replier | carries `aria-expanded` |
+| `ArrowUp` / `ArrowDown` | monter / descendre | moves a thing one place in a list the person orders |
+| `ArrowLeft` / `ArrowRight` | page précédente / suivante | |
 
 The last two rows are the ones worth spelling out. A cross that deletes sits a few pixels
 from a cross that closes, and the difference is discovered by clicking. So the bin deletes,

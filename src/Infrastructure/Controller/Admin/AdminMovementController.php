@@ -96,6 +96,7 @@ final class AdminMovementController extends AbstractController
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'Deleted.')]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such common movement.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A workout logged it.')]
     public function deleteMovement(int $id, DeleteMovementUseCase $useCase): JsonResponse
     {
         $useCase->execute($id);

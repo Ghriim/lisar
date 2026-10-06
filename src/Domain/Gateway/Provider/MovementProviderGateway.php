@@ -37,6 +37,20 @@ interface MovementProviderGateway
         ?int $equipmentId,
     ): array;
 
+    /**
+     * A movement a workout may take on now: active, in an active family, and common — a person's
+     * own movements will join them the day they exist.
+     */
+    public function findOneOfferedById(int $id): ?MovementDataModel;
+
+    /**
+     * Every movement a workout may take on now, by name, everything the output reads joined and
+     * selected.
+     *
+     * @return list<MovementDataModel>
+     */
+    public function findAllOffered(): array;
+
     public function countForMovementFamily(MovementFamilyDataModel $movementFamily): int;
 
     /** As the primary muscle or a secondary one. */

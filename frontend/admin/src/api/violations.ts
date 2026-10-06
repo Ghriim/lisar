@@ -50,6 +50,10 @@ const MESSAGES: Record<string, string> = {
     description_too_long: '5000 caractères maximum.',
     video_url_invalid: 'Adresse de vidéo invalide.',
     video_url_too_long: '512 caractères maximum.',
+    movement_in_use: 'Des séances ont enregistré ce mouvement : désactivez-le plutôt.',
+    colour_unknown: 'Cette couleur n’est pas dans la palette.',
+    set_type_name_already_used: 'Un type de série porte déjà ce nom.',
+    set_type_in_use: 'Des séries portent ce type : désactivez-le plutôt.',
 }
 
 export function humanise(code: string): string {

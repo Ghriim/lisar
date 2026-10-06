@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\UseCase\Admin;
+
+use App\Domain\DTO\DataModel\SetTypeDataModel;
+use App\Domain\DTO\Input\Workout\CreateSetTypeDataInput;
+use App\Domain\DTO\Output\Workout\SetTypeDataOutput;
+use App\Domain\Exception\ValidationException;
+use App\Domain\Factory\OutputFactory\SetTypeOutputFactory;
+use App\Domain\Gateway\Persister\SetTypePersisterGateway;
+use App\Domain\Gateway\Provider\SetTypeProviderGateway;
+use App\Domain\Validation\Validator\Workout\CreateSetTypeValidator;
+use App\UseCase\UseCaseInterface;
+
+/**
+ * Adding a set type, offered to new sets at once.
+ */
+final readonly class CreateSetTypeUseCase implements UseCaseInterface
+{
+    public function __construct(
+        private CreateSetTypeValidator $validator,
+        private SetTypeProviderGateway $setTypeProviderGateway,
+        private SetTypePersisterGateway $setTypePersisterGateway,
+        private SetTypeOutputFactory $outputFactory,
+    ) {
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function execute(CreateSetTypeDataInput $input): SetTypeDataOutput
+    {
+        $this->validator->validate($input, $this->setTypeProviderGateway->findOneByName($input->name));
+
+        $setType = new SetTypeDataModel();
+        $setType->name = $input->name;
+        $setType->colour = $input->colour;
+
+        $this->setTypePersisterGateway->create($setType);
+
+        return $this->outputFactory->buildOne($setType);
+    }
+}

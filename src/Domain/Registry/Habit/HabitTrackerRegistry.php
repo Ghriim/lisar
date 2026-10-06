@@ -20,6 +20,9 @@ interface HabitTrackerRegistry
     /** The daily hydration total. */
     public const string HYDRATION = 'hydration';
 
+    /** How many workouts were finished that day. */
+    public const string WORKOUT = 'workout';
+
     /** @var list<string> */
-    public const array ALL = [self::STEPS, self::HYDRATION];
+    public const array ALL = [self::STEPS, self::HYDRATION, self::WORKOUT];
 }

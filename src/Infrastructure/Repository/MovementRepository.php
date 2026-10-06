@@ -92,6 +92,25 @@ final class MovementRepository extends ServiceEntityRepository implements Moveme
         return $queryBuilder->getQuery()->getResult();
     }
 
+    public function findOneOfferedById(int $id): ?MovementDataModel
+    {
+        return $this->offered()
+            ->andWhere('movement.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /** @return list<MovementDataModel> */
+    public function findAllOffered(): array
+    {
+        return $this->offered()
+            ->orderBy('movement.name', 'ASC')
+            ->addOrderBy('movement.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function countForMovementFamily(MovementFamilyDataModel $movementFamily): int
     {
         return (int) $this->createQueryBuilder('movement')
@@ -142,6 +161,13 @@ final class MovementRepository extends ServiceEntityRepository implements Moveme
             ->leftJoin('movement.equipments', 'equipment')
             ->addSelect('equipment')
             ->andWhere('movement.owner IS NULL');
+    }
+
+    private function offered(): QueryBuilder
+    {
+        return $this->common()
+            ->andWhere('movement.isActive = true')
+            ->andWhere('movementFamily.isActive = true');
     }
 
     /** The ids of the movements, with their primary and secondary muscles joined under these aliases. */
