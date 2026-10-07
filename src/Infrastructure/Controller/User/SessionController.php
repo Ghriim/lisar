@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Controller\User;
 
-use App\Domain\DTO\Input\Session\LoginDataInput;
-use App\Domain\DTO\Output\Session\SessionDataOutput;
-use App\Domain\Registry\Session\SessionAudienceRegistry;
+use App\Domain\DTO\Input\User\LoginDataInput;
+use App\Domain\DTO\Output\User\SessionDataOutput;
+use App\Domain\Registry\User\SessionAudienceRegistry;
 use App\Infrastructure\Factory\RefreshTokenCookieFactory;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\UseCase\Session\LoginUseCase;
-use App\UseCase\Session\LogoutUseCase;
-use App\UseCase\Session\RefreshSessionUseCase;
+use App\UseCase\User\LoginUseCase;
+use App\UseCase\User\LogoutUseCase;
+use App\UseCase\User\RefreshSessionUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

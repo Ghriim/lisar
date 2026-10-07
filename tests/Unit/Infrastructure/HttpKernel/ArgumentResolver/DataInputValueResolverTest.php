@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Infrastructure\HttpKernel\ArgumentResolver;
 
-use App\Domain\DTO\Input\Session\LoginDataInput;
-use App\Domain\DTO\Input\Task\CreateTaskDataInput;
-use App\Domain\DTO\Input\Weight\SaveWeightDataInput;
+use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
+use App\Domain\DTO\Input\Tracking\Weight\SaveWeightDataInput;
+use App\Domain\DTO\Input\User\LoginDataInput;
 use App\Infrastructure\Exception\DataInputMappingException;
 use App\Infrastructure\HttpKernel\ArgumentResolver\DataInputValueResolver;
 use LogicException;

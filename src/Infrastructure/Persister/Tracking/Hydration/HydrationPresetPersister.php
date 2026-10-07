@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Infrastructure\Persister\Tracking\Hydration;
+
+use App\Domain\DTO\DataModel\Tracking\HydrationPresetDataModel;
+use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationPresetPersisterGateway;
+use App\Infrastructure\Persister\AbstractBaseMysqlPersister;
+
+/**
+ * @extends AbstractBaseMysqlPersister<HydrationPresetDataModel>
+ */
+final class HydrationPresetPersister extends AbstractBaseMysqlPersister implements HydrationPresetPersisterGateway
+{
+    public function create(HydrationPresetDataModel $preset): HydrationPresetDataModel
+    {
+        return $this->persistAndStampCreate($preset);
+    }
+
+    public function update(HydrationPresetDataModel $preset): HydrationPresetDataModel
+    {
+        return $this->persistAndStampUpdate($preset);
+    }
+
+    public function delete(HydrationPresetDataModel $preset): void
+    {
+        $this->persistDelete($preset);
+    }
+}

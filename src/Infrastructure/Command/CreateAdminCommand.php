@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Command;
 
-use App\Domain\DTO\Input\Admin\CreateAdminDataInput;
+use App\Domain\DTO\Input\User\Admin\CreateAdminDataInput;
 use App\Domain\Exception\ValidationException;
-use App\UseCase\Admin\CreateAdminUseCase;
+use App\UseCase\User\Admin\CreateAdminUseCase;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;

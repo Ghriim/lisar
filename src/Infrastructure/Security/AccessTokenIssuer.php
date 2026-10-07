@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Security;
 
-use App\Domain\DTO\DataModel\UserDataModel;
-use App\Domain\Session\AccessTokenIssuerInterface;
+use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\User\AccessTokenIssuerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 

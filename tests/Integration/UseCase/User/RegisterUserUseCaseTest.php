@@ -6,7 +6,7 @@ namespace App\Tests\Integration\UseCase\User;
 
 use App\Domain\DTO\Input\User\RegisterUserDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Registry\User\IdentityProviderRegistry;
 use App\Domain\Registry\User\UserRoleRegistry;
 use App\Domain\User\PasswordHasherInterface;

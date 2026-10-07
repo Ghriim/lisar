@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\UseCase\User;
 
-use App\Domain\DTO\DataModel\UserDataModel;
-use App\Fixtures\UserFixtures;
+use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\UseCase\User\GetUserUseCase;

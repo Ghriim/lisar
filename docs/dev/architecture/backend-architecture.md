@@ -211,41 +211,42 @@ src/
 │   │   ├── Input/
 │   │   │   ├── DataInputInterface.php           # marker
 │   │   │   ├── SensitiveDataInputInterface.php  # marker: never log this payload
-│   │   │   └── <SubDomain>/<Verb><Thing>DataInput.php
+│   │   │   └── <Perimeter>/[Admin/]<Verb><Thing>DataInput.php
 │   │   ├── Output/
-│   │   │   ├── <SubDomain>/<Thing>DataOutput.php
+│   │   │   ├── <Perimeter>/[Admin/]<Thing>DataOutput.php
 │   │   │   └── SimpleReportDataOutput.php       # generic {message} envelope
 │   │   └── DataModel/                           # Doctrine-mapped, public props, no accessors
 │   │       ├── DataModelInterface.php           # marker
-│   │       └── <Noun>DataModel.php
+│   │       └── <Perimeter>/<Noun>DataModel.php
 │   ├── Gateway/
-│   │   ├── Provider/<Noun>ProviderGateway.php   # read contracts
-│   │   └── Persister/<Noun>PersisterGateway.php # write contracts
+│   │   ├── Provider/<Perimeter>/<Noun>ProviderGateway.php   # read contracts
+│   │   └── Persister/<Perimeter>/<Noun>PersisterGateway.php # write contracts
 │   ├── Factory/
-│   │   ├── DataModelFactory/<Noun>DataModelFactory.php  # data model ← data model/DTO
-│   │   └── OutputFactory/<Thing>OutputFactory.php       # DataOutput ← data model
-│   ├── Registry/<SubDomain>/<Name>Registry.php    # interfaces holding constants
+│   │   ├── DataModelFactory/<Perimeter>/<Noun>DataModelFactory.php  # data model ← data model/DTO
+│   │   └── OutputFactory/<Perimeter>/<Thing>OutputFactory.php       # DataOutput ← data model
+│   ├── Registry/<Perimeter>/<Name>Registry.php    # interfaces holding constants
 │   ├── Validation/
-│   │   ├── Validator/<SubDomain>/<Verb><Thing>Validator.php
-│   │   └── Constraint/<SubDomain>/<Rule>Constraint.php
+│   │   ├── Validator/<Perimeter>/[Admin/]<Verb><Thing>Validator.php
+│   │   └── Constraint/<Perimeter>/<Rule>Constraint.php
 │   ├── DataTransformer/<Name>DataTransformer.php  # PURE formatters, usable by DataOutputs
 │   ├── Exception/ValidationException.php
-│   └── <SubDomain>/<DomainService>.php            # stateless domain services
+│   └── <Perimeter>/<DomainService>.php            # stateless domain services
 │
 ├── UseCase/                              # application services, one per user intent
 │   ├── UseCaseInterface.php              # marker
-│   └── <SubDomain>/<Verb><Thing>UseCase.php
+│   └── <Perimeter>/[Admin/]<Verb><Thing>UseCase.php
 │
 ├── Infrastructure/                       # everything that talks to the outside world
-│   ├── Controller/                        # one folder per audience, never loose at the root
-│   │   ├── User/<Aggregate>Controller.php         # what the website calls
-│   │   └── Admin/Admin<Aggregate>Controller.php   # back-office surface, ROLE_ADMIN
+│   ├── Controller/                        # one folder per perimeter, never loose at the root
+│   │   └── <Perimeter>/
+│   │       ├── <Aggregate>Controller.php          # what the website calls
+│   │       └── Admin/Admin<Aggregate>Controller.php  # back-office surface, ROLE_ADMIN
 │   ├── Command/<Verb><Thing>Command.php
 │   │   └── Dev/                          # developer-only commands, never run in prod
-│   ├── Repository/<Noun>Repository.php             # implements a ProviderGateway
+│   ├── Repository/<Perimeter>/<Noun>Repository.php # implements a ProviderGateway
 │   ├── Persister/
 │   │   ├── AbstractBaseMysqlPersister.php
-│   │   └── <Noun>Persister.php                     # implements a PersisterGateway
+│   │   └── <Perimeter>/<Noun>Persister.php         # implements a PersisterGateway
 │   ├── HttpClient/
 │   │   ├── <Integration>/                         # one namespace per outbound integration family
 │   │   │   ├── <Family>HttpClientInterface.php    # tagged contract
@@ -269,8 +270,35 @@ src/
 │       ├── DependencyInjection/<Name>Resolver.php # tagged-service locators
 │       └── EventListener/ExceptionListener.php
 │
-└── Fixtures/<Noun>Fixtures.php           # Doctrine seed data, dev/test only (§10)
+└── Fixtures/<Perimeter>/<Noun>Fixtures.php  # Doctrine seed data, dev/test only (§10)
 ```
+
+### 4.1 Functional perimeters
+
+Every layer is split by functional perimeter, one sub-folder (and sub-namespace) each, with the
+same names everywhere:
+
+| Perimeter | Covers |
+| --- | --- |
+| `Training/` | workouts and their reference data: movements, families, muscles, groups, equipment, set types |
+| `Tracking/` | the trackers, one sub-folder each: `Hydration/`, `Sleep/`, `Step/`, `Weight/` |
+| `Habits/` | the habit catalogue, subscriptions, entries |
+| `Todo/` | tasks and their categories, priorities, tags |
+| `User/` | accounts, identities, sessions, admin comments |
+
+- **What the back-office alone uses goes in an `Admin/` sub-folder of its perimeter**
+  (`UseCase/Training/Admin/CreateSetTypeUseCase.php`), so a perimeter keeps its app and
+  back-office sides side by side. Gateways, repositories, persisters, factories and constraints
+  serve both sides and have no `Admin/` level.
+- `Tracking/` has one more level, per tracker, everywhere but in `DataModel/` — six data models
+  do not need four folders.
+- **What is shared stays at the root** of its layer: markers and abstract bases
+  (`DataModelInterface`, `UseCaseInterface`, `AbstractBaseValidator`,
+  `AbstractBaseMysqlPersister`), generic envelopes (`PaginatedListDataOutput`,
+  `SimpleReportDataOutput`), `Exception/`, `DataTransformer/`, and the technical folders of
+  `Infrastructure/` (`Security/`, `HttpKernel/`, `Command/`…). A domain service used across
+  perimeters stays at the root of the perimeter that owns it (`Domain/Tracking/DayClock`).
+- `tests/` mirrors the same layout.
 
 ---
 
@@ -344,7 +372,7 @@ event), `Fetch…` (call a third party and persist the result).
 ### 6.1 DataModel
 
 A **data model** is a persisted shape: a Doctrine-mapped class living in
-`Domain/DTO/DataModel/<Noun>DataModel.php`. It sits next to `DataInput` and `DataOutput` under
+`Domain/DTO/DataModel/<Perimeter>/<Noun>DataModel.php` (§4.1). It sits next to `DataInput` and `DataOutput` under
 `Domain/DTO/` on purpose — these are the three data shapes the application manipulates, one per
 direction: what comes in, what goes out, what is stored. Nothing else in the codebase is called an
 "entity".
@@ -722,7 +750,7 @@ Rules:
 ### 6.7 Registry
 
 Constants attached to a DTO or a sub-domain live in an **interface** under
-`Domain/Registry/<SubDomain>/`. An interface (not a final class with constants, **not a backed
+`Domain/Registry/<Perimeter>/`. An interface (not a final class with constants, **not a backed
 enum**) so it can never be instantiated and constants can be referenced without importing
 behaviour.
 
@@ -1034,14 +1062,15 @@ final class SubscriptionController extends AbstractController
 
 Rules:
 
-- One controller per aggregate **per audience**, `final`, extends `AbstractController`. Each
-  audience gets its own folder under `Controller/` and no controller sits loose at the root:
-  `Controller/User/` for what the website calls, `Controller/Admin/` for the back-office. An
-  audience is a set of routes sharing an authorization rule and a client, so a new one (a partner
-  API, a webhook surface) is a new folder, not a suffix.
-- **The `Admin` prefix on the class name stays**, because `Controller\Admin\UserController` and
-  `Controller\User\UserController` would be two classes with the same short name, imported side
-  by side in a review. The public side keeps the bare name.
+- One controller per aggregate **per audience**, `final`, extends `AbstractController`. Controllers
+  follow the perimeters (§4.1) and no controller sits loose at the root: what the website calls
+  sits at the root of its perimeter (`Controller/Training/WorkoutController.php`), the
+  back-office in its `Admin/` sub-folder (`Controller/Training/Admin/AdminSetTypeController.php`).
+  An audience is a set of routes sharing an authorization rule and a client, so a new one (a
+  partner API, a webhook surface) is a new sub-folder, not a suffix.
+- **The `Admin` prefix on the class name stays**, because `Controller\User\Admin\UserController`
+  and `Controller\User\UserController` would be two classes with the same short name, imported
+  side by side in a review. The public side keeps the bare name.
 - Authorization is declared once in `security.yaml`'s `access_control` (`^/api/admin` →
   `ROLE_ADMIN`), not as an attribute repeated on every route. There is **no role hierarchy**:
   an account belongs to one audience, and its token opens that audience's routes only.
@@ -1394,11 +1423,11 @@ Key decisions to carry over:
 ### 6.17 Domain services
 
 Business logic that is neither a use case (no orchestration, no persistence) nor a validator lives
-in `Domain/<SubDomain>/<Name>.php` as a `final readonly` class with a verb-ish or
+in `Domain/<Perimeter>/<Name>.php` as a `final readonly` class with a verb-ish or
 predicate-ish public method. **This is the one family with no mandatory suffix** — the class name
 states the concept (`SubscriptionEligibility`, `RenewalSchedule`), and a `…Service` suffix would
-add nothing. In exchange, the folder is not free: `<SubDomain>` must be the aggregate the service
-serves, so `Domain/Subscription/SubscriptionEligibility.php`, never a folder named after some
+add nothing. In exchange, the folder is not free: `<Perimeter>` must be the perimeter (§4.1) of
+the aggregate the service serves, so `Domain/Todo/TaskState.php`, never a folder named after some
 unrelated neighbour.
 
 ```php
@@ -1457,7 +1486,7 @@ Rules:
 
 A Gateway covers **data access**. Everything else the Domain needs from the outside world —
 hashing a password, signing a token, sending a mail — gets the same treatment under a different
-name: **an interface in `Domain/<SubDomain>/<Name>Interface.php`, implemented in
+name: **an interface in `Domain/<Perimeter>/<Name>Interface.php`, implemented in
 `Infrastructure/<Concern>/`**.
 
 ```php
@@ -1906,30 +1935,31 @@ Each step overrides the previous one. New variable → add it to `../.env` first
 
 Adding a "create X" endpoint, end to end:
 
-1. **DataModel** `Domain/DTO/DataModel/XDataModel.php` — public props, `DataModelInterface`,
+1. **DataModel** `Domain/DTO/DataModel/<Perimeter>/XDataModel.php` — public props, `DataModelInterface`,
    `createdAt`/`updatedAt`.
 2. **Migration** — `make` a migration, apply it, regenerate the schema spec.
-3. **Gateways** — `Domain/Gateway/Provider/XProviderGateway.php` (the query the use case needs,
-   context-named) and/or `Domain/Gateway/Persister/XPersisterGateway.php`.
-4. **Implementations** — `Infrastructure/Repository/XRepository.php` (joins + `addSelect` for
-   every association read downstream) and `Infrastructure/Persister/XPersister.php`.
-5. **DataInput** `Domain/DTO/Input/X/CreateXDataInput.php` — `final readonly`, `#[Assert\…]`,
+3. **Gateways** — `Domain/Gateway/Provider/<Perimeter>/XProviderGateway.php` (the query the use
+   case needs, context-named) and/or `Domain/Gateway/Persister/<Perimeter>/XPersisterGateway.php`.
+4. **Implementations** — `Infrastructure/Repository/<Perimeter>/XRepository.php` (joins +
+   `addSelect` for every association read downstream) and
+   `Infrastructure/Persister/<Perimeter>/XPersister.php`.
+5. **DataInput** `Domain/DTO/Input/<Perimeter>/CreateXDataInput.php` — `final readonly`, `#[Assert\…]`,
    `SensitiveDataInputInterface` if it carries secrets.
-6. **DataOutput** `Domain/DTO/Output/X/XDataOutput.php` — `#[Map]` attributes, dates through
+6. **DataOutput** `Domain/DTO/Output/<Perimeter>/XDataOutput.php` — `#[Map]` attributes, dates through
    `Domain\DataTransformer\DateDataTransformer` — **plus its mandatory**
-   `Domain/Factory/OutputFactory/XOutputFactory.php` (`buildOne` / `buildMany`).
+   `Domain/Factory/OutputFactory/<Perimeter>/XOutputFactory.php` (`buildOne` / `buildMany`).
 7. **Constraints** for each cross-model rule, static and pure.
-8. **Validator** `Domain/Validation/Validator/X/CreateXValidator.php` — accumulates, throws one
+8. **Validator** `Domain/Validation/Validator/<Perimeter>/CreateXValidator.php` — accumulates, throws one
    `ValidationException` with an `ERROR_CODE`.
-9. **UseCase** `UseCase/X/CreateXUseCase.php` — `final readonly`, single `execute`,
+9. **UseCase** `UseCase/<Perimeter>/CreateXUseCase.php` — `final readonly`, single `execute`,
    load → validate → mutate → persist → `outputFactory->buildOne()`.
-10. **Controller route** in `Infrastructure/Controller/XController.php` — `#[MapDataInput]`, use
+10. **Controller route** in `Infrastructure/Controller/<Perimeter>/XController.php` — `#[MapDataInput]`, use
     case injected as a method argument, full OpenAPI attributes.
 11. **Unit test** for the validator (happy path + one per rule + accumulation) and for each
     constraint/factory.
 12. **Integration test** for the use case (happy path asserting output *and* a gateway re-read,
     plus one method per error branch, conflicts set up in-test).
-13. **Fixtures** — `Fixtures/XFixtures.php`, with `public const string`
+13. **Fixtures** — `Fixtures/<Perimeter>/XFixtures.php`, with `public const string`
     reference keys; the integration test lists the fixture classes it needs and reaches rows
     through `getReference()`, never through a hardcoded id.
 14. `make pre-commit` — cs-fix, PHPStan level 8, unit suite. Then the integration suite.
@@ -1980,7 +2010,7 @@ and a project started from this blueprint has nothing to migrate.
 | 11 | Exception placement: `ValidationException` in `Domain/Exception`, `EntityNotFoundException` and `DataInputMappingException` in `Infrastructure/Exception` — and use cases import the infrastructure ones. `EntityNotFoundException` is also constructed both with a class name and with a free-text message. | **✔ Keep the split** (domain rule vs infrastructure failure), documented as the one allowed UseCase→Infrastructure import, and **always construct `EntityNotFoundException` with `Entity::class`**. |
 | 12 | `../Makefile` targets are `php-cs-fixer` / `phpstan` (which `.git-hooks/pre-commit` calls correctly), but `../../../CLAUDE.md` and the README both document `make cs-fix` / `make stan`, which do not exist. `reset_db` and `reset-db` both exist with different semantics (the latter runs `--env=dev` inside the *test* container). | **✔ kebab-case everywhere, one name per action, no aliases** (§3.1); the README, the agent-facing doc and the git hook cite only targets that exist, checked in CI. |
 | 13 | `UseCase::execute` signatures vary: `execute(XDataInput)`, `execute(int $id, XDataInput)`, `execute(int $id)`, `execute(string $poolId)`, while `../CLAUDE.md` documents only the first. | **✔ All four are legitimate** and documented as such (§6.10): the DataInput carries the body, scalars carry route identity. |
-| 14 | `Domain/GiftCard/GiftCardEligibility` is a domain service with no suffix, in a folder shaped unlike the rest of `Domain/`; `Domain/DataProvider/Merchant/ClientDataProvider` sits under a sub-domain folder that does not match its entity. | **✔ Domain services live in `Domain/<SubDomain>/` and stay unsuffixed** — their name says what they do; but the sub-domain folder must match the aggregate they serve. |
+| 14 | `Domain/GiftCard/GiftCardEligibility` is a domain service with no suffix, in a folder shaped unlike the rest of `Domain/`; `Domain/DataProvider/Merchant/ClientDataProvider` sits under a sub-domain folder that does not match its entity. | **✔ Domain services live in `Domain/<Perimeter>/` and stay unsuffixed** — their name says what they do; but the perimeter folder must be the one of the aggregate they serve. |
 
 ---
 

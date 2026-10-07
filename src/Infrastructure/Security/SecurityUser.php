@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Security;
 
-use App\Domain\DTO\DataModel\UserDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Registry\User\IdentityProviderRegistry;
 use LogicException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;

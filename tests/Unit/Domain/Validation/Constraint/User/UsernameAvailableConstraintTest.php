@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Validation\Constraint\User;
 
-use App\Domain\DTO\DataModel\UserDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Validation\Constraint\User\UsernameAvailableConstraint;
 use PHPUnit\Framework\TestCase;
 

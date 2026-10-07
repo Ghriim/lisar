@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Factory;
 
-use App\Domain\Registry\Session\SessionAudienceRegistry;
+use App\Domain\Registry\User\SessionAudienceRegistry;
 use DateTimeImmutable;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Cookie;

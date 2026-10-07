@@ -85,4 +85,4 @@ By name, with a search on the name, and filters that combine:
 ## Seeded
 
 41 families and 68 movements, all common and active; the table is readable in
-`src/Fixtures/MovementFixtures.php`.
+`src/Fixtures/Training/MovementFixtures.php`.

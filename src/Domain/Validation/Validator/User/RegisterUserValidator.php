@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Validation\Validator\User;
 
-use App\Domain\DTO\DataModel\UserDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\User\RegisterUserDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\User\EmailAvailableConstraint;

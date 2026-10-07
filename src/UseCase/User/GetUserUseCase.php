@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\UseCase\User;
 
-use App\Domain\DTO\DataModel\UserDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\User\UserDataOutput;
-use App\Domain\Factory\OutputFactory\UserOutputFactory;
-use App\Domain\Gateway\Provider\UserProviderGateway;
+use App\Domain\Factory\OutputFactory\User\UserOutputFactory;
+use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
