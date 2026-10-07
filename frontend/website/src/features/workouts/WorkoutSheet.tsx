@@ -35,6 +35,9 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
     const busy = finish.isPending || remove.isPending || copy.isPending
     const error = failureOf(finish.error ?? remove.error) ?? copy.error
     const name = workoutName(workout)
+    // The API finishes only a workout with sets, every one of them ticked: offered once it would.
+    const sets = workout.blocks.flatMap((block) => block.exercises.flatMap((exercise) => exercise.sets))
+    const isFinishable = sets.length > 0 && sets.every((set) => set.isComplete)
 
     return (
         <Stack>
@@ -73,7 +76,7 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
                 <Row style={{ justifyContent: 'center' }}>
                     <Button
                         icon={Check}
-                        disabled={busy}
+                        disabled={busy || !isFinishable}
                         onClick={() =>
                             finish.mutate(workout.id, {
                                 onSuccess: () => void navigate(`/workouts/${workout.id}/complete`),

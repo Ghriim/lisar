@@ -16,8 +16,13 @@ interface ListItemProps {
     actions?: ReactNode
     /** Colours the left edge: a priority, a status, a muscle group. */
     accent?: string
-    /** Faded and struck through: something already dealt with. */
+    /** Faded and struck through: something already dealt with, and out of the way. */
     muted?: boolean
+    /**
+     * A green left edge: something done that still stands to be read — a set ticked while the
+     * workout runs keeps its measures in full view.
+     */
+    done?: boolean
     /** Shown under the row, in red: what the last action on it answered. */
     error?: string | null
     /** Nested items. Their presence is what makes the row foldable. */
@@ -39,17 +44,25 @@ export function ListItem({
     actions,
     accent,
     muted = false,
+    done = false,
     error = null,
     children,
     defaultUnfolded = false,
 }: ListItemProps) {
     const [unfolded, setUnfolded] = useState(defaultUnfolded)
     const foldable = children !== undefined && children !== null && children !== false
+    const classes = ['list-item']
+    if (muted) {
+        classes.push('list-item-muted')
+    }
+    if (done) {
+        classes.push('list-item-done')
+    }
 
     return (
         <>
             <article
-                className={muted ? 'list-item list-item-muted' : 'list-item'}
+                className={classes.join(' ')}
                 style={{ '--list-item-accent': accent } as CSSProperties}
             >
                 {icon !== undefined && <span className="list-item-lead">{icon}</span>}

@@ -43,6 +43,8 @@ export function ExerciseCard({
 }: ExerciseCardProps) {
     const { movement } = exercise
     const setCount = exercise.sets.length
+    // Green once every one of its sets is: the movement is over for this workout.
+    const isDone = inProgress && setCount > 0 && exercise.sets.every((set) => set.isComplete)
 
     return (
         <ListItem
@@ -50,6 +52,7 @@ export function ExerciseCard({
             note={setCount === 0 ? undefined : `${setCount} série${setCount > 1 ? 's' : ''}`}
             description={exercise.note}
             defaultUnfolded
+            done={isDone}
             meta={
                 <>
                     {!movement.isActive && <Chip>Retiré</Chip>}
@@ -90,8 +93,8 @@ export function ExerciseCard({
                         }
                         title={formatSetMeasures(set, movement)}
                         note={set.rpe === null ? undefined : formatRpe(set.rpe)}
-                        // Done fades out, so what is left to do is what stands out.
-                        muted={inProgress && set.isComplete}
+                        // Done turns green, and stays readable: the next set is often the same again.
+                        done={inProgress && set.isComplete}
                         actions={
                             <>
                                 {inProgress &&

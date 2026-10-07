@@ -421,3 +421,9 @@
     padding: var(--step) calc(var(--step) * 1.5);
     background: rgba(5, 11, 28, 0.5);
 }
+
+/* Done, and left in full view: the left edge turns green, the rest of the frame stays as it is. */
+.list-item-done,
+.list-item-done:hover {
+    border-left-color: var(--success);
+}

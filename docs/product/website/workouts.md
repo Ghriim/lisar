@@ -47,10 +47,12 @@ editable once finished.
   A set is corrected with its pencil and **removed without a question**: it is logged again in
   one gesture.
 - **« Terminer »**, a button with the check icon, centred under the exercises — in progress only —
-  **finishes** the workout and goes to the [closing page](#closing-a-workout).
+  **finishes** the workout and goes to the [closing page](#closing-a-workout). It stays disabled
+  until the workout has a set and every set is ticked — what the API requires to finish it.
 - **While the workout runs**, each set also carries a check, **« Valider »**, to tick it once it
-  is done; a done set fades out and its check becomes **« Décocher »**, for a mis-tap. A finished
-  workout shows neither: every set in it was done.
+  is done; a done set gets **a green left edge**, its measures still in full view, and its check
+  becomes **« Décocher »**, for a mis-tap. A movement whose sets are all done gets one
+  too. A finished workout shows neither the checks nor the green: every set in it was done.
 
 ### Closing a workout
 
