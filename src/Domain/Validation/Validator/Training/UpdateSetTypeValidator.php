@@ -7,6 +7,7 @@ namespace App\Domain\Validation\Validator\Training;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\Input\Training\UpdateSetTypeDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Training\DefaultSetTypeKeptConstraint;
 use App\Domain\Validation\Constraint\Training\SetTypeNameAvailableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 
@@ -24,6 +25,7 @@ final readonly class UpdateSetTypeValidator extends AbstractBaseValidator
     {
         $violations = $this->getViolations($input);
         $violations = SetTypeNameAvailableConstraint::validate($withSameName, $setType->id, $violations);
+        $violations = DefaultSetTypeKeptConstraint::validate($setType, $input->isDefaultType, $violations);
 
         if (false === empty($violations)) {
             throw new ValidationException(self::ERROR_CODE, $violations);

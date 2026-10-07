@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\Factory\OutputFactory\Training;
 
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
+use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutBlockDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
@@ -67,6 +68,7 @@ trait WorkoutOutputFactoriesTestTrait
         $set->id = $id;
         $set->position = $position;
         $set->reps = $reps;
+        $set->setType = $this->workingSetType();
         $set->exercise = $exercise;
         $exercise->sets->add($set);
 
@@ -81,5 +83,16 @@ trait WorkoutOutputFactoriesTestTrait
         $movement->tracksReps = true;
 
         return $movement;
+    }
+
+    private function workingSetType(): SetTypeDataModel
+    {
+        $setType = new SetTypeDataModel();
+        $setType->id = 1;
+        $setType->name = 'Travail';
+        $setType->colour = 'blue';
+        $setType->isDefaultType = true;
+
+        return $setType;
     }
 }

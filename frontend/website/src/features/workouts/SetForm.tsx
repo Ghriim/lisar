@@ -38,7 +38,8 @@ const RPE_OPTIONS: Option[] = Array.from({ length: 19 }, (_, index) => {
 
 /**
  * One set: exactly the measures its movement tracks, then an RPE and a set type, both optional and
- * neither preselected — an untyped set is an ordinary working set.
+ * neither preselected. The empty type is the default one, which the server applies: it is the
+ * placeholder rather than an option, so it is never chosen on anyone's behalf.
  */
 export function SetForm({ workoutId, exerciseId, movement, editing, previous, onDone }: SetFormProps) {
     const add = useAddWorkoutSet()
@@ -54,11 +55,16 @@ export function SetForm({ workoutId, exerciseId, movement, editing, previous, on
     const [duration, setDuration] = useState(durationField(source?.durationInSeconds ?? null))
     const [distance, setDistance] = useState(source?.distanceInMetres?.toString() ?? '')
     const [rpe, setRpe] = useState(editing?.rpe?.toString() ?? '')
-    const [setTypeId, setSetTypeId] = useState(editing?.setType?.id.toString() ?? '')
+    const [setTypeId, setSetTypeId] = useState(
+        editing === null || editing.setType.isDefaultType ? '' : editing.setType.id.toString(),
+    )
 
-    const typeOptions: Option[] = (setTypes.data ?? []).map((type) => ({ value: `${type.id}`, label: type.name }))
+    const defaultType = setTypes.data?.find((type) => type.isDefaultType)
+    const typeOptions: Option[] = (setTypes.data ?? [])
+        .filter((type) => !type.isDefaultType)
+        .map((type) => ({ value: `${type.id}`, label: type.name }))
     // A type retired since stays on the set it is on, through a correction.
-    if (editing?.setType && !typeOptions.some((option) => option.value === `${editing.setType?.id}`)) {
+    if (editing !== null && setTypeId !== '' && !typeOptions.some((option) => option.value === setTypeId)) {
         typeOptions.push({ value: `${editing.setType.id}`, label: editing.setType.name })
     }
 
@@ -142,7 +148,12 @@ export function SetForm({ workoutId, exerciseId, movement, editing, previous, on
                 </Field>
 
                 <Field label="Type (facultatif)" errors={violations.for('setTypeId')}>
-                    <Select value={setTypeId} onChange={setSetTypeId} options={typeOptions} placeholder="Série normale" />
+                    <Select
+                        value={setTypeId}
+                        onChange={setSetTypeId}
+                        options={typeOptions}
+                        placeholder={defaultType?.name ?? 'Par défaut'}
+                    />
                 </Field>
             </FormGrid>
 

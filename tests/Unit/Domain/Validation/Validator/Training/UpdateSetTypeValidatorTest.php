@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\Input\Training\UpdateSetTypeDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Training\DefaultSetTypeKeptConstraint;
 use App\Domain\Validation\Constraint\Training\SetTypeNameAvailableConstraint;
 use App\Domain\Validation\Validator\Training\UpdateSetTypeValidator;
 use PHPUnit\Framework\TestCase;
@@ -81,16 +82,32 @@ final class UpdateSetTypeValidatorTest extends TestCase
         }
     }
 
+    public function testItRejectsUnsettingTheDefault(): void
+    {
+        $current = $this->current();
+        $current->isDefaultType = true;
+
+        try {
+            $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'purple'), $current, null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame([DefaultSetTypeKeptConstraint::DEFAULT_REQUIRED], $exception->violations['isDefaultType']);
+        }
+    }
+
     public function testItAccumulatesEveryViolation(): void
     {
         $other = new SetTypeDataModel();
         $other->id = 99;
 
         try {
-            $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'beige'), $this->current(), $other);
+            $current = $this->current();
+            $current->isActive = false;
+            $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'beige', isDefaultType: true), $current, $other);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(['colour_unknown'], $exception->violations['colour']);
+            self::assertSame([DefaultSetTypeKeptConstraint::DEFAULT_INACTIVE], $exception->violations['isDefaultType']);
             self::assertSame([SetTypeNameAvailableConstraint::NAME_ALREADY_USED], $exception->violations['name']);
         }
     }

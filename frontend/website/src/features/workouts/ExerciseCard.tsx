@@ -1,6 +1,6 @@
 import { Check, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react'
 import type { WorkoutExercise, WorkoutPreviousPerformance, WorkoutSet } from '../../api/types'
-import { Chip, DotChip, IconButton, ListItem, Row } from '../../components'
+import { Chip, IconButton, IndexBadge, ListItem, Row } from '../../components'
 import { setTypeShade } from './setTypeColours'
 import { formatRpe, formatSetMeasures, formatShortDay } from './workoutFormat'
 
@@ -78,12 +78,20 @@ export function ExerciseCard({
                 exercise.sets.map((set, index) => (
                     <ListItem
                         key={set.id}
-                        title={`Série ${index + 1}`}
-                        note={formatSetMeasures(set, movement)}
-                        accent={set.setType === null ? undefined : setTypeShade(set.setType.colour)}
+                        // The rank, framed in the type's colour: the measures are what the row says.
+                        icon={
+                            <IndexBadge
+                                colour={setTypeShade(set.setType.colour)}
+                                label={set.setType.name}
+                                subject={`Série ${index + 1}`}
+                            >
+                                {index + 1}
+                            </IndexBadge>
+                        }
+                        title={formatSetMeasures(set, movement)}
+                        note={set.rpe === null ? undefined : formatRpe(set.rpe)}
                         // Done fades out, so what is left to do is what stands out.
                         muted={inProgress && set.isComplete}
-                        meta={set.setType === null && set.rpe === null ? undefined : <SetChips set={set} />}
                         actions={
                             <>
                                 {inProgress &&
@@ -124,16 +132,6 @@ export function ExerciseCard({
                     />
                 ))}
         </ListItem>
-    )
-}
-
-/** Only for a set that has something to say: an ordinary working set shows no chip at all. */
-function SetChips({ set }: { set: WorkoutSet }) {
-    return (
-        <>
-            {set.setType !== null && <DotChip colour={setTypeShade(set.setType.colour)}>{set.setType.name}</DotChip>}
-            {set.rpe !== null && <Chip>{formatRpe(set.rpe)}</Chip>}
-        </>
     )
 }
 

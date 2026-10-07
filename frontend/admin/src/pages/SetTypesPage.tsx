@@ -15,14 +15,17 @@ import {
     Row,
     SelectField,
     StatusTag,
+    SwitchField,
+    Tag,
     TextField,
     useActiveFilter,
     useNotifier,
 } from '../components'
 
 /**
- * The kinds of set a workout can mark — warm-up, dropset… A set without one is an ordinary
- * working set, so there is no row for that.
+ * The kinds of set a workout can mark — warm-up, dropset… One of them is the default, the ordinary
+ * working set a set takes when it is logged without a type. It moves by being given to another
+ * type, and it is neither retired nor deleted: neither action is offered on it.
  */
 export function SetTypesPage() {
     const notify = useNotifier()
@@ -92,7 +95,16 @@ export function SetTypesPage() {
                 loading={setTypes.isPending}
                 emptyText="Aucun type de série"
                 columns={[
-                    { key: 'name', title: 'Type de série', render: (setType) => setType.name },
+                    {
+                        key: 'name',
+                        title: 'Type de série',
+                        render: (setType) => (
+                            <Row gap={8}>
+                                {setType.name}
+                                {setType.isDefaultType && <Tag colour="blue">défaut</Tag>}
+                            </Row>
+                        ),
+                    },
                     {
                         key: 'colour',
                         title: 'Couleur',
@@ -119,7 +131,7 @@ export function SetTypesPage() {
                                 <Button size="small" onClick={() => setEditing(setType)}>
                                     Modifier
                                 </Button>
-                                {setType.isActive ? (
+                                {setType.isDefaultType ? null : setType.isActive ? (
                                     <Button
                                         size="small"
                                         loading={setActive.isPending && setActive.variables?.id === setType.id}
@@ -135,13 +147,15 @@ export function SetTypesPage() {
                                         Réactiver
                                     </Button>
                                 )}
-                                <ConfirmButton
-                                    question="Supprimer ce type de série ?"
-                                    loading={remove.isPending && remove.variables === setType.id}
-                                    onConfirm={() => remove.mutate(setType.id)}
-                                >
-                                    Supprimer
-                                </ConfirmButton>
+                                {!setType.isDefaultType && (
+                                    <ConfirmButton
+                                        question="Supprimer ce type de série ?"
+                                        loading={remove.isPending && remove.variables === setType.id}
+                                        onConfirm={() => remove.mutate(setType.id)}
+                                    >
+                                        Supprimer
+                                    </ConfirmButton>
+                                )}
                             </Row>
                         ),
                     },
@@ -157,11 +171,15 @@ export function SetTypesPage() {
                     onSubmit={(values) =>
                         save.mutate({
                             id: editing?.id ?? null,
-                            payload: { name: values.name, colour: values.colour },
+                            payload: { name: values.name, colour: values.colour, isDefaultType: values.isDefaultType },
                         })
                     }
                     // Nothing preselected on a creation: the administrator picks the colour.
-                    initialValues={{ name: editing?.name ?? '', colour: editing?.colour }}
+                    initialValues={{
+                        name: editing?.name ?? '',
+                        colour: editing?.colour,
+                        isDefaultType: editing?.isDefaultType ?? false,
+                    }}
                 >
                     <TextField name="name" label="Nom" required autoFocus />
                     <SelectField
@@ -178,6 +196,12 @@ export function SetTypesPage() {
                                 </Row>
                             ),
                         }))}
+                    />
+                    <SwitchField
+                        name="isDefaultType"
+                        label="Type par défaut"
+                        disabled={editing?.isDefaultType === true}
+                        hint="Le donner à celui-ci le retire à celui qui l’avait. Il ne se retire jamais seul."
                     />
                 </FormModal>
             )}

@@ -13,6 +13,9 @@ interface SetTypeProviderGateway
     /** Ignoring case: the column's collation does the comparing. */
     public function findOneByName(string $name): ?SetTypeDataModel;
 
+    /** The one a set takes when it is logged without one. */
+    public function findOneDefault(): ?SetTypeDataModel;
+
     /**
      * Every set type for the back-office, by name. `$isActive` narrows it when it is not null —
      * true for the offered ones, false for the retired ones.

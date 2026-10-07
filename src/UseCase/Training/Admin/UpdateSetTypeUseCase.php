@@ -16,8 +16,9 @@ use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
 /**
- * Renaming or recolouring a set type. The sets already carrying it follow: they point at the row,
- * not at a copy of its name.
+ * Renaming or recolouring a set type, or making it the default. The sets already carrying it
+ * follow: they point at the row, not at a copy of its name. Becoming the default takes it from the
+ * type that had it; the default is never unset, only given away.
  */
 final readonly class UpdateSetTypeUseCase implements UseCaseInterface
 {
@@ -44,7 +45,18 @@ final readonly class UpdateSetTypeUseCase implements UseCaseInterface
         $setType->name = $input->name;
         $setType->colour = $input->colour;
 
-        $this->setTypePersisterGateway->update($setType);
+        $changed = [$setType];
+        if (true === $input->isDefaultType && false === $setType->isDefaultType) {
+            $previous = $this->setTypeProviderGateway->findOneDefault();
+            if (null !== $previous) {
+                $previous->isDefaultType = false;
+                $changed[] = $previous;
+            }
+
+            $setType->isDefaultType = true;
+        }
+
+        $this->setTypePersisterGateway->updateMany($changed);
 
         return $this->outputFactory->buildOne($setType);
     }

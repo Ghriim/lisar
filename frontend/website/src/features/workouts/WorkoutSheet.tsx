@@ -2,7 +2,7 @@ import { Check, Pencil, Repeat, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Workout } from '../../api/types'
-import { ConfirmDialog, IconButton, Modal, Row, Stack } from '../../components'
+import { Button, ConfirmDialog, IconButton, Modal, Row, Stack } from '../../components'
 import { useDeleteWorkout, useFinishWorkout } from './queries'
 import { useCopyWorkoutAction } from './useCopyWorkoutAction'
 import { WorkoutDetailsForm } from './WorkoutDetailsForm'
@@ -20,7 +20,8 @@ interface WorkoutSheetProps {
 /**
  * One workout on its own page: the one in progress as it is logged, or a past one to read and
  * correct. Its overview with what can be done to it, its bilan once finished, then its exercises.
- * Finishing it goes to the page that closes it.
+ * Finishing it is a button of its own under the exercises — where the last set was just ticked —
+ * and goes to the page that closes it.
  */
 export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
     const [panel, setPanel] = useState<'details' | 'delete' | null>(null)
@@ -43,19 +44,6 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
                 actions={
                     <Row style={{ gap: 6 }}>
                         <IconButton icon={Pencil} label="Modifier" subject={name} onClick={() => setPanel('details')} />
-                        {workout.isInProgress && (
-                            <IconButton
-                                icon={Check}
-                                label="Terminer"
-                                subject={name}
-                                disabled={busy}
-                                onClick={() =>
-                                    finish.mutate(workout.id, {
-                                        onSuccess: () => void navigate(`/workouts/${workout.id}/complete`),
-                                    })
-                                }
-                            />
-                        )}
                         {!workout.isInProgress && copy.isOffered && (
                             <IconButton
                                 icon={Repeat}
@@ -80,6 +68,22 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
             {!workout.isInProgress && <WorkoutStatsCard workoutId={workout.id} />}
 
             <WorkoutExercisesCard workout={workout} />
+
+            {workout.isInProgress && (
+                <Row style={{ justifyContent: 'center' }}>
+                    <Button
+                        icon={Check}
+                        disabled={busy}
+                        onClick={() =>
+                            finish.mutate(workout.id, {
+                                onSuccess: () => void navigate(`/workouts/${workout.id}/complete`),
+                            })
+                        }
+                    >
+                        {finish.isPending ? 'Terminer…' : 'Terminer'}
+                    </Button>
+                </Row>
+            )}
 
             {panel === 'details' && (
                 <Modal title="Modifier la séance" onClose={close}>

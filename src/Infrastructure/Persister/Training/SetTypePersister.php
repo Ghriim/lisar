@@ -23,6 +23,16 @@ final class SetTypePersister extends AbstractBaseMysqlPersister implements SetTy
         return $this->persistAndStampUpdate($setType);
     }
 
+    /** @param SetTypeDataModel[] $setTypes */
+    public function updateMany(array $setTypes): void
+    {
+        foreach ($setTypes as $setType) {
+            $this->persistAndStampUpdate($setType, flush: false);
+        }
+
+        $this->entityManager->flush();
+    }
+
     public function delete(SetTypeDataModel $setType): void
     {
         $this->persistDelete($setType);

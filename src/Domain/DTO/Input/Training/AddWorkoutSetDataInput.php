@@ -32,7 +32,7 @@ final readonly class AddWorkoutSetDataInput implements DataInputInterface
         #[Assert\DivisibleBy(value: 0.5, message: 'rpe_invalid')]
         public ?float $rpe = null,
 
-        // None: an ordinary working set.
+        // None: the default type, an ordinary working set.
         public ?int $setTypeId = null,
     ) {
     }

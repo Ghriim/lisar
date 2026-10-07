@@ -15,4 +15,7 @@ final class SetTypeDataOutput
     public string $colour;
 
     public bool $isActive;
+
+    /** The one a set takes when it is logged without one. Exactly one type carries it. */
+    public bool $isDefaultType;
 }

@@ -22,6 +22,9 @@ final readonly class CreateSetTypeDataInput implements DataInputInterface
 
         #[Assert\Choice(choices: SetTypeColourRegistry::ALL, message: 'colour_unknown')]
         public string $colour,
+
+        /** Only ever set to true: the default moves by being given to another type. */
+        public bool $isDefaultType = false,
     ) {
     }
 }

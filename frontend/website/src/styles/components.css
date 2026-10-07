@@ -76,6 +76,24 @@
     color: var(--text-dim);
 }
 
+/* A rank in a small frame: the frame and the figure in the colour of what it ranks, the glass
+   behind them barely tinted with it. */
+.index-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 4px;
+    border: 1px solid var(--index-badge-colour, var(--accent-line));
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--index-badge-colour, var(--accent)) 14%, transparent);
+    color: var(--index-badge-colour, var(--accent));
+    font-family: var(--font-system);
+    font-size: 11px;
+    line-height: 1;
+}
+
 .chip-dot {
     width: 6px;
     height: 6px;

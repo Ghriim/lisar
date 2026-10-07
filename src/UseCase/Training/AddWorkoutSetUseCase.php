@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCase\Training;
 
+use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
@@ -66,7 +67,8 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
         $set = new WorkoutSetDataModel();
         $set->exercise = $exercise;
         $set->position = $exercise->nextSetPosition();
-        $set->setType = $setType;
+        // No type named: the default one, an ordinary working set.
+        $set->setType = $setType ?? $this->findDefaultSetType();
         $set->reps = $input->reps;
         $set->weightInKilograms = $input->weightInKilograms;
         $set->durationInSeconds = $input->durationInSeconds;
@@ -78,5 +80,18 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
         $exercise->sets->add($set);
 
         return $this->outputFactory->buildOne($workout);
+    }
+
+    /**
+     * @throws DataModelNotFoundException
+     */
+    private function findDefaultSetType(): SetTypeDataModel
+    {
+        $default = $this->setTypeProviderGateway->findOneDefault();
+        if (null === $default) {
+            throw new DataModelNotFoundException(SetTypeDataModel::class);
+        }
+
+        return $default;
     }
 }

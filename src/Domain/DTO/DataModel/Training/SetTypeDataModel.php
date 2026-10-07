@@ -11,8 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * What kind of set a logged set was — a warm-up, a dropset, one taken to failure. Reference data
- * an administrator maintains. A set carries one or none: a set without a type is an ordinary
- * working set, so there is no "normal" row.
+ * an administrator maintains. A set always carries one: logged without one, it takes the default
+ * type — the ordinary working set.
  *
  * The name is unique ignoring case: the column's collation compares case-insensitively, so
  * "Dropset" and "dropset" are the same name to the index and to every lookup.
@@ -35,6 +35,11 @@ class SetTypeDataModel implements DataModelInterface
     // Inactive: no longer offered to new sets; the sets already carrying it keep it.
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
     public bool $isActive = true;
+
+    // Exactly one set type carries this, and it applies to sets logged without one. It is never
+    // retired nor deleted: it moves by being given to another type.
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    public bool $isDefaultType = false;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     public ?DateTimeImmutable $createdAt = null;

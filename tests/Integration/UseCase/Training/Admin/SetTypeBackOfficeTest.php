@@ -16,7 +16,9 @@ use App\Domain\DTO\Input\Training\UpdateSetTypeDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Training\SetTypeProviderGateway;
 use App\Domain\Registry\Training\SetTypeColourRegistry;
+use App\Domain\Validation\Constraint\Training\DefaultSetTypeKeptConstraint;
 use App\Domain\Validation\Constraint\Training\SetTypeNameAvailableConstraint;
+use App\Domain\Validation\Constraint\Training\SetTypeNotDefaultConstraint;
 use App\Domain\Validation\Constraint\Training\SetTypeUnusedConstraint;
 use App\Domain\Validation\Validator\Training\CreateSetTypeValidator;
 use App\Domain\Validation\Validator\Training\UpdateSetTypeValidator;
@@ -42,7 +44,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     use LoadFixturesTrait;
 
     /** How many set types SetTypeFixtures seeds. */
-    private const int SEEDED = 4;
+    private const int SEEDED = 5;
 
     private ListSetTypesForAdminUseCase $list;
     private CreateSetTypeUseCase $create;
@@ -69,7 +71,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
 
     public function testItListsEverySetTypeByName(): void
     {
-        self::assertSame(['Back-off', 'Dropset', 'Échauffement', 'Échec'], $this->names(new ListSetTypesForAdminDataInput()));
+        self::assertSame(['Back-off', 'Dropset', 'Échauffement', 'Échec', 'Travail'], $this->names(new ListSetTypesForAdminDataInput()));
     }
 
     public function testTheListFiltersByStatus(): void
@@ -88,6 +90,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
         self::assertSame('Rest-pause', $output->name);
         self::assertSame(SetTypeColourRegistry::TEAL, $output->colour);
         self::assertTrue($output->isActive);
+        self::assertFalse($output->isDefaultType);
 
         $setType = $this->setTypeProviderGateway->findOneById($output->id);
         self::assertNotNull($setType);
@@ -179,6 +182,81 @@ final class SetTypeBackOfficeTest extends KernelTestCase
         }
     }
 
+    /** Exactly one default: a type created as the default takes it from the one that had it. */
+    public function testASetTypeCreatedAsTheDefaultTakesIt(): void
+    {
+        $output = $this->create->execute(new CreateSetTypeDataInput('Rest-pause', SetTypeColourRegistry::TEAL, isDefaultType: true));
+
+        self::assertTrue($output->isDefaultType);
+        self::assertSame($output->id, $this->setTypeProviderGateway->findOneDefault()?->id);
+        self::assertFalse($this->working()->isDefaultType);
+    }
+
+    public function testAnUpdateGivesTheDefaultToAnotherSetType(): void
+    {
+        $id = $this->dropset()->id ?? 0;
+
+        $output = $this->update->execute($id, new UpdateSetTypeDataInput('Dropset', SetTypeColourRegistry::PURPLE, isDefaultType: true));
+
+        self::assertTrue($output->isDefaultType);
+        self::assertSame($id, $this->setTypeProviderGateway->findOneDefault()?->id);
+        self::assertFalse($this->setTypeProviderGateway->findOneById($this->working()->id ?? 0)?->isDefaultType);
+    }
+
+    /** The default is never unset, only given away: a set logged without a type has to get one. */
+    public function testItRefusesToUnsetTheDefault(): void
+    {
+        try {
+            $this->update->execute($this->working()->id ?? 0, new UpdateSetTypeDataInput('Travail', SetTypeColourRegistry::BLUE));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateSetTypeValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame([DefaultSetTypeKeptConstraint::DEFAULT_REQUIRED], $exception->violations['isDefaultType']);
+        }
+
+        self::assertTrue($this->setTypeProviderGateway->findOneById($this->working()->id ?? 0)?->isDefaultType);
+    }
+
+    public function testItRefusesToGiveTheDefaultToARetiredSetType(): void
+    {
+        $id = $this->dropset()->id ?? 0;
+        $this->deactivate->execute($id);
+
+        try {
+            $this->update->execute($id, new UpdateSetTypeDataInput('Dropset', SetTypeColourRegistry::PURPLE, isDefaultType: true));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateSetTypeValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame([DefaultSetTypeKeptConstraint::DEFAULT_INACTIVE], $exception->violations['isDefaultType']);
+        }
+    }
+
+    public function testItRefusesToDeactivateTheDefault(): void
+    {
+        try {
+            $this->deactivate->execute($this->working()->id ?? 0);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(DeactivateSetTypeUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame([SetTypeNotDefaultConstraint::IS_THE_DEFAULT], $exception->violations['id']);
+        }
+
+        self::assertTrue($this->setTypeProviderGateway->findOneById($this->working()->id ?? 0)?->isActive);
+    }
+
+    public function testItRefusesToDeleteTheDefault(): void
+    {
+        try {
+            $this->delete->execute($this->working()->id ?? 0);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(DeleteSetTypeUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame([SetTypeNotDefaultConstraint::IS_THE_DEFAULT], $exception->violations['id']);
+        }
+
+        self::assertNotNull($this->setTypeProviderGateway->findOneById($this->working()->id ?? 0));
+    }
+
     public function testItFailsOnAnUnknownSetType(): void
     {
         $this->expectException(DataModelNotFoundException::class);
@@ -190,6 +268,11 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     private function names(ListSetTypesForAdminDataInput $input): array
     {
         return array_map(static fn ($setType) => $setType->name, $this->list->execute($input));
+    }
+
+    private function working(): SetTypeDataModel
+    {
+        return $this->getReference(SetTypeFixtures::WORKING, SetTypeDataModel::class);
     }
 
     private function dropset(): SetTypeDataModel

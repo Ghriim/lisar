@@ -20,6 +20,7 @@ final class WorkoutSetOutputFactoryTest extends TestCase
         $set->reps = 8;
         $set->weightInKilograms = 62.5;
         $set->isComplete = true;
+        $set->setType = $this->workingSetType();
 
         $output = $this->setFactory()->buildOne($set);
 
@@ -27,7 +28,8 @@ final class WorkoutSetOutputFactoryTest extends TestCase
         self::assertSame(8, $output->reps);
         self::assertSame(62.5, $output->weightInKilograms);
         self::assertNull($output->rpe);
-        self::assertNull($output->setType);
+        self::assertSame('Travail', $output->setType->name);
+        self::assertTrue($output->setType->isDefaultType);
         self::assertTrue($output->isComplete);
     }
 
@@ -44,7 +46,8 @@ final class WorkoutSetOutputFactoryTest extends TestCase
 
         $output = $this->setFactory()->buildOne($set);
 
-        self::assertSame('Dropset', $output->setType?->name);
+        self::assertSame('Dropset', $output->setType->name);
+        self::assertFalse($output->setType->isDefaultType);
         self::assertSame(SetTypeColourRegistry::PURPLE, $output->setType->colour);
     }
 }

@@ -115,11 +115,14 @@ export interface SetType {
     name: string
     colour: string
     isActive: boolean
+    /** The one a set takes when it is logged without one. Exactly one type carries it. */
+    isDefaultType: boolean
 }
 
 export interface SetTypePayload {
     name: string
     colour: string
+    isDefaultType: boolean
 }
 
 export interface MuscleGroup {

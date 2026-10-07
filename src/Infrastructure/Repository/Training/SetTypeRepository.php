@@ -38,6 +38,15 @@ final class SetTypeRepository extends ServiceEntityRepository implements SetType
             ->getOneOrNullResult();
     }
 
+    public function findOneDefault(): ?SetTypeDataModel
+    {
+        return $this->createQueryBuilder('setType')
+            ->andWhere('setType.isDefaultType = true')
+            ->getQuery()
+            ->setMaxResults(1)
+            ->getOneOrNullResult();
+    }
+
     /** @return list<SetTypeDataModel> */
     public function findAllForAdminList(?bool $isActive): array
     {

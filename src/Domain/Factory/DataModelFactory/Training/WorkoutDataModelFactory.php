@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Factory\DataModelFactory\Training;
 
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
+use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutBlockDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
@@ -22,10 +23,10 @@ final readonly class WorkoutDataModelFactory
      * not ticked. The workout's own note and feeling stay behind: they tell what happened that day.
      *
      * Only what is offered now is taken over: a movement retired since is left out, and a block
-     * left empty with it. A set type retired since is dropped from its set. A set keeps only the
-     * measures its movement tracks now, and is left out when one it now tracks is missing.
+     * left empty with it. A set type retired since gives way to `$defaultSetType`. A set keeps only
+     * the measures its movement tracks now, and is left out when one it now tracks is missing.
      */
-    public function buildCopy(WorkoutDataModel $source, DateTimeImmutable $startedAt): WorkoutDataModel
+    public function buildCopy(WorkoutDataModel $source, DateTimeImmutable $startedAt, SetTypeDataModel $defaultSetType): WorkoutDataModel
     {
         $workout = new WorkoutDataModel();
         $workout->owner = $source->owner;
@@ -42,7 +43,7 @@ final readonly class WorkoutDataModelFactory
                     continue;
                 }
 
-                $block->exercises->add($this->copyExercise($sourceExercise, $block));
+                $block->exercises->add($this->copyExercise($sourceExercise, $block, $defaultSetType));
             }
 
             if (false === $block->exercises->isEmpty()) {
@@ -72,7 +73,7 @@ final readonly class WorkoutDataModelFactory
         return $leftOut;
     }
 
-    private function copyExercise(WorkoutExerciseDataModel $source, WorkoutBlockDataModel $block): WorkoutExerciseDataModel
+    private function copyExercise(WorkoutExerciseDataModel $source, WorkoutBlockDataModel $block, SetTypeDataModel $defaultSetType): WorkoutExerciseDataModel
     {
         $exercise = new WorkoutExerciseDataModel();
         $exercise->block = $block;
@@ -81,7 +82,7 @@ final readonly class WorkoutDataModelFactory
         $exercise->note = $source->note;
 
         foreach ($source->orderedSets() as $sourceSet) {
-            $set = $this->copySet($sourceSet, $exercise);
+            $set = $this->copySet($sourceSet, $exercise, $defaultSetType);
             if (null !== $set) {
                 $exercise->sets->add($set);
             }
@@ -90,7 +91,7 @@ final readonly class WorkoutDataModelFactory
         return $exercise;
     }
 
-    private function copySet(WorkoutSetDataModel $source, WorkoutExerciseDataModel $exercise): ?WorkoutSetDataModel
+    private function copySet(WorkoutSetDataModel $source, WorkoutExerciseDataModel $exercise, SetTypeDataModel $defaultSetType): ?WorkoutSetDataModel
     {
         $movement = $exercise->movement;
 
@@ -102,7 +103,7 @@ final readonly class WorkoutDataModelFactory
         $set->durationInSeconds = true === $movement->tracksDuration ? $source->durationInSeconds : null;
         $set->distanceInMetres = true === $movement->tracksDistance ? $source->distanceInMetres : null;
         $set->rpe = $source->rpe;
-        $set->setType = true === $source->setType?->isActive ? $source->setType : null;
+        $set->setType = true === $source->setType->isActive ? $source->setType : $defaultSetType;
         $set->isComplete = false;
 
         $violations = WorkoutSetMeasuresConstraint::validate($movement, $set->reps, $set->weightInKilograms, $set->durationInSeconds, $set->distanceInMetres);

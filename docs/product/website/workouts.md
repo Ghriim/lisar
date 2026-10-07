@@ -26,8 +26,7 @@ editable once finished.
 
 - **Its panel** carries its name, and lists every field: start, end (« En cours » while it runs),
   duration — **ticking every half minute** while it runs — feeling and note. Its actions:
-  the pencil opens name, feeling and note in a window; the check **finishes** it (in progress
-  only) and goes to the [closing page](#closing-a-workout); **« Refaire »** starts a new workout
+  the pencil opens name, feeling and note in a window; **« Refaire »** starts a new workout
   [from it](#starting-from-a-past-workout) (finished, and only while none is in progress); the bin
   **abandons** it (in progress) or **deletes** it (finished), after asking.
 - **« Bilan »**, on a finished workout only, between that panel and the exercises: see below.
@@ -41,11 +40,14 @@ editable once finished.
 - **Each movement** shows its note, a « Retiré » chip if it was retired since, and **the last
   time**: one chip per set from the previous workout it was done in, or « Jamais fait avant. »
   Its plus logs a set, its pencil edits its note; inside a superset, a bin removes it alone.
-- **Each set** reads « Série 2 — 10 reps · 60 kg », « 10 reps / côté » for a unilateral movement,
-  durations as « 45 s » or « 1:30 », distances as « 800 m » or « 5,2 km ». A typed set is edged
-  and chipped in its type's colour, an RPE gets its own chip; an ordinary set shows neither.
+- **Each set** is one line: its rank in a small frame, **in its type's colour** — the type's name
+  on hover — then its measures, in full white: « 10 reps · 60 kg », « 10 reps / côté » for a
+  unilateral movement, durations as « 45 s » or « 1:30 », distances as « 800 m » or « 5,2 km ».
+  An RPE follows on the same line, dimmed and unframed: « RPE 8,5 ».
   A set is corrected with its pencil and **removed without a question**: it is logged again in
   one gesture.
+- **« Terminer »**, a button with the check icon, centred under the exercises — in progress only —
+  **finishes** the workout and goes to the [closing page](#closing-a-workout).
 - **While the workout runs**, each set also carries a check, **« Valider »**, to tick it once it
   is done; a done set fades out and its check becomes **« Décocher »**, for a mis-tap. A finished
   workout shows neither: every set in it was done.
@@ -68,7 +70,8 @@ to its page.
 ### Logging a set
 
 A window with **only the measures the movement tracks**, then RPE and type, both « facultatif »
-and empty. The measures **open on the previous set** — the last one of this movement in this
+and empty. The empty type reads as the default type's name — it is what the server applies — and
+the default is not offered again among the choices. The measures **open on the previous set** — the last one of this movement in this
 workout, or else the first one of the last time: a load is a measurement, and the next is
 almost always the last again. A weight takes a comma; a duration is typed in seconds (« 90 ») or
 as a stopwatch reads (« 1:30 »).
@@ -133,8 +136,10 @@ On top of the measures, and both optional:
 
 - **RPE**, 1 to 10 by halves (`rpe_invalid`);
 - **a set type** from the [admin list](../admin/set-types.md), active only (`set_type_unknown`,
-  `set_type_inactive`). **No type means an ordinary working set**, and nothing is preselected. A
-  set already carrying a type retired since keeps it through a correction.
+  `set_type_inactive`). **A set always carries one**: none named, at logging or at a correction,
+  means the [default type](../admin/set-types.md), an ordinary working set — nothing is
+  preselected, the server applies it. A set already carrying a type retired since keeps it through
+  a correction.
 
 **A unilateral movement's set covers both sides**, and its reps count per side: the front reads
 it « 10 reps / côté ». No side is recorded.
@@ -161,8 +166,8 @@ laid out like that one, and goes straight to its page.
   happened that day, not what is about to.
 - **Only what is offered now is taken over.** A movement retired since, or in a family retired
   since, is **left out**, and a block left without a movement goes with it. The new workout's
-  page says which movements were left out, once, on arrival. A set type retired since is dropped
-  from the set, which becomes an ordinary working set.
+  page says which movements were left out, once, on arrival. A set type retired since gives way
+  to the default type.
 - **A set follows what its movement tracks now.** A measure the movement no longer tracks is
   dropped; a set missing a measure it now tracks is left out.
 - **One workout in progress at a time** holds here too: doing one again is refused while one is

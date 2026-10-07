@@ -54,6 +54,9 @@ const MESSAGES: Record<string, string> = {
     colour_unknown: 'Cette couleur n’est pas dans la palette.',
     set_type_name_already_used: 'Un type de série porte déjà ce nom.',
     set_type_in_use: 'Des séries portent ce type : désactivez-le plutôt.',
+    set_type_is_the_default: 'C’est le type par défaut : donnez-le à un autre d’abord.',
+    default_set_type_required: 'Le défaut ne se retire pas, il se donne à un autre type.',
+    default_set_type_inactive: 'Un type désactivé ne peut pas être le type par défaut.',
 }
 
 export function humanise(code: string): string {

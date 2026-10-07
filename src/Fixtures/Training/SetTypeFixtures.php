@@ -11,20 +11,23 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
 /**
- * The kinds of set worth marking, all active. No "working set" row: a set without a type is one.
+ * The kinds of set, all active. « Travail », the ordinary working set, is the default: a set
+ * logged without a type takes it.
  */
 final class SetTypeFixtures extends Fixture
 {
+    public const string WORKING = 'set-type-working';
     public const string WARM_UP = 'set-type-warm-up';
     public const string DROPSET = 'set-type-dropset';
     public const string FAILURE = 'set-type-failure';
     public const string BACK_OFF = 'set-type-back-off';
 
     private const array SEEDED = [
+        self::WORKING => ['Travail', SetTypeColourRegistry::BLUE],
         self::WARM_UP => ['Échauffement', SetTypeColourRegistry::ORANGE],
         self::DROPSET => ['Dropset', SetTypeColourRegistry::PURPLE],
         self::FAILURE => ['Échec', SetTypeColourRegistry::RED],
-        self::BACK_OFF => ['Back-off', SetTypeColourRegistry::BLUE],
+        self::BACK_OFF => ['Back-off', SetTypeColourRegistry::TEAL],
     ];
 
     public function __construct(private readonly SetTypePersisterGateway $setTypePersisterGateway)
@@ -37,6 +40,7 @@ final class SetTypeFixtures extends Fixture
             $setType = new SetTypeDataModel();
             $setType->name = $name;
             $setType->colour = $colour;
+            $setType->isDefaultType = self::WORKING === $reference;
 
             $this->setTypePersisterGateway->create($setType);
             $this->addReference($reference, $setType);

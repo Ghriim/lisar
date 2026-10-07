@@ -15,7 +15,8 @@ use App\Domain\Validation\Validator\Training\CreateSetTypeValidator;
 use App\UseCase\UseCaseInterface;
 
 /**
- * Adding a set type, offered to new sets at once.
+ * Adding a set type, offered to new sets at once. Made the default, it takes the default from the
+ * type that had it: there is exactly one.
  */
 final readonly class CreateSetTypeUseCase implements UseCaseInterface
 {
@@ -37,9 +38,25 @@ final readonly class CreateSetTypeUseCase implements UseCaseInterface
         $setType = new SetTypeDataModel();
         $setType->name = $input->name;
         $setType->colour = $input->colour;
+        $setType->isDefaultType = $input->isDefaultType;
+
+        if (true === $setType->isDefaultType) {
+            $this->takeTheDefault();
+        }
 
         $this->setTypePersisterGateway->create($setType);
 
         return $this->outputFactory->buildOne($setType);
+    }
+
+    private function takeTheDefault(): void
+    {
+        $previous = $this->setTypeProviderGateway->findOneDefault();
+        if (null === $previous) {
+            return;
+        }
+
+        $previous->isDefaultType = false;
+        $this->setTypePersisterGateway->update($previous);
     }
 }

@@ -116,7 +116,7 @@ final class WorkoutFixtures extends Fixture implements DependentFixtureInterface
         $set->weightInKilograms = $weight;
         $set->distanceInMetres = $distance;
         $set->rpe = $rpe;
-        $set->setType = $setType;
+        $set->setType = $setType ?? $this->getReference(SetTypeFixtures::WORKING, SetTypeDataModel::class);
         // Alice's workout is finished: every set in it was done.
         $set->isComplete = true;
         $this->workoutSetPersisterGateway->create($set);

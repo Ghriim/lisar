@@ -14,7 +14,8 @@ use Doctrine\ORM\Mapping as ORM;
  * duration, a distance — and none of the others. For a unilateral movement a set covers both
  * sides, and its reps are counted per side.
  *
- * A set without a type is an ordinary working set; a type marks the others — a warm-up, a dropset.
+ * A set always carries a type: the default one for an ordinary working set, another to mark a
+ * warm-up, a dropset.
  *
  * A set is logged before it is done — its measures are what is about to be lifted — and ticked
  * once it is. A finished workout holds only ticked sets: one is not finished while a set is left.
@@ -36,8 +37,8 @@ class WorkoutSetDataModel implements DataModelInterface
 
     // RESTRICT: a set type a set carries cannot be deleted, only retired.
     #[ORM\ManyToOne(targetEntity: SetTypeDataModel::class)]
-    #[ORM\JoinColumn(name: 'set_type_id', nullable: true, onDelete: 'RESTRICT')]
-    public ?SetTypeDataModel $setType = null;
+    #[ORM\JoinColumn(name: 'set_type_id', nullable: false, onDelete: 'RESTRICT')]
+    public SetTypeDataModel $setType;
 
     #[ORM\Column(nullable: true)]
     public ?int $reps = null;

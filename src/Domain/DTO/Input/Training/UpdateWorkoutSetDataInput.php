@@ -8,8 +8,9 @@ use App\Domain\DTO\Input\DataInputInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Correcting a set. The whole of it, every time: a measure or a set type left out is cleared, and
- * the same rules as adding one hold — except that a set type retired since may stay.
+ * Correcting a set. The whole of it, every time: a measure left out is cleared, a set type left out
+ * goes back to the default, and the same rules as adding one hold — except that a set type retired
+ * since may stay.
  */
 final readonly class UpdateWorkoutSetDataInput implements DataInputInterface
 {
@@ -31,7 +32,7 @@ final readonly class UpdateWorkoutSetDataInput implements DataInputInterface
         #[Assert\DivisibleBy(value: 0.5, message: 'rpe_invalid')]
         public ?float $rpe = null,
 
-        // None: an ordinary working set.
+        // None: the default type, an ordinary working set.
         public ?int $setTypeId = null,
     ) {
     }

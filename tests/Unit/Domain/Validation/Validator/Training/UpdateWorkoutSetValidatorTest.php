@@ -115,14 +115,19 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
         return $setType;
     }
 
-    /** A set carrying no type: a retired one is refused on it, like on a new set. */
+    /** A set carrying the default type: another, retired one is refused on it, like on a new set. */
     private function set(): WorkoutSetDataModel
     {
         $exercise = new WorkoutExerciseDataModel();
         $exercise->movement = $this->bench();
 
+        $default = new SetTypeDataModel();
+        $default->id = 2;
+        $default->isDefaultType = true;
+
         $set = new WorkoutSetDataModel();
         $set->exercise = $exercise;
+        $set->setType = $default;
 
         return $set;
     }

@@ -60,7 +60,7 @@ final class AdminSetTypeController extends AbstractController
     #[OA\RequestBody(required: true, content: new Model(type: UpdateSetTypeDataInput::class))]
     #[OA\Response(response: Response::HTTP_OK, description: 'Updated.', content: new OA\JsonContent(ref: new Model(type: SetTypeDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such set type.')]
-    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Blank or already-used name, or unknown colour.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Blank or already-used name, unknown colour, the default unset, or given to a retired type.')]
     public function updateSetType(
         int $id,
         #[MapDataInput] UpdateSetTypeDataInput $input,
@@ -73,6 +73,7 @@ final class AdminSetTypeController extends AbstractController
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_OK, description: 'No longer offered to new sets.', content: new OA\JsonContent(ref: new Model(type: SetTypeDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such set type.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'It is the default set type.')]
     public function deactivateSetType(int $id, DeactivateSetTypeUseCase $useCase): JsonResponse
     {
         return new JsonResponse($useCase->execute($id));
@@ -91,7 +92,7 @@ final class AdminSetTypeController extends AbstractController
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'Deleted.')]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such set type.')]
-    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A logged set carries it.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A logged set carries it, or it is the default set type.')]
     public function deleteSetType(int $id, DeleteSetTypeUseCase $useCase): JsonResponse
     {
         $useCase->execute($id);

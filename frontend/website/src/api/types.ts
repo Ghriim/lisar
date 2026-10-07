@@ -174,6 +174,8 @@ export interface SetType {
     /** One of the palette codes the API knows — red, orange… — never a hex value. */
     colour: string
     isActive: boolean
+    /** The one a set takes when it is logged without one: the ordinary working set. */
+    isDefaultType: boolean
 }
 
 /** A movement as a workout picker offers it: only what a set needs to know about it. */
@@ -205,7 +207,8 @@ export interface WorkoutMovement {
 /** A set carries exactly the measures its movement tracks; the others are null. */
 export interface WorkoutSet {
     id: number
-    setType: SetType | null
+    /** Always there: an ordinary working set carries the default type. */
+    setType: SetType
     reps: number | null
     weightInKilograms: number | null
     durationInSeconds: number | null

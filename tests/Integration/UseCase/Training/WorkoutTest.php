@@ -190,11 +190,32 @@ final class WorkoutTest extends KernelTestCase
         self::assertSame(62.5, $set->weightInKilograms);
         self::assertSame(8.5, $set->rpe);
         self::assertNull($set->durationInSeconds);
-        self::assertSame('Dropset', $set->setType?->name);
+        self::assertSame('Dropset', $set->setType->name);
 
         // Read back from the database, not from what the use case held.
         $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
         self::assertSame(62.5, $reread->blocks[0]->exercises[0]->sets[0]->weightInKilograms);
+    }
+
+    /** No type named: the set takes the default one, at logging and at a correction alike. */
+    public function testASetWithoutATypeTakesTheDefault(): void
+    {
+        $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP);
+
+        $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 10));
+        $set = $workout->blocks[0]->exercises[0]->sets[0];
+        self::assertSame('Travail', $set->setType->name);
+        self::assertTrue($set->setType->isDefaultType);
+
+        $workout = $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
+            $this->idOf($this->alice), $workout->id, $set->id,
+            new UpdateWorkoutSetDataInput(reps: 10, setTypeId: $this->setTypeId(SetTypeFixtures::DROPSET)),
+        );
+        $output = $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
+            $this->idOf($this->alice), $workout->id, $set->id, new UpdateWorkoutSetDataInput(reps: 10),
+        );
+
+        self::assertSame('Travail', $output->blocks[0]->exercises[0]->sets[0]->setType->name);
     }
 
     public function testASetMissesNoTrackedMeasureAndCarriesNoOther(): void
@@ -238,7 +259,7 @@ final class WorkoutTest extends KernelTestCase
 
         $set = $output->blocks[0]->exercises[0]->sets[0];
         self::assertSame(12, $set->reps);
-        self::assertSame('Dropset', $set->setType?->name);
+        self::assertSame('Dropset', $set->setType->name);
     }
 
     public function testSetsComeInTheOrderTheyWereLoggedAndCanBeRemoved(): void
@@ -578,7 +599,7 @@ final class WorkoutTest extends KernelTestCase
         $bench = $copy->blocks[0]->exercises[0]->sets;
         self::assertSame([10, 8, 8, 7], array_map(static fn ($set) => $set->reps, $bench));
         self::assertSame([40.0, 60.0, 60.0, 60.0], array_map(static fn ($set) => $set->weightInKilograms, $bench));
-        self::assertSame('Échauffement', $bench[0]->setType?->name);
+        self::assertSame('Échauffement', $bench[0]->setType->name);
         self::assertSame(7.5, $bench[1]->rpe);
         self::assertSame([24.0, 24.0], array_map(static fn ($set) => $set->weightInKilograms, $copy->blocks[1]->exercises[1]->sets));
 
@@ -611,8 +632,8 @@ final class WorkoutTest extends KernelTestCase
 
         self::assertSame(['Push-up'], $output->skippedMovements);
         self::assertSame(['Farmer walk (dumbbell)'], $this->movementNames($output->workout, 1));
-        // The warm-up set comes back as an ordinary working set.
-        self::assertNull($output->workout->blocks[0]->exercises[0]->sets[0]->setType);
+        // The warm-up set comes back as an ordinary working set: the default type.
+        self::assertSame('Travail', $output->workout->blocks[0]->exercises[0]->sets[0]->setType->name);
     }
 
     public function testACopyIsRefusedWhileAWorkoutIsInProgress(): void
@@ -660,7 +681,7 @@ final class WorkoutTest extends KernelTestCase
 
         self::assertContains('Bench press (barbell)', $movements);
         self::assertNotContains('Push-up', $movements);
-        self::assertSame(['Back-off', 'Échauffement', 'Échec'], $setTypes);
+        self::assertSame(['Back-off', 'Échauffement', 'Échec', 'Travail'], $setTypes);
     }
 
     private function start(?string $name = null): WorkoutDataOutput

@@ -11,9 +11,9 @@ final class WorkoutSetDataOutput
 {
     public int $id;
 
-    /** Null for an ordinary working set. */
+    /** Always there: an ordinary working set carries the default type. */
     #[Map(if: false)]
-    public ?SetTypeDataOutput $setType = null;
+    public SetTypeDataOutput $setType;
 
     public ?int $reps = null;
 

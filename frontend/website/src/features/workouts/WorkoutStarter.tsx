@@ -15,16 +15,22 @@ export function WorkoutStarter() {
     const [name, setName] = useState('')
     const navigate = useNavigate()
 
-    const submit = (event: FormEvent) => {
+    const submit = async (event: FormEvent) => {
         event.preventDefault()
-        start.mutate(name.trim() === '' ? null : name.trim(), {
-            onSuccess: (workout) => void navigate(`/workouts/${workout.id}`),
-        })
+
+        // Awaited rather than passed to mutate(): storing the new workout swaps this form for its
+        // overview, and mutate() drops the callbacks of a component that is gone by then.
+        try {
+            const workout = await start.mutateAsync(name.trim() === '' ? null : name.trim())
+            void navigate(`/workouts/${workout.id}`)
+        } catch {
+            // The violations are on the mutation, and the fields below read them.
+        }
     }
 
     return (
         <SystemPanel title="Nouvelle séance">
-            <form className="form-grid" onSubmit={submit}>
+            <form className="form-grid" onSubmit={(event) => void submit(event)}>
                 <Field label="Nom (facultatif)" errors={violations.for('name')}>
                     <TextInput
                         value={name}

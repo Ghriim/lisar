@@ -22,6 +22,7 @@ final class WorkoutDataModelFactoryTest extends TestCase
     private MovementFamilyDataModel $family;
     private WorkoutDataModel $source;
     private DateTimeImmutable $now;
+    private SetTypeDataModel $default;
 
     protected function setUp(): void
     {
@@ -30,6 +31,8 @@ final class WorkoutDataModelFactoryTest extends TestCase
         $this->factory = new WorkoutDataModelFactory();
         $this->family = new MovementFamilyDataModel();
         $this->now = new DateTimeImmutable('2026-10-07T18:00:00+00:00');
+        $this->default = new SetTypeDataModel();
+        $this->default->isDefaultType = true;
 
         $owner = new UserDataModel();
         $owner->id = 1;
@@ -51,7 +54,7 @@ final class WorkoutDataModelFactoryTest extends TestCase
         $this->set($exercise, 0, reps: 10, weight: 40.0, setType: $setType);
         $this->set($exercise, 1, reps: 8, weight: 60.0, rpe: 8.5);
 
-        $copy = $this->factory->buildCopy($this->source, $this->now);
+        $copy = $this->factory->buildCopy($this->source, $this->now, $this->default);
 
         self::assertSame($this->source->owner, $copy->owner);
         self::assertSame('Push', $copy->name);
@@ -80,7 +83,7 @@ final class WorkoutDataModelFactoryTest extends TestCase
         $this->exercise($superset, $this->movement('Push-up'), 3);
         $this->exercise($superset, $this->movement('Row'), 1);
 
-        $copy = $this->factory->buildCopy($this->source, $this->now);
+        $copy = $this->factory->buildCopy($this->source, $this->now, $this->default);
 
         self::assertSame([['Row', 'Push-up'], ['Dips']], $this->layout($copy));
     }
@@ -100,21 +103,21 @@ final class WorkoutDataModelFactoryTest extends TestCase
         $this->exercise($superset, $inRetiredFamily, 1);
         $this->exercise($this->block(2), $retired, 0);
 
-        $copy = $this->factory->buildCopy($this->source, $this->now);
+        $copy = $this->factory->buildCopy($this->source, $this->now, $this->default);
 
         self::assertSame([['Squat']], $this->layout($copy));
         self::assertSame([$retired, $inRetiredFamily], $this->factory->movementsLeftOut($this->source));
     }
 
-    public function testASetTypeRetiredSinceIsDropped(): void
+    public function testASetTypeRetiredSinceGivesWayToTheDefault(): void
     {
         $setType = new SetTypeDataModel();
         $setType->isActive = false;
         $this->set($this->exercise($this->block(0), $this->movement('Squat'), 0), 0, reps: 5, setType: $setType);
 
-        $copy = $this->factory->buildCopy($this->source, $this->now);
+        $copy = $this->factory->buildCopy($this->source, $this->now, $this->default);
 
-        self::assertNull($copy->orderedBlocks()[0]->orderedExercises()[0]->orderedSets()[0]->setType);
+        self::assertSame($this->default, $copy->orderedBlocks()[0]->orderedExercises()[0]->orderedSets()[0]->setType);
     }
 
     /** The movement now tracks a weight, no longer a duration: one set still fits, one does not. */
@@ -125,7 +128,7 @@ final class WorkoutDataModelFactoryTest extends TestCase
         $this->set($exercise, 0, reps: 10, weight: 20.0, duration: 30);
         $this->set($exercise, 1, reps: 10);
 
-        $copy = $this->factory->buildCopy($this->source, $this->now);
+        $copy = $this->factory->buildCopy($this->source, $this->now, $this->default);
 
         $sets = $copy->orderedBlocks()[0]->orderedExercises()[0]->orderedSets();
         self::assertCount(1, $sets);
@@ -198,7 +201,7 @@ final class WorkoutDataModelFactoryTest extends TestCase
         $set->weightInKilograms = $weight;
         $set->durationInSeconds = $duration;
         $set->rpe = $rpe;
-        $set->setType = $setType;
+        $set->setType = $setType ?? $this->default;
         $set->isComplete = true;
         $set->exercise = $exercise;
         $exercise->sets->add($set);

@@ -34,10 +34,7 @@ final readonly class WorkoutSetOutputFactory
     public function buildOne(WorkoutSetDataModel $set): WorkoutSetDataOutput
     {
         $output = $this->mapper->map($set, WorkoutSetDataOutput::class);
-
-        if (null !== $set->setType) {
-            $output->setType = $this->setTypeOutputFactory->buildOne($set->setType);
-        }
+        $output->setType = $this->setTypeOutputFactory->buildOne($set->setType);
 
         return $output;
     }

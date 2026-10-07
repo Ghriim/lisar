@@ -12,5 +12,8 @@ interface SetTypePersisterGateway
 
     public function update(SetTypeDataModel $setType): SetTypeDataModel;
 
+    /** @param SetTypeDataModel[] $setTypes */
+    public function updateMany(array $setTypes): void;
+
     public function delete(SetTypeDataModel $setType): void;
 }
