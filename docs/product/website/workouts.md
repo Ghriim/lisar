@@ -14,7 +14,8 @@ finished.
 - **The history**, under it: past workouts, latest first, 25 to a page with arrows to turn them.
   Each row gives the name, the day and how long it lasted, the
   movements done and how many sets. The eye opens it on its own page, to read it or correct it;
-  « Revenir » goes back to the list.
+  « Revenir » goes back to the list. **« Refaire »** (the repeat icon) starts a new workout
+  [from that one](#starting-from-a-past-workout) — offered only while no workout is in progress.
 
 A workout in progress is not part of the history yet. It joins it when it is finished.
 
@@ -26,8 +27,9 @@ editable once finished.
 - **Its panel** carries its name, and lists every field: start, end (« En cours » while it runs),
   duration — **ticking every half minute** while it runs — feeling and note. Its actions:
   the pencil opens name, feeling and note in a window; the check **finishes** it (in progress
-  only) and goes to the [closing page](#closing-a-workout); the bin **abandons** it (in progress)
-  or **deletes** it (finished), after asking.
+  only) and goes to the [closing page](#closing-a-workout); **« Refaire »** starts a new workout
+  [from it](#starting-from-a-past-workout) (finished, and only while none is in progress); the bin
+  **abandons** it (in progress) or **deletes** it (finished), after asking.
 - **« Bilan »**, on a finished workout only, between that panel and the exercises: see below.
 - **« Exercices »** lists the blocks in order, each headed « Bloc 2 » or « Bloc 2 · superset »,
   with arrows to move it up or down, a plus to add a movement to it (up to 6) and a bin to remove
@@ -81,8 +83,8 @@ as a stopwatch reads (« 1:30 »).
 | started | set when it is started, **never rewritten** |
 | finished | set when it is finished, **never rewritten** |
 
-It is **logged live**: started now and empty, filled set by set, then finished. Nothing is
-entered after the fact as a form. Everything stays editable once it is finished (sets,
+It is **logged live**: started now — empty, or [from a past workout](#starting-from-a-past-workout)
+— filled set by set, then finished. Nothing is entered after the fact as a form. Everything stays editable once it is finished (sets,
 movements, notes, feeling); only the two moments are fixed.
 
 - **One workout in progress at a time.** Starting a second is refused
@@ -145,6 +147,28 @@ was done.
 be lifted. During the workout it starts not done; ticking and unticking are idempotent, and only
 possible while the workout runs (`workout_finished` after). A set added to a finished workout
 was done already: it comes ticked. So **a finished workout holds only done sets**.
+
+## Starting from a past workout
+
+A finished workout of the history can be **done again**: « Refaire » starts a new workout, now,
+laid out like that one, and goes straight to its page.
+
+- **What it takes over**: the name, the blocks and their movements in the same order, each
+  movement's note, and **every set as something to do**: same measures, RPE and type, **not
+  ticked**. The sets are what is about to be lifted, as when one is logged before it is done:
+  the load is adjusted if need be, then each set is ticked.
+- **What it leaves**: the workout's own note and feeling, and its two moments. They tell what
+  happened that day, not what is about to.
+- **Only what is offered now is taken over.** A movement retired since, or in a family retired
+  since, is **left out**, and a block left without a movement goes with it. The new workout's
+  page says which movements were left out, once, on arrival. A set type retired since is dropped
+  from the set, which becomes an ordinary working set.
+- **A set follows what its movement tracks now.** A measure the movement no longer tracks is
+  dropped; a set missing a measure it now tracks is left out.
+- **One workout in progress at a time** holds here too: doing one again is refused while one is
+  in progress (`workout_already_in_progress`), and the action is not offered then. Only a finished
+  workout can be done again — the one in progress is, by definition, the one in the way.
+- What is left out is left out of the copy only: the workout it was copied from does not change.
 
 ## The last time
 

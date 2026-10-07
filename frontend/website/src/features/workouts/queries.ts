@@ -73,26 +73,43 @@ function useWorkoutMutation<TVariables>(
     mutationFn: (variables: TVariables) => Promise<Workout>,
     { touchesHabits = false }: { touchesHabits?: boolean } = {},
 ) {
-    const queryClient = useQueryClient()
+    const store = useStoreWorkout()
 
     return useMutation({
         mutationFn,
-        onSuccess: async (workout) => {
-            queryClient.setQueryData([...WORKOUTS, 'one', workout.id], workout)
-            queryClient.setQueryData(CURRENT, workout.isInProgress ? workout : null)
-
-            await Promise.all([
-                queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'history'] }),
-                queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'previous', workout.id] }),
-                queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'stats', workout.id] }),
-                touchesHabits ? queryClient.invalidateQueries({ queryKey: ['habits'] }) : null,
-            ])
-        },
+        onSuccess: (workout) => store(workout, { touchesHabits }),
     })
+}
+
+/** Puts a workout a write answered into the cache, and re-reads what that write may have changed. */
+function useStoreWorkout() {
+    const queryClient = useQueryClient()
+
+    return async (workout: Workout, { touchesHabits = false }: { touchesHabits?: boolean } = {}) => {
+        queryClient.setQueryData([...WORKOUTS, 'one', workout.id], workout)
+        queryClient.setQueryData(CURRENT, workout.isInProgress ? workout : null)
+
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'history'] }),
+            queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'previous', workout.id] }),
+            queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'stats', workout.id] }),
+            touchesHabits ? queryClient.invalidateQueries({ queryKey: ['habits'] }) : null,
+        ])
+    }
 }
 
 export function useStartWorkout() {
     return useWorkoutMutation((name: string | null) => api.startWorkout(name))
+}
+
+/** Starting a workout from a past one answers the new workout, with what it left out. */
+export function useCopyWorkout() {
+    const store = useStoreWorkout()
+
+    return useMutation({
+        mutationFn: (id: number) => api.copyWorkout(id),
+        onSuccess: (copy) => store(copy.workout),
+    })
 }
 
 export function useUpdateWorkout() {

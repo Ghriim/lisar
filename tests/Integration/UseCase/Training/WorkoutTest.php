@@ -18,6 +18,7 @@ use App\Domain\DTO\Input\Training\StartWorkoutDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutExerciseDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
+use App\Domain\DTO\Output\Training\WorkoutCopyDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
@@ -49,6 +50,7 @@ use App\UseCase\Training\AddWorkoutSetUseCase;
 use App\UseCase\Training\Admin\DeactivateMovementUseCase;
 use App\UseCase\Training\Admin\DeactivateSetTypeUseCase;
 use App\UseCase\Training\CompleteWorkoutSetUseCase;
+use App\UseCase\Training\CopyWorkoutUseCase;
 use App\UseCase\Training\DeleteWorkoutBlockUseCase;
 use App\UseCase\Training\DeleteWorkoutExerciseUseCase;
 use App\UseCase\Training\DeleteWorkoutSetUseCase;
@@ -560,6 +562,94 @@ final class WorkoutTest extends KernelTestCase
         $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->idOf($this->alice), $workout->id, $seeded->blocks[0]->exercises[0]->sets[0]->id);
     }
 
+    /** The seeded « Push » done again: same layout, every set still to do, its day left behind. */
+    public function testItStartsAWorkoutFromAPastOne(): void
+    {
+        $output = $this->copy(WorkoutFixtures::ALICE_FINISHED);
+        $copy = $output->workout;
+
+        self::assertSame([], $output->skippedMovements);
+        self::assertSame('Push', $copy->name);
+        self::assertNull($copy->feeling);
+        self::assertTrue($copy->isInProgress);
+        self::assertSame(['Bench press (barbell)'], $this->movementNames($copy, 0));
+        self::assertSame(['Push-up', 'Farmer walk (dumbbell)'], $this->movementNames($copy, 1));
+
+        $bench = $copy->blocks[0]->exercises[0]->sets;
+        self::assertSame([10, 8, 8, 7], array_map(static fn ($set) => $set->reps, $bench));
+        self::assertSame([40.0, 60.0, 60.0, 60.0], array_map(static fn ($set) => $set->weightInKilograms, $bench));
+        self::assertSame('Échauffement', $bench[0]->setType?->name);
+        self::assertSame(7.5, $bench[1]->rpe);
+        self::assertSame([24.0, 24.0], array_map(static fn ($set) => $set->weightInKilograms, $copy->blocks[1]->exercises[1]->sets));
+
+        // Read back: it is the workout in progress, and nothing in it is done yet.
+        $current = $this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->idOf($this->alice));
+        self::assertSame($copy->id, $current?->id);
+        foreach ($current->blocks as $block) {
+            foreach ($block->exercises as $exercise) {
+                foreach ($exercise->sets as $set) {
+                    self::assertFalse($set->isComplete);
+                }
+            }
+        }
+
+        // The workout it came from does not move.
+        $source = $this->useCase(GetWorkoutUseCase::class)->execute(
+            $this->idOf($this->alice), $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0,
+        );
+        self::assertFalse($source->isInProgress);
+        self::assertSame(4, $source->feeling);
+        self::assertCount(4, $source->blocks[0]->exercises[0]->sets);
+    }
+
+    public function testACopyLeavesOutWhatIsNoLongerOffered(): void
+    {
+        $this->useCase(DeactivateMovementUseCase::class)->execute($this->movementId(MovementFixtures::PUSH_UP));
+        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->setTypeId(SetTypeFixtures::WARM_UP));
+
+        $output = $this->copy(WorkoutFixtures::ALICE_FINISHED);
+
+        self::assertSame(['Push-up'], $output->skippedMovements);
+        self::assertSame(['Farmer walk (dumbbell)'], $this->movementNames($output->workout, 1));
+        // The warm-up set comes back as an ordinary working set.
+        self::assertNull($output->workout->blocks[0]->exercises[0]->sets[0]->setType);
+    }
+
+    public function testACopyIsRefusedWhileAWorkoutIsInProgress(): void
+    {
+        $this->start();
+
+        try {
+            $this->copy(WorkoutFixtures::ALICE_FINISHED);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(CopyWorkoutUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame([WorkoutNotInProgressConstraint::ALREADY_IN_PROGRESS], $exception->violations['workout']);
+        }
+    }
+
+    /** The one in progress is the one in the way: only a finished workout is done again. */
+    public function testTheWorkoutInProgressCannotBeCopied(): void
+    {
+        $workout = $this->start();
+
+        try {
+            $this->useCase(CopyWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame([WorkoutNotInProgressConstraint::ALREADY_IN_PROGRESS], $exception->violations['workout']);
+        }
+    }
+
+    public function testSomeoneElsesWorkoutCannotBeCopied(): void
+    {
+        $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
+
+        $this->expectException(DataModelNotFoundException::class);
+
+        $this->useCase(CopyWorkoutUseCase::class)->execute($this->idOf($this->bob), $workout->id ?? 0);
+    }
+
     public function testThePickersOfferOnlyWhatIsLive(): void
     {
         $this->useCase(DeactivateMovementUseCase::class)->execute($this->movementId(MovementFixtures::PUSH_UP));
@@ -576,6 +666,13 @@ final class WorkoutTest extends KernelTestCase
     private function start(?string $name = null): WorkoutDataOutput
     {
         return $this->useCase(StartWorkoutUseCase::class)->execute($this->idOf($this->alice), new StartWorkoutDataInput($name));
+    }
+
+    private function copy(string $workoutReference): WorkoutCopyDataOutput
+    {
+        $workout = $this->getReference($workoutReference, WorkoutDataModel::class);
+
+        return $this->useCase(CopyWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id ?? 0);
     }
 
     private function addBlock(WorkoutDataOutput $workout, string ...$movementReferences): WorkoutDataOutput

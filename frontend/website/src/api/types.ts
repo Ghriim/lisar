@@ -246,6 +246,13 @@ export interface Workout {
     blocks: WorkoutBlock[]
 }
 
+/** A workout started from a past one, and what it could not take over. */
+export interface WorkoutCopy {
+    workout: Workout
+    /** The movements left out because they are no longer offered, each once. */
+    skippedMovements: string[]
+}
+
 /** A row of the history. */
 export interface WorkoutSummary {
     id: number

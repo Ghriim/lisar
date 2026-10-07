@@ -36,6 +36,7 @@ app — the same action never wears two faces, and two actions never wear the sa
 | `RotateCcw` | rouvrir | the undo of `Check`, and only that |
 | `Eye` | consulter | opens something read-only |
 | `Play` | reprendre | goes back to something under way, where it carries on |
+| `Repeat` | refaire | starts something new laid out like a past one — a workout done again |
 | `Pencil` | modifier | |
 | `Plus` | créer, ajouter | |
 | `Trash2` | supprimer | **always `variant="danger"`**, red from the start |

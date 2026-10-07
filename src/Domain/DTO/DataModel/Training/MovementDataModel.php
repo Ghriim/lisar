@@ -102,4 +102,10 @@ class MovementDataModel implements DataModelInterface
         $this->secondaryMuscles = new ArrayCollection();
         $this->equipments = new ArrayCollection();
     }
+
+    /** What a workout may take on now: active, in an active family. */
+    public function isOffered(): bool
+    {
+        return true === $this->isActive && true === $this->movementFamily->isActive;
+    }
 }

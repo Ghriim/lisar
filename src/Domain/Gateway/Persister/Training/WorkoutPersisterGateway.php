@@ -10,6 +10,9 @@ interface WorkoutPersisterGateway
 {
     public function create(WorkoutDataModel $workout): WorkoutDataModel;
 
+    /** Creates the workout with every block, movement and set it holds, all at once or none. */
+    public function createWhole(WorkoutDataModel $workout): WorkoutDataModel;
+
     public function update(WorkoutDataModel $workout): WorkoutDataModel;
 
     public function delete(WorkoutDataModel $workout): void;

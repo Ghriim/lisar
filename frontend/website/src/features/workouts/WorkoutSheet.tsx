@@ -1,9 +1,10 @@
-import { Check, Pencil, Trash2 } from 'lucide-react'
+import { Check, Pencil, Repeat, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Workout } from '../../api/types'
 import { ConfirmDialog, IconButton, Modal, Row, Stack } from '../../components'
 import { useDeleteWorkout, useFinishWorkout } from './queries'
+import { useCopyWorkoutAction } from './useCopyWorkoutAction'
 import { WorkoutDetailsForm } from './WorkoutDetailsForm'
 import { WorkoutExercisesCard } from './WorkoutExercisesCard'
 import { failureOf, workoutName } from './workoutFormat'
@@ -28,9 +29,10 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
 
     const finish = useFinishWorkout()
     const remove = useDeleteWorkout()
+    const copy = useCopyWorkoutAction()
 
-    const busy = finish.isPending || remove.isPending
-    const error = failureOf(finish.error ?? remove.error)
+    const busy = finish.isPending || remove.isPending || copy.isPending
+    const error = failureOf(finish.error ?? remove.error) ?? copy.error
     const name = workoutName(workout)
 
     return (
@@ -52,6 +54,15 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
                                         onSuccess: () => void navigate(`/workouts/${workout.id}/complete`),
                                     })
                                 }
+                            />
+                        )}
+                        {!workout.isInProgress && copy.isOffered && (
+                            <IconButton
+                                icon={Repeat}
+                                label="Refaire"
+                                subject={name}
+                                disabled={busy}
+                                onClick={() => copy.copy(workout.id)}
                             />
                         )}
                         <IconButton

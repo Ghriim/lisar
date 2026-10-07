@@ -15,6 +15,7 @@ use App\Domain\DTO\Input\Training\UpdateWorkoutExerciseDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
 use App\Domain\DTO\Output\Training\MovementDataOutput;
 use App\Domain\DTO\Output\Training\SetTypeDataOutput;
+use App\Domain\DTO\Output\Training\WorkoutCopyDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutPreviousPerformanceDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutStatsDataOutput;
@@ -25,6 +26,7 @@ use App\UseCase\Training\AddWorkoutBlockUseCase;
 use App\UseCase\Training\AddWorkoutExerciseUseCase;
 use App\UseCase\Training\AddWorkoutSetUseCase;
 use App\UseCase\Training\CompleteWorkoutSetUseCase;
+use App\UseCase\Training\CopyWorkoutUseCase;
 use App\UseCase\Training\DeleteWorkoutBlockUseCase;
 use App\UseCase\Training\DeleteWorkoutExerciseUseCase;
 use App\UseCase\Training\DeleteWorkoutSetUseCase;
@@ -94,6 +96,19 @@ final class WorkoutController extends AbstractController
         StartWorkoutUseCase $useCase,
     ): JsonResponse {
         return new JsonResponse($useCase->execute($securityUser->id, $input), Response::HTTP_CREATED);
+    }
+
+    #[Route('/api/workouts/{id}/copy', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
+    #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: Response::HTTP_CREATED, description: 'Started now, laid out like that workout, its sets still to do; with the movements left out because no longer offered.', content: new OA\JsonContent(ref: new Model(type: WorkoutCopyDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such workout on this account.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A workout is in progress.')]
+    public function copyWorkout(
+        int $id,
+        #[CurrentUser] SecurityUser $securityUser,
+        CopyWorkoutUseCase $useCase,
+    ): JsonResponse {
+        return new JsonResponse($useCase->execute($securityUser->id, $id), Response::HTTP_CREATED);
     }
 
     #[Route('/api/workouts/current', methods: Request::METHOD_GET)]

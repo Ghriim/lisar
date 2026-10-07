@@ -17,6 +17,7 @@ import type {
     User,
     Weight,
     Workout,
+    WorkoutCopy,
     WorkoutDetailsPayload,
     WorkoutMovementChoice,
     WorkoutPreviousPerformance,
@@ -251,6 +252,11 @@ export function fetchWorkoutSetTypes(): Promise<SetType[]> {
 
 export function startWorkout(name: string | null): Promise<Workout> {
     return request<Workout>('/api/workouts', { method: 'POST', body: { name } })
+}
+
+/** A new workout, now, laid out like a finished one: its sets come back still to do. */
+export function copyWorkout(id: number): Promise<WorkoutCopy> {
+    return request<WorkoutCopy>(`/api/workouts/${id}/copy`, { method: 'POST' })
 }
 
 export function updateWorkout(id: number, payload: WorkoutDetailsPayload): Promise<Workout> {
