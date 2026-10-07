@@ -130,7 +130,7 @@ engine is swappable, and unit tests mock one small interface instead of Doctrine
 ├── appconfig/                # runtime config shipped with the image
 ├── bin/                      # console, phpunit
 ├── config/                   # Symfony config (see §11)
-├── docker/                   # container-side assets (php ini, sidecar components…)
+├── docker/                   # container-side assets (php ini, nginx vhost, sidecars…)
 ├── docs/                     # the living documentation: conventions, architecture,
 │                             #   product specs, env vars, generated schema dumps
 ├── frontend/                 # the two React+TS+Vite apps (website, admin) — not covered here
@@ -139,7 +139,6 @@ engine is swappable, and unit tests mock one small interface instead of Doctrine
 │   └── <Bus>/Events/         #   sample inbound events (.json)
 │                             #   DB seed data lives in src/Fixtures/
 ├── migrations/               # Doctrine migrations, Version<UTC timestamp>.php
-├── nginx/                    # vhost
 ├── schemas/                  # JSON Schemas of the contracts we consume/expose
 │   └── import/               #   inbound event schemas, one file per event version
 ├── src/                      # see §4
