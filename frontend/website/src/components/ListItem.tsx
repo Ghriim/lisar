@@ -10,7 +10,7 @@ interface ListItemProps {
     /** A glyph in its own column at the head of the row, centred against it — what the row is about. */
     icon?: ReactNode
     /** Right after the title, dimmed. A progress count, a quantity, a duration. */
-    note?: string
+    note?: ReactNode
     description?: string | null
     /** The line under the title: chips, mostly. */
     meta?: ReactNode

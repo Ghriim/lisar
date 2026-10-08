@@ -124,6 +124,55 @@ class WorkoutDataModel implements DataModelInterface
         return $count;
     }
 
+    /** The sets ticked as done. */
+    public function countCompleteSets(): int
+    {
+        return count($this->completeSets());
+    }
+
+    /**
+     * Reps times load, over the done sets carrying both; null when none does. A unilateral set
+     * counts its reps per side, so it counts twice.
+     */
+    public function volumeInKilograms(): ?float
+    {
+        $volume = null;
+        foreach ($this->completeSets() as $set) {
+            if (null !== $set->reps && null !== $set->weightInKilograms) {
+                $sides = true === $set->exercise->movement->isUnilateral ? 2 : 1;
+                $volume = ($volume ?? 0.0) + $set->reps * $set->weightInKilograms * $sides;
+            }
+        }
+
+        return null === $volume ? null : round($volume, 2);
+    }
+
+    /** The time its done sets lasted, added up; null when none is timed. */
+    public function durationInSeconds(): ?int
+    {
+        $duration = null;
+        foreach ($this->completeSets() as $set) {
+            if (null !== $set->durationInSeconds) {
+                $duration = ($duration ?? 0) + $set->durationInSeconds;
+            }
+        }
+
+        return $duration;
+    }
+
+    /** The distance its done sets covered, added up; null when none measures one. */
+    public function distanceInMetres(): ?int
+    {
+        $distance = null;
+        foreach ($this->completeSets() as $set) {
+            if (null !== $set->distanceInMetres) {
+                $distance = ($distance ?? 0) + $set->distanceInMetres;
+            }
+        }
+
+        return $distance;
+    }
+
     /** The sets logged but not ticked as done yet. */
     public function countIncompleteSets(): int
     {
@@ -183,5 +232,22 @@ class WorkoutDataModel implements DataModelInterface
         }
 
         return $movements;
+    }
+
+    /** @return list<WorkoutSetDataModel> */
+    private function completeSets(): array
+    {
+        $sets = [];
+        foreach ($this->blocks as $block) {
+            foreach ($block->exercises as $exercise) {
+                foreach ($exercise->sets as $set) {
+                    if (true === $set->isComplete) {
+                        $sets[] = $set;
+                    }
+                }
+            }
+        }
+
+        return $sets;
     }
 }

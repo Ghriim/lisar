@@ -70,7 +70,6 @@ final readonly class AddWorkoutExerciseUseCase implements UseCaseInterface
         $exercise->position = $block->nextExercisePosition();
         $exercise->restInSeconds = $input->restInSeconds;
         $this->workoutExercisePersisterGateway->create($exercise);
-        $block->exercises->add($exercise);
 
         return $this->outputFactory->buildOne($workout);
     }

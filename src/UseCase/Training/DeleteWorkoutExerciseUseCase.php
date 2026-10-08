@@ -55,10 +55,8 @@ final readonly class DeleteWorkoutExerciseUseCase implements UseCaseInterface
 
         if (1 === $block->exercises->count()) {
             $this->workoutBlockPersisterGateway->delete($block);
-            $workout->blocks->removeElement($block);
         } else {
             $this->workoutExercisePersisterGateway->delete($exercise);
-            $block->exercises->removeElement($exercise);
         }
 
         return $this->outputFactory->buildOne($workout);

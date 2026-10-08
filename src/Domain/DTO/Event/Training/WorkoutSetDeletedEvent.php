@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Domain\DTO\Event\Training;
 
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
-use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\Event\EventInterface;
 
 /** A set was removed. What it belonged to is read before it went. */
 final readonly class WorkoutSetDeletedEvent implements EventInterface
 {
     public function __construct(
-        public UserDataModel $owner,
+        public WorkoutDataModel $workout,
         public MovementDataModel $movement,
     ) {
     }

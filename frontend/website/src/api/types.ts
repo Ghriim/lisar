@@ -322,6 +322,12 @@ export interface WorkoutSummary {
     /** In the order they were done, each once. */
     movementNames: string[]
     setCount: number
+    /** Null when no set measures it, as on the bilan. */
+    volumeInKilograms: number | null
+    durationInSeconds: number | null
+    distanceInMetres: number | null
+    /** The personal bests it beat, by one of its sets or as a whole. */
+    personalBestCount: number
 }
 
 export interface Page<TItem> {

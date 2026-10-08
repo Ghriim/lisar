@@ -31,4 +31,14 @@ interface PersonalBestProviderGateway
      * @return list<PersonalBestDataModel>
      */
     public function findAllForWorkout(WorkoutDataModel $workout): array;
+
+    /**
+     * How many rows each of those workouts beat, by workout id. A workout that beat none is
+     * absent.
+     *
+     * @param list<WorkoutDataModel> $workouts
+     *
+     * @return array<int, int>
+     */
+    public function countByWorkout(array $workouts): array;
 }

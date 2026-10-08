@@ -27,7 +27,12 @@ final class WorkoutExercisePersister extends AbstractBaseMysqlPersister implemen
 
     public function create(WorkoutExerciseDataModel $workoutExercise): WorkoutExerciseDataModel
     {
-        return $this->persistAndStampCreate($workoutExercise);
+        $this->persistAndStampCreate($workoutExercise);
+        if (false === $workoutExercise->block->exercises->contains($workoutExercise)) {
+            $workoutExercise->block->exercises->add($workoutExercise);
+        }
+
+        return $workoutExercise;
     }
 
     public function update(WorkoutExerciseDataModel $workoutExercise): WorkoutExerciseDataModel
@@ -37,10 +42,12 @@ final class WorkoutExercisePersister extends AbstractBaseMysqlPersister implemen
 
     public function delete(WorkoutExerciseDataModel $workoutExercise): void
     {
-        $event = new WorkoutExerciseDeletedEvent($workoutExercise->block->workout->owner, $workoutExercise->movement);
+        $block = $workoutExercise->block;
+        $event = new WorkoutExerciseDeletedEvent($block->workout, $workoutExercise->movement);
 
-        $this->inTransaction(function () use ($workoutExercise, $event): void {
+        $this->inTransaction(function () use ($workoutExercise, $block, $event): void {
             $this->persistDelete($workoutExercise);
+            $block->exercises->removeElement($workoutExercise);
             $this->eventDispatcher->dispatch($event);
         });
     }

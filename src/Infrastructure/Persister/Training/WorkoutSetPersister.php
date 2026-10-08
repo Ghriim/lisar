@@ -31,6 +31,10 @@ final class WorkoutSetPersister extends AbstractBaseMysqlPersister implements Wo
     {
         $this->inTransaction(function () use ($workoutSet): void {
             $this->persistAndStampCreate($workoutSet);
+            // Both sides kept in step before anyone adds the workout up off its sets.
+            if (false === $workoutSet->exercise->sets->contains($workoutSet)) {
+                $workoutSet->exercise->sets->add($workoutSet);
+            }
             $this->eventDispatcher->dispatch(new WorkoutSetCreatedEvent($workoutSet));
         });
 
@@ -49,10 +53,12 @@ final class WorkoutSetPersister extends AbstractBaseMysqlPersister implements Wo
 
     public function delete(WorkoutSetDataModel $workoutSet): void
     {
-        $event = new WorkoutSetDeletedEvent($workoutSet->exercise->block->workout->owner, $workoutSet->exercise->movement);
+        $exercise = $workoutSet->exercise;
+        $event = new WorkoutSetDeletedEvent($exercise->block->workout, $exercise->movement);
 
-        $this->inTransaction(function () use ($workoutSet, $event): void {
+        $this->inTransaction(function () use ($workoutSet, $exercise, $event): void {
             $this->persistDelete($workoutSet);
+            $exercise->sets->removeElement($workoutSet);
             $this->eventDispatcher->dispatch($event);
         });
     }

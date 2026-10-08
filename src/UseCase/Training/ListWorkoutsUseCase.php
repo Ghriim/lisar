@@ -11,14 +11,15 @@ use App\Domain\DTO\Output\Training\WorkoutSummaryDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutSummaryOutputFactory;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutSummaryProviderGateway;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Training\ListWorkoutsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
 /**
- * The workout history: finished workouts only, the latest started first, a page at a time. The
- * one in progress is not history yet.
+ * The workout history: finished workouts only, the latest started first, a page at a time, each
+ * with its summary as it stands. The one in progress is not history yet.
  */
 final readonly class ListWorkoutsUseCase implements UseCaseInterface
 {
@@ -26,6 +27,7 @@ final readonly class ListWorkoutsUseCase implements UseCaseInterface
         private ListWorkoutsValidator $validator,
         private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private WorkoutSummaryProviderGateway $workoutSummaryProviderGateway,
         private WorkoutSummaryOutputFactory $outputFactory,
     ) {
     }
@@ -45,8 +47,11 @@ final readonly class ListWorkoutsUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(UserDataModel::class);
         }
 
+        $workouts = $this->workoutProviderGateway->findFinishedPageForOwner($owner, $input->getOffset(), $input->perPage);
+
         return $this->outputFactory->buildPaginated(
-            $this->workoutProviderGateway->findFinishedPageForOwner($owner, $input->getOffset(), $input->perPage),
+            $workouts,
+            $this->workoutSummaryProviderGateway->findAllForWorkouts($workouts),
             $this->workoutProviderGateway->countFinishedForOwner($owner),
             $input->page,
             $input->perPage,

@@ -48,10 +48,7 @@ final readonly class DeleteWorkoutSetUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutSetDataModel::class);
         }
 
-        $exercise = $set->exercise;
-
         $this->workoutSetPersisterGateway->delete($set);
-        $exercise->sets->removeElement($set);
 
         return $this->outputFactory->buildOne($workout);
     }

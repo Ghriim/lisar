@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\EventHandler\Training;
 
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
+use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Event\EventInterface;
 use App\Domain\DTO\Event\Training\SetTypeUpdatedEvent;
@@ -17,8 +19,10 @@ use App\Domain\DTO\Event\Training\WorkoutSetUpdatedEvent;
 use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Domain\Factory\DataModelFactory\Training\PersonalBestDataModelFactory;
 use App\Domain\Gateway\Persister\Training\PersonalBestPersisterGateway;
+use App\Domain\Gateway\Persister\Training\WorkoutSummaryPersisterGateway;
 use App\Domain\Gateway\Provider\Training\PersonalBestProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutSummaryProviderGateway;
 use App\Infrastructure\EventHandler\EventHandlerInterface;
 use LogicException;
 
@@ -26,6 +30,10 @@ use LogicException;
  * Rebuilds the personal bests a write may have moved: those of each movement it touched, for its
  * owner, and those of the owner's whole workouts. Rebuilt from the sets rather than adjusted, so
  * a set unticked, corrected or removed hands its records back to whoever held them before.
+ *
+ * Then recounts the records of every workout that lost or gained one — not only the one written
+ * to: a record beaten again hands the row of an older workout back, or takes it away — on their
+ * summaries.
  */
 final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInterface
 {
@@ -34,6 +42,8 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         private PersonalBestProviderGateway $personalBestProviderGateway,
         private PersonalBestPersisterGateway $personalBestPersisterGateway,
         private PersonalBestDataModelFactory $personalBestDataModelFactory,
+        private WorkoutSummaryProviderGateway $workoutSummaryProviderGateway,
+        private WorkoutSummaryPersisterGateway $workoutSummaryPersisterGateway,
     ) {
     }
 
@@ -53,12 +63,16 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
 
     public function handle(EventInterface $event): void
     {
+        /** @var array<int, WorkoutDataModel> $workouts */
+        $workouts = [];
         foreach ($this->touched($event) as [$owner, $movements]) {
             foreach ($movements as $movement) {
-                $this->refreshMovement($owner, $movement);
+                $workouts += $this->refreshMovement($owner, $movement);
             }
-            $this->refreshSessions($owner);
+            $workouts += $this->refreshSessions($owner);
         }
+
+        $this->recount(array_values($workouts));
     }
 
     /**
@@ -73,8 +87,9 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
                 $event->set->exercise->block->workout->owner,
                 [$event->set->exercise->movement],
             ]],
-            $event instanceof WorkoutSetDeletedEvent, $event instanceof WorkoutExerciseDeletedEvent => [[$event->owner, [$event->movement]]],
-            $event instanceof WorkoutBlockDeletedEvent, $event instanceof WorkoutDeletedEvent => [[$event->owner, $event->movements]],
+            $event instanceof WorkoutSetDeletedEvent, $event instanceof WorkoutExerciseDeletedEvent => [[$event->workout->owner, [$event->movement]]],
+            $event instanceof WorkoutBlockDeletedEvent => [[$event->workout->owner, $event->movements]],
+            $event instanceof WorkoutDeletedEvent => [[$event->owner, $event->movements]],
             // Finishing gives a workout its length; nothing else about it moves a movement's record.
             $event instanceof WorkoutUpdatedEvent => [[$event->workout->owner, []]],
             $event instanceof SetTypeUpdatedEvent => true === $event->countsForPersonalBestsChanged ? $this->carrying($event) : [],
@@ -105,9 +120,10 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         return $touched;
     }
 
-    private function refreshMovement(UserDataModel $owner, MovementDataModel $movement): void
+    /** @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id */
+    private function refreshMovement(UserDataModel $owner, MovementDataModel $movement): array
     {
-        $this->personalBestPersisterGateway->replace(
+        return $this->replace(
             $this->personalBestProviderGateway->findAllForOwnerAndMovement($owner, $movement),
             $this->personalBestDataModelFactory->buildMovementProgression(
                 $owner,
@@ -117,14 +133,52 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         );
     }
 
-    private function refreshSessions(UserDataModel $owner): void
+    /** @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id */
+    private function refreshSessions(UserDataModel $owner): array
     {
-        $this->personalBestPersisterGateway->replace(
+        return $this->replace(
             $this->personalBestProviderGateway->findAllForOwnerAndMovement($owner, null),
             $this->personalBestDataModelFactory->buildSessionProgression(
                 $owner,
                 $this->workoutProviderGateway->findTalliesForOwner($owner),
             ),
         );
+    }
+
+    /**
+     * @param list<PersonalBestDataModel> $previous
+     * @param list<PersonalBestDataModel> $rebuilt
+     *
+     * @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id
+     */
+    private function replace(array $previous, array $rebuilt): array
+    {
+        $this->personalBestPersisterGateway->replace($previous, $rebuilt);
+
+        $workouts = [];
+        foreach ([...$previous, ...$rebuilt] as $row) {
+            $workouts[(int) $row->workout->id] = $row->workout;
+        }
+
+        return $workouts;
+    }
+
+    /** @param list<WorkoutDataModel> $workouts */
+    private function recount(array $workouts): void
+    {
+        $counts = $this->personalBestProviderGateway->countByWorkout($workouts);
+
+        $moved = [];
+        foreach ($this->workoutSummaryProviderGateway->findAllForWorkouts($workouts) as $workoutId => $summary) {
+            $count = $counts[$workoutId] ?? 0;
+            if ($count !== $summary->personalBestCount) {
+                $summary->personalBestCount = $count;
+                $moved[] = $summary;
+            }
+        }
+
+        if ([] !== $moved) {
+            $this->workoutSummaryPersisterGateway->updateMany($moved);
+        }
     }
 }

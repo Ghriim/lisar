@@ -550,6 +550,9 @@ final class WorkoutTest extends KernelTestCase
         self::assertSame('Push', $summary->name);
         self::assertSame(['Bench press (barbell)', 'Push-up', 'Farmer walk (dumbbell)'], $summary->movementNames);
         self::assertSame(8, $summary->setCount);
+        self::assertSame(1780.0, $summary->volumeInKilograms);
+        self::assertNull($summary->durationInSeconds);
+        self::assertSame(80, $summary->distanceInMetres);
     }
 
     public function testTheHistoryIsPaginated(): void

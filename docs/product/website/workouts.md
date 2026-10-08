@@ -12,8 +12,13 @@ finished.
   start, end, duration, feeling, note, and **one action, « Reprendre »** (the play icon), which
   opens its page. Editing, finishing and abandoning it, and its exercises, are on that page only.
 - **The history**, under it: past workouts, latest first, 25 to a page with arrows to turn them.
-  Each row gives the name, the day and how long it lasted, the
-  movements done and how many sets. The eye opens it on its own page, to read it or correct it;
+  Each row gives the name, then on one line the day, how long it lasted and the « Bilan »'s
+  totals ([closing a workout](#closing-a-workout)) — sets, volume, effort time, distance, each
+  only when a set measured it — and on that same line, **a trophy and a count** in the records'
+  colour, written like the rest of the line, when the workout beat personal bests (none when it
+  beat none). Under it, the movements done as chips, **five at most** and « 3 autres
+  exercices » for the rest. No set is detailed there. The eye opens it on its own page, to read
+  it or correct it;
   « Revenir » goes back to the list. **« Refaire »** (the repeat icon) starts a new workout
   [from that one](#starting-from-a-past-workout) — offered only while no workout is in progress.
 
@@ -94,7 +99,9 @@ to its page.
 - **« Bilan »** under it, the same card as on a finished workout's page:
   - **sets**, always; **volume** (reps × load, a unilateral set counting both sides) when a set
     carries both; **time under effort** when a set has a duration; **distance** when one has a
-    distance. A total no set measures is not shown — it is not zero, it does not exist;
+    distance. A total no set measures is not shown — it is not zero, it does not exist. Only done
+    sets count, and the totals are kept with the workout as its sets are ticked, corrected or
+    removed — the history reads the same ones;
   - **the share of each muscle**, the most worked first, as a bar and a percentage: a set counts
     **1 for the movement's primary muscle and 0.5 for each secondary one**, and the percentages
     are out of all those counts together, so they add up to 100;

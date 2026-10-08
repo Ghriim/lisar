@@ -321,6 +321,14 @@
     letter-spacing: 0.08em;
 }
 
+/* A note in the records' colour, with its trophy: what a workout beat. */
+.list-item-note-record {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--warning);
+}
+
 .icon-button-small {
     width: 22px;
     height: 22px;

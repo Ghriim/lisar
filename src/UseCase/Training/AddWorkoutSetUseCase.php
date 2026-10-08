@@ -77,7 +77,6 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
         $set->isComplete = false === $workout->isInProgress();
 
         $this->workoutSetPersisterGateway->create($set);
-        $exercise->sets->add($set);
 
         return $this->outputFactory->buildOne($workout);
     }

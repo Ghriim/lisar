@@ -11,6 +11,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockDataInput;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockExerciseDataInput;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
+use App\Domain\DTO\Input\Training\ListWorkoutsDataInput;
 use App\Domain\DTO\Input\Training\StartWorkoutDataInput;
 use App\Domain\DTO\Input\Training\UpdateSetTypeDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
@@ -34,6 +35,7 @@ use App\UseCase\Training\DeleteWorkoutUseCase;
 use App\UseCase\Training\FinishWorkoutUseCase;
 use App\UseCase\Training\GetWorkoutStatsUseCase;
 use App\UseCase\Training\ListPersonalBestsUseCase;
+use App\UseCase\Training\ListWorkoutsUseCase;
 use App\UseCase\Training\StartWorkoutUseCase;
 use App\UseCase\Training\UncompleteWorkoutSetUseCase;
 use App\UseCase\Training\UpdateWorkoutSetUseCase;
@@ -204,6 +206,28 @@ final class PersonalBestTest extends KernelTestCase
         self::assertContains(Kind::MAX_WEIGHT, $kinds);
         self::assertContains(Kind::MAX_SESSION_SETS, $kinds);
         self::assertSame(Kind::MAX_WEIGHT, $stats->personalBests[0]->kind);
+    }
+
+    /** The history counts the same records the bilan lists; a workout that beat none counts 0. */
+    public function testTheHistoryCountsTheRecordsEachWorkoutBeat(): void
+    {
+        $seeded = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
+        $stats = $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->aliceId, $seeded->id ?? 0);
+
+        // A warm-up, finished at once: no set record, no session record.
+        $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 20.0, setTypeId: $this->setTypeId(SetTypeFixtures::WARM_UP)));
+        $this->complete($workout, $this->lastSet($workout));
+        $this->useCase(FinishWorkoutUseCase::class)->execute($this->aliceId, $workout->id);
+
+        $page = $this->useCase(ListWorkoutsUseCase::class)->execute($this->aliceId, new ListWorkoutsDataInput());
+
+        $counts = [];
+        foreach ($page->items as $summary) {
+            $counts[$summary->id] = $summary->personalBestCount;
+        }
+        self::assertGreaterThan(0, $counts[$seeded->id]);
+        self::assertSame(count($stats->personalBests), $counts[$seeded->id]);
+        self::assertSame(0, $counts[$workout->id]);
     }
 
     private function board(): PersonalBestBoardDataOutput

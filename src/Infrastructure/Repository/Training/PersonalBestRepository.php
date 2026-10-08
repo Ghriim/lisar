@@ -57,6 +57,30 @@ final class PersonalBestRepository extends ServiceEntityRepository implements Pe
             ->getResult();
     }
 
+    /** @return array<int, int> */
+    public function countByWorkout(array $workouts): array
+    {
+        if ([] === $workouts) {
+            return [];
+        }
+
+        /** @var list<array{workoutId: int|string, personalBestCount: int|string}> $rows */
+        $rows = $this->createQueryBuilder('personalBest')
+            ->select('IDENTITY(personalBest.workout) AS workoutId', 'COUNT(personalBest.id) AS personalBestCount')
+            ->andWhere('personalBest.workout IN (:workouts)')
+            ->setParameter('workouts', $workouts)
+            ->groupBy('personalBest.workout')
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['workoutId']] = (int) $row['personalBestCount'];
+        }
+
+        return $counts;
+    }
+
     /** Oldest first, with what an output reads of a row. */
     private function ordered(): QueryBuilder
     {

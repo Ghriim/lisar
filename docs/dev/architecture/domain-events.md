@@ -48,13 +48,32 @@ listen to one event; none may count on running before another.
 
 | Event | Raised by | Handled by |
 | --- | --- | --- |
-| `WorkoutSetCreatedEvent` · `WorkoutSetUpdatedEvent` · `WorkoutSetDeletedEvent` | `WorkoutSetPersister` | `RefreshPersonalBestsEventHandler` |
-| `WorkoutExerciseDeletedEvent` | `WorkoutExercisePersister::delete` | `RefreshPersonalBestsEventHandler` |
-| `WorkoutBlockDeletedEvent` | `WorkoutBlockPersister::delete` | `RefreshPersonalBestsEventHandler` |
+| `WorkoutCreatedEvent` | `WorkoutPersister::create` / `createWhole` | `RefreshWorkoutSummaryEventHandler` |
+| `WorkoutSetCreatedEvent` · `WorkoutSetUpdatedEvent` · `WorkoutSetDeletedEvent` | `WorkoutSetPersister` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
+| `WorkoutExerciseDeletedEvent` | `WorkoutExercisePersister::delete` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
+| `WorkoutBlockDeletedEvent` | `WorkoutBlockPersister::delete` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
 | `WorkoutUpdatedEvent` · `WorkoutDeletedEvent` | `WorkoutPersister` | `RefreshPersonalBestsEventHandler`, `SyncWorkoutHabitsEventHandler` |
 | `SetTypeUpdatedEvent` | `SetTypePersister::update` / `updateMany` | `RefreshPersonalBestsEventHandler` |
 | `HydrationEntryCreatedEvent` · `HydrationEntryUpdatedEvent` · `HydrationEntryDeletedEvent` | `HydrationEntryPersister` | `SyncHydrationHabitsEventHandler` |
 | `StepDayCreatedEvent` · `StepDayUpdatedEvent` | `StepDayPersister` | `SyncStepHabitsEventHandler` |
+
+### A workout's summary
+
+`workout_summary` holds what a workout adds up to — done sets, volume, effort time, distance —
+and how many personal bests it holds, so the history and the bilan read them instead of working
+them out. One per workout: `RefreshWorkoutSummaryEventHandler` creates it on
+`WorkoutCreatedEvent`, and works the totals out again (`WorkoutSummaryDataModelFactory`) each
+time a set, a movement or a block of the workout moves.
+
+The record count is not its to keep. Two handlers of one event cannot count on their order, and
+a rebuild moves the rows of other workouts than the one written to — a record taken back by an
+older workout leaves the newer one. So `RefreshPersonalBestsEventHandler`, once its rows are
+replaced, recounts every workout that held one before or holds one after.
+
+The workout's persisters keep the tree in step in memory — a set added to its exercise's
+`sets`, a block taken out of its workout's `blocks` — before they dispatch: the summary is added
+up off what the request holds. `WorkoutPersister::delete` removes the summary with the workout,
+or the identity map would keep one pointing at a workout that is gone.
 
 ### The habits a tracker keeps
 

@@ -7,7 +7,7 @@ namespace App\Domain\DTO\Output\Training;
 use App\Domain\DataTransformer\DateDataTransformer;
 use Symfony\Component\ObjectMapper\Attribute\Map;
 
-/** A finished workout as the history lists it: when, what, how much. */
+/** A finished workout as the history lists it: when, what, how much, and the records it beat. */
 final class WorkoutSummaryDataOutput
 {
     public int $id;
@@ -32,4 +32,18 @@ final class WorkoutSummaryDataOutput
 
     #[Map(if: false)]
     public int $setCount = 0;
+
+    /** Null when no set measures it, as on the bilan. */
+    #[Map(if: false)]
+    public ?float $volumeInKilograms = null;
+
+    #[Map(if: false)]
+    public ?int $durationInSeconds = null;
+
+    #[Map(if: false)]
+    public ?int $distanceInMetres = null;
+
+    /** The personal bests it beat, by one of its sets or as a whole. */
+    #[Map(if: false)]
+    public int $personalBestCount = 0;
 }

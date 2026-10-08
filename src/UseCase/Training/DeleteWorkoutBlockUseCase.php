@@ -50,7 +50,6 @@ final readonly class DeleteWorkoutBlockUseCase implements UseCaseInterface
         }
 
         $this->workoutBlockPersisterGateway->delete($block);
-        $workout->blocks->removeElement($block);
 
         return $this->outputFactory->buildOne($workout);
     }

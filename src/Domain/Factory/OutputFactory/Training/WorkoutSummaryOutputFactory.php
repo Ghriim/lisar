@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Factory\OutputFactory\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutSummaryDataModel;
 use App\Domain\DTO\Output\PaginatedListDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutSummaryDataOutput;
 use Symfony\Component\ObjectMapper\ObjectMapperInterface;
@@ -18,30 +19,32 @@ final readonly class WorkoutSummaryOutputFactory
     }
 
     /**
-     * @param list<WorkoutDataModel> $workouts
+     * @param list<WorkoutDataModel>              $workouts
+     * @param array<int, WorkoutSummaryDataModel> $summaries by workout id
      *
      * @return list<WorkoutSummaryDataOutput>
      */
-    public function buildMany(array $workouts): array
+    public function buildMany(array $workouts, array $summaries): array
     {
         $outputs = [];
         foreach ($workouts as $workout) {
-            $outputs[] = $this->buildOne($workout);
+            $outputs[] = $this->buildOne($workout, $summaries[(int) $workout->id] ?? null);
         }
 
         return $outputs;
     }
 
     /**
-     * @param list<WorkoutDataModel> $workouts
+     * @param list<WorkoutDataModel>              $workouts
+     * @param array<int, WorkoutSummaryDataModel> $summaries by workout id
      *
      * @return PaginatedListDataOutput<WorkoutSummaryDataOutput>
      */
-    public function buildPaginated(array $workouts, int $total, int $page, int $perPage): PaginatedListDataOutput
+    public function buildPaginated(array $workouts, array $summaries, int $total, int $page, int $perPage): PaginatedListDataOutput
     {
         /** @var PaginatedListDataOutput<WorkoutSummaryDataOutput> $output */
         $output = new PaginatedListDataOutput();
-        $output->items = $this->buildMany($workouts);
+        $output->items = $this->buildMany($workouts, $summaries);
         $output->total = $total;
         $output->page = $page;
         $output->perPage = $perPage;
@@ -49,7 +52,8 @@ final readonly class WorkoutSummaryOutputFactory
         return $output;
     }
 
-    public function buildOne(WorkoutDataModel $workout): WorkoutSummaryDataOutput
+    /** The totals are the summary's, as it stands; a workout without one reads as empty. */
+    public function buildOne(WorkoutDataModel $workout, ?WorkoutSummaryDataModel $summary): WorkoutSummaryDataOutput
     {
         $output = $this->mapper->map($workout, WorkoutSummaryDataOutput::class);
 
@@ -60,7 +64,14 @@ final readonly class WorkoutSummaryOutputFactory
                 }
             }
         }
-        $output->setCount = $workout->countSets();
+
+        if (null !== $summary) {
+            $output->setCount = $summary->setCount;
+            $output->volumeInKilograms = $summary->volumeInKilograms;
+            $output->durationInSeconds = $summary->durationInSeconds;
+            $output->distanceInMetres = $summary->distanceInMetres;
+            $output->personalBestCount = $summary->personalBestCount;
+        }
 
         return $output;
     }

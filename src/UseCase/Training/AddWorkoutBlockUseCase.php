@@ -68,7 +68,6 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
         $block->workout = $workout;
         $block->position = $workout->nextBlockPosition();
         $this->workoutBlockPersisterGateway->create($block);
-        $workout->blocks->add($block);
 
         // Every movement asked for is offered past the validator, so the two lists line up.
         foreach ($offered as $position => $movement) {
@@ -78,7 +77,6 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
             $exercise->position = $position;
             $exercise->restInSeconds = $input->exercises[$position]->restInSeconds;
             $this->workoutExercisePersisterGateway->create($exercise);
-            $block->exercises->add($exercise);
         }
 
         return $this->outputFactory->buildOne($workout);
