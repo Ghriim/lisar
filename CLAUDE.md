@@ -18,6 +18,9 @@ validators qui accumulent les violations, `final readonly` par défaut, comparai
 
 Sa §13 est la checklist pour ajouter une feature, sa §15 la liste des anti-patterns.
 
+Ce qui découle d'une écriture passe par un événement synchrone levé par le persister :
+`docs/dev/architecture/domain-events.md`.
+
 Pour le front, lire `docs/dev/frontend-conventions.md` : libellés de boutons, actions de
 formulaire, modales, et le fait que rien n'est présélectionné par défaut.
 

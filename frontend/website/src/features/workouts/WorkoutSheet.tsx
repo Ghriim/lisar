@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import type { Workout } from '../../api/types'
 import { Button, ConfirmDialog, IconButton, Modal, Row, Stack } from '../../components'
 import { useDeleteWorkout, useFinishWorkout } from './queries'
+import { RestTimerBar } from './RestTimerBar'
 import { useCopyWorkoutAction } from './useCopyWorkoutAction'
+import { useRestTimer } from './useRestTimer'
 import { WorkoutDetailsForm } from './WorkoutDetailsForm'
 import { WorkoutExercisesCard } from './WorkoutExercisesCard'
 import { failureOf, workoutName } from './workoutFormat'
@@ -31,6 +33,7 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
     const finish = useFinishWorkout()
     const remove = useDeleteWorkout()
     const copy = useCopyWorkoutAction()
+    const restTimer = useRestTimer()
 
     const busy = finish.isPending || remove.isPending || copy.isPending
     const error = failureOf(finish.error ?? remove.error) ?? copy.error
@@ -70,7 +73,7 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
 
             {!workout.isInProgress && <WorkoutStatsCard workoutId={workout.id} />}
 
-            <WorkoutExercisesCard workout={workout} />
+            <WorkoutExercisesCard workout={workout} restTimer={restTimer} />
 
             {workout.isInProgress && (
                 <Row style={{ justifyContent: 'center' }}>
@@ -87,6 +90,8 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
                     </Button>
                 </Row>
             )}
+
+            {workout.isInProgress && <RestTimerBar timer={restTimer} />}
 
             {panel === 'details' && (
                 <Modal title="Modifier la séance" onClose={close}>

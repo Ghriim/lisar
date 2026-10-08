@@ -1,4 +1,4 @@
-import { ChartColumn, Dumbbell, House, ListChecks, Mail, Settings, Users } from 'lucide-react'
+import { ChartColumn, Dumbbell, House, ListChecks, Mail, Settings, Trophy, Users } from 'lucide-react'
 import { useState, useSyncExternalStore } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
@@ -8,6 +8,7 @@ const PRIMARY: NavItem[] = [
     { to: '/', label: 'Dashboard', icon: House },
     { to: '/todo', label: 'Todo', icon: ListChecks },
     { to: '/workouts', label: 'Workouts', icon: Dumbbell },
+    { to: '/records', label: 'Records', icon: Trophy },
     { to: '/statistiques', label: 'Statistiques', icon: ChartColumn },
 ]
 

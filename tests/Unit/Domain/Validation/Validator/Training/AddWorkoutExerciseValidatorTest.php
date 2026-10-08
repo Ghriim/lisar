@@ -43,4 +43,17 @@ final class AddWorkoutExerciseValidatorTest extends TestCase
             self::assertSame([WorkoutMovementsOfferedConstraint::UNAVAILABLE], $exception->violations['movementId']);
         }
     }
+
+    public function testItRejectsARestOutOfBounds(): void
+    {
+        $movement = new MovementDataModel();
+        $movement->id = 4;
+
+        try {
+            $this->validator->validate(new AddWorkoutExerciseDataInput(4, 0), $movement);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['rest_invalid'], $exception->violations['restInSeconds']);
+        }
+    }
 }

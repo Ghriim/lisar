@@ -10,6 +10,7 @@ use App\Domain\DTO\DataModel\Training\WorkoutBlockDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
+use App\Domain\Factory\OutputFactory\Training\PersonalBestOutputFactory;
 use App\Domain\Factory\OutputFactory\Training\SetTypeOutputFactory;
 use App\Domain\Factory\OutputFactory\Training\WorkoutSetOutputFactory;
 use DateTimeImmutable;
@@ -27,7 +28,7 @@ trait WorkoutOutputFactoriesTestTrait
 
     private function setFactory(): WorkoutSetOutputFactory
     {
-        return new WorkoutSetOutputFactory($this->mapper(), new SetTypeOutputFactory($this->mapper()));
+        return new WorkoutSetOutputFactory($this->mapper(), new SetTypeOutputFactory($this->mapper()), new PersonalBestOutputFactory($this->mapper()));
     }
 
     private function workout(int $id = 1): WorkoutDataModel

@@ -5,6 +5,8 @@ import { IconButton } from './IconButton'
 interface ListItemProps {
     /** Plain text: it is also what the fold control announces. */
     title: string
+    /** Where a link lands: the row's anchor in its page. */
+    id?: string
     /** A glyph in its own column at the head of the row, centred against it — what the row is about. */
     icon?: ReactNode
     /** Right after the title, dimmed. A progress count, a quantity, a duration. */
@@ -37,6 +39,7 @@ interface ListItemProps {
  */
 export function ListItem({
     title,
+    id,
     icon,
     note,
     description,
@@ -62,6 +65,7 @@ export function ListItem({
     return (
         <>
             <article
+                id={id}
                 className={classes.join(' ')}
                 style={{ '--list-item-accent': accent } as CSSProperties}
             >

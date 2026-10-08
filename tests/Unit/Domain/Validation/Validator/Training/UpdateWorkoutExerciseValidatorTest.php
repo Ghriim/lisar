@@ -38,4 +38,23 @@ final class UpdateWorkoutExerciseValidatorTest extends TestCase
             self::assertSame(['note_too_long'], $exception->violations['note']);
         }
     }
+
+    public function testItAcceptsARest(): void
+    {
+        $this->validator->validate(new UpdateWorkoutExerciseDataInput(restInSeconds: 90));
+
+        $this->expectNotToPerformAssertions();
+    }
+
+    public function testItRejectsARestOutOfBounds(): void
+    {
+        foreach ([0, 3601] as $rest) {
+            try {
+                $this->validator->validate(new UpdateWorkoutExerciseDataInput(restInSeconds: $rest));
+                self::fail('Expected ValidationException');
+            } catch (ValidationException $exception) {
+                self::assertSame(['rest_invalid'], $exception->violations['restInSeconds']);
+            }
+        }
+    }
 }

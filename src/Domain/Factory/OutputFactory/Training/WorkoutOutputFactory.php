@@ -55,6 +55,7 @@ final readonly class WorkoutOutputFactory
         $output->id = (int) $exercise->id;
         $output->movement = $this->buildMovement($exercise->movement);
         $output->note = $exercise->note;
+        $output->restInSeconds = $exercise->restInSeconds;
         $output->sets = $this->workoutSetOutputFactory->buildMany($exercise->orderedSets());
 
         return $output;

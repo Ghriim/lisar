@@ -24,6 +24,9 @@ final readonly class UpdateSetTypeDataInput implements DataInputInterface
 
         /** Only ever set to true: the default moves by being given to another type. */
         public bool $isDefaultType = false,
+
+        /** Whether its sets can set a personal best. On unless switched off: a warm-up is the exception. */
+        public bool $countsForPersonalBests = true,
     ) {
     }
 }

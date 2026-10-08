@@ -252,7 +252,8 @@
     margin-top: 6px;
 }
 
-button.chip {
+button.chip,
+a.chip {
     background: transparent;
     font-family: var(--font-system);
     font-size: 10px;
@@ -261,7 +262,12 @@ button.chip {
     cursor: pointer;
 }
 
-button.chip:hover {
+a.chip {
+    text-decoration: none;
+}
+
+button.chip:hover,
+a.chip:hover {
     border-color: var(--accent-line);
     color: var(--accent);
 }
@@ -611,6 +617,13 @@ button.chip[aria-pressed='true'] {
     margin-bottom: 0;
 }
 
+/* Under a set, what the same set gave the last time: plain text, as written. */
+.set-last-time {
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    text-transform: none;
+}
+
 /* A family of movements in the picker: its name, then its chips. */
 .movement-family {
     display: flex;
@@ -628,4 +641,62 @@ button.chip[aria-pressed='true'] {
 
 .muscle-share {
     display: contents;
+}
+
+/*
+ * The rest under way, held at the bottom of the screen: centred, as wide as the content at most,
+ * and above everything but a window.
+ */
+.rest-timer {
+    position: fixed;
+    bottom: calc(var(--step) * 2);
+    left: 50%;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: calc(var(--step) * 2);
+    width: max-content;
+    max-width: calc(100vw - var(--step) * 4);
+    padding: var(--step) calc(var(--step) * 2);
+    transform: translateX(-50%);
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--panel-solid);
+    box-shadow: var(--shadow-panel), var(--shadow-glow);
+}
+
+.rest-timer-room {
+    height: calc(var(--step) * 8);
+}
+
+.rest-timer-label {
+    color: var(--text-dim);
+    font-family: var(--font-system);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.rest-timer-time {
+    min-width: 4ch;
+    color: var(--accent);
+    font-family: var(--font-system);
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+}
+
+.rest-timer-actions {
+    display: flex;
+    gap: var(--step);
+}
+
+@media (max-width: 520px) {
+    .rest-timer {
+        gap: var(--step);
+        padding: var(--step);
+    }
+
+    .rest-timer-label {
+        display: none;
+    }
 }

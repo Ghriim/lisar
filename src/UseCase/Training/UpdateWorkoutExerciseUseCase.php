@@ -19,7 +19,7 @@ use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
 /**
- * The note on a movement as done in one workout.
+ * The note on a movement as done in one workout, and the rest planned after each of its sets.
  */
 final readonly class UpdateWorkoutExerciseUseCase implements UseCaseInterface
 {
@@ -56,6 +56,7 @@ final readonly class UpdateWorkoutExerciseUseCase implements UseCaseInterface
         $this->validator->validate($input);
 
         $exercise->note = $input->getNote();
+        $exercise->restInSeconds = $input->restInSeconds;
         $this->workoutExercisePersisterGateway->update($exercise);
 
         return $this->outputFactory->buildOne($workout);

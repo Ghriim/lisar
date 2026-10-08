@@ -7,6 +7,7 @@ import type {
     HydrationDay,
     HydrationPreset,
     Page,
+    PersonalBestBoard,
     Priority,
     Session,
     SetType,
@@ -17,6 +18,7 @@ import type {
     User,
     Weight,
     Workout,
+    WorkoutBlockExercisePayload,
     WorkoutCopy,
     WorkoutDetailsPayload,
     WorkoutMovementChoice,
@@ -233,6 +235,10 @@ export function fetchWorkoutPreviousPerformances(id: number): Promise<WorkoutPre
     return request<WorkoutPreviousPerformance[]>(`/api/workouts/${id}/previous-performances`)
 }
 
+export function fetchPersonalBests(): Promise<PersonalBestBoard> {
+    return request<PersonalBestBoard>('/api/workouts/personal-bests')
+}
+
 export function fetchWorkoutStats(id: number): Promise<WorkoutStats> {
     return request<WorkoutStats>(`/api/workouts/${id}/stats`)
 }
@@ -272,9 +278,9 @@ export function deleteWorkout(id: number): Promise<void> {
     return request<void>(`/api/workouts/${id}`, { method: 'DELETE' })
 }
 
-/** Several movements make a superset, in the order given. */
-export function addWorkoutBlock(id: number, movementIds: number[]): Promise<Workout> {
-    return request<Workout>(`/api/workouts/${id}/blocks`, { method: 'POST', body: { movementIds } })
+/** Several movements make a superset, in the order given, each with its own rest. */
+export function addWorkoutBlock(id: number, exercises: WorkoutBlockExercisePayload[]): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/blocks`, { method: 'POST', body: { exercises } })
 }
 
 export function reorderWorkoutBlocks(id: number, blockIds: number[]): Promise<Workout> {
@@ -285,15 +291,17 @@ export function deleteWorkoutBlock(id: number, blockId: number): Promise<Workout
     return request<Workout>(`/api/workouts/${id}/blocks/${blockId}`, { method: 'DELETE' })
 }
 
-export function addWorkoutExercise(id: number, blockId: number, movementId: number): Promise<Workout> {
-    return request<Workout>(`/api/workouts/${id}/blocks/${blockId}/exercises`, {
-        method: 'POST',
-        body: { movementId },
-    })
+export function addWorkoutExercise(id: number, blockId: number, exercise: WorkoutBlockExercisePayload): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/blocks/${blockId}/exercises`, { method: 'POST', body: exercise })
 }
 
-export function updateWorkoutExercise(id: number, exerciseId: number, note: string | null): Promise<Workout> {
-    return request<Workout>(`/api/workouts/${id}/exercises/${exerciseId}`, { method: 'PUT', body: { note } })
+/** Both fields, every time: one left null is cleared. */
+export function updateWorkoutExercise(
+    id: number,
+    exerciseId: number,
+    payload: { note: string | null; restInSeconds: number | null },
+): Promise<Workout> {
+    return request<Workout>(`/api/workouts/${id}/exercises/${exerciseId}`, { method: 'PUT', body: payload })
 }
 
 /** Removing a block's last movement removes the block too. */

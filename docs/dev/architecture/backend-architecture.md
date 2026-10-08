@@ -635,8 +635,10 @@ Rules:
 - Time comes from `Psr\Clock\ClockInterface`, never `new \DateTimeImmutable()`. That is what makes
   timestamps assertable in tests.
 - Batch methods take `flush: false` per item and flush once at the end.
-- **All post-create/update/delete side effects live in the persister** (cache invalidation,
+- **All post-create/update/delete side effects start in the persister** (cache invalidation,
   denormalised counters, outbound notifications). A use case that persists gets them for free.
+  In this project the persister **raises an event** after its flush and handlers do the work, in
+  the same transaction — see [domain-events.md](domain-events.md).
 - Persisters do not read. If a write needs a lookup, the use case does the lookup through a
   provider gateway and hands the data model over.
 - **Every persister implements a `PersisterGateway`, without exception** — including those only
@@ -2040,3 +2042,5 @@ Rejected in review, every time:
 - A YAML fixture file, or any fixture library beyond `doctrine/doctrine-fixtures-bundle`.
 - The word "entity" for a persisted class — it is a **data model**, in `Domain/DTO/DataModel/`.
 - A new pattern introduced next to an existing one without deprecating the old one.
+- A reaction to a write coded inside a persister or a use case instead of an event handler
+  ([domain-events.md](domain-events.md)).

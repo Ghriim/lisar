@@ -9,7 +9,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * A block added at the end of a workout: one movement, or several done back to back — a superset,
- * in the order given. That each one is offered needs the database: WorkoutMovementsOfferedConstraint.
+ * in the order given, each with its own rest. That each one is offered needs the database:
+ * WorkoutMovementsOfferedConstraint.
  */
 final readonly class AddWorkoutBlockDataInput implements DataInputInterface
 {
@@ -17,13 +18,25 @@ final readonly class AddWorkoutBlockDataInput implements DataInputInterface
     public const int MAX_MOVEMENTS = 6;
 
     /**
-     * @param list<int> $movementIds
+     * @param list<AddWorkoutBlockExerciseDataInput> $exercises
      */
     public function __construct(
-        #[Assert\Count(min: 1, max: self::MAX_MOVEMENTS, minMessage: 'movement_ids_required', maxMessage: 'movement_ids_too_many')]
-        #[Assert\All([new Assert\Type(type: 'int', message: 'movement_id_invalid')])]
-        #[Assert\Unique(message: 'movement_ids_duplicated')]
-        public array $movementIds = [],
+        #[Assert\Count(min: 1, max: self::MAX_MOVEMENTS, minMessage: 'exercises_required', maxMessage: 'exercises_too_many')]
+        #[Assert\Unique(message: 'movement_ids_duplicated', normalizer: [self::class, 'movementIdOf'])]
+        #[Assert\Valid]
+        public array $exercises = [],
     ) {
+    }
+
+    /** What two exercises of one block may not share. */
+    public static function movementIdOf(AddWorkoutBlockExerciseDataInput $exercise): int
+    {
+        return $exercise->movementId;
+    }
+
+    /** @return list<int> in the order given */
+    public function movementIds(): array
+    {
+        return array_map(static fn (AddWorkoutBlockExerciseDataInput $exercise): int => $exercise->movementId, $this->exercises);
     }
 }

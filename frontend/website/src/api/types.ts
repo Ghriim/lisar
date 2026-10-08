@@ -176,6 +176,8 @@ export interface SetType {
     isActive: boolean
     /** The one a set takes when it is logged without one: the ordinary working set. */
     isDefaultType: boolean
+    /** Whether its sets can set a personal best. A warm-up does not. */
+    countsForPersonalBests: boolean
 }
 
 /** A movement as a workout picker offers it: only what a set needs to know about it. */
@@ -220,14 +222,68 @@ export interface WorkoutSet {
      * workout holds only done sets.
      */
     isComplete: boolean
+    /** The personal bests this set beat, in the order records are listed in. */
+    personalBests: PersonalBest[]
+}
+
+/** A personal best, the moment it was beaten. */
+export interface PersonalBest {
+    id: number
+    /** A code the API knows — max_weight, best_pace… — worded in personalBestFormat. */
+    kind: string
+    /** A number of reps, a distance in metres or a load, for a tiered kind; null otherwise. */
+    tier: number | null
+    /** In the kind's unit: kilograms, reps, seconds, metres, seconds per kilometre. */
+    value: number
+    /** Null for a record of a whole workout. */
+    movementId: number | null
+    movementName: string | null
+    workoutId: number
+    /** Null for a record a whole workout beat. */
+    setId: number | null
+    /** When the workout that beat it started. */
+    achievedAt: string
+}
+
+/** One record and every time it was beaten, oldest first: the last is `current`. */
+export interface PersonalBestRecord {
+    kind: string
+    tier: number | null
+    current: PersonalBest
+    progression: PersonalBest[]
+}
+
+export interface MovementPersonalBests {
+    movementId: number
+    movementName: string
+    movementFamilyId: number
+    movementFamilyName: string
+    /** False for one retired since, listed because it holds records. */
+    isOffered: boolean
+    records: PersonalBestRecord[]
+}
+
+/** Every record of the account: those of whole workouts, then movement by movement. */
+export interface PersonalBestBoard {
+    sessions: PersonalBestRecord[]
+    /** Every movement on offer, records or not, by family then by name. */
+    movements: MovementPersonalBests[]
 }
 
 export interface WorkoutExercise {
     id: number
     movement: WorkoutMovement
     note: string | null
+    /** The rest planned after each of its sets, which the timer counts down. Null: no timer. */
+    restInSeconds: number | null
     /** In the order they were logged. */
     sets: WorkoutSet[]
+}
+
+/** One movement of a block being added, with its own rest. */
+export interface WorkoutBlockExercisePayload {
+    movementId: number
+    restInSeconds: number | null
 }
 
 /** One movement, or several done back to back: a superset. */
@@ -303,6 +359,8 @@ export interface WorkoutStats {
     distanceInMetres: number | null
     /** The most worked first. */
     muscles: WorkoutMuscleShare[]
+    /** The personal bests this workout beat, in the order records are listed in. */
+    personalBests: PersonalBest[]
 }
 
 /** Every measure, null for those the movement does not track. Replaces a set whole. */

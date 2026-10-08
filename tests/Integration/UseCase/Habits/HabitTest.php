@@ -7,8 +7,11 @@ namespace App\Tests\Integration\UseCase\Habits;
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
 use App\Domain\DTO\DataModel\Habits\HabitSubscriptionDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Input\Tracking\Hydration\CreateHydrationEntryDataInput;
+use App\Domain\DTO\Input\Tracking\Hydration\UpdateHydrationEntryDataInput;
 use App\Domain\DTO\Input\Tracking\Step\SaveStepDayDataInput;
 use App\Domain\DTO\Output\Habits\HabitDataOutput;
+use App\Domain\DTO\Output\Tracking\Hydration\HydrationDayDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Habits\HabitOutputFactory;
 use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
@@ -24,6 +27,9 @@ use App\UseCase\Habits\ListHabitsUseCase;
 use App\UseCase\Habits\SubscribeHabitUseCase;
 use App\UseCase\Habits\UncompleteHabitUseCase;
 use App\UseCase\Habits\UnsubscribeHabitUseCase;
+use App\UseCase\Tracking\Hydration\CreateHydrationEntryUseCase;
+use App\UseCase\Tracking\Hydration\DeleteHydrationEntryUseCase;
+use App\UseCase\Tracking\Hydration\UpdateHydrationEntryUseCase;
 use App\UseCase\Tracking\Step\SaveStepDayUseCase;
 use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -156,6 +162,42 @@ final class HabitTest extends KernelTestCase
         self::assertFalse($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);
     }
 
+    /** The day's total counts every drink, the one just logged with the others: 1000 + 600 crosses 1500. */
+    public function testTheHydrationTrackerKeepsItsHabitWhenTheDayCrossesTheMark(): void
+    {
+        $this->subscribe->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::DRINK));
+
+        $this->drink(1000);
+        self::assertFalse($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
+
+        $this->drink(600);
+        self::assertTrue($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
+    }
+
+    public function testTheHydrationTrackerUnkeepsWhenADrinkIsCorrectedBelowTheMark(): void
+    {
+        $this->subscribe->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::DRINK));
+        $this->drink(1000);
+        $day = $this->drink(600);
+
+        self::getContainer()->get(UpdateHydrationEntryUseCase::class)->execute(
+            $this->idOf($this->alice), $this->entryId($day, 600), new UpdateHydrationEntryDataInput(300),
+        );
+
+        self::assertFalse($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
+    }
+
+    public function testTheHydrationTrackerUnkeepsWhenADrinkIsRemovedBelowTheMark(): void
+    {
+        $this->subscribe->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::DRINK));
+        $this->drink(1000);
+        $day = $this->drink(600);
+
+        self::getContainer()->get(DeleteHydrationEntryUseCase::class)->execute($this->idOf($this->alice), $this->entryId($day, 600));
+
+        self::assertFalse($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
+    }
+
     /** Dropping a habit keeps its days: resuming it picks the run back up rather than starting over. */
     public function testSubscribingKeepsHistoryAcrossADrop(): void
     {
@@ -197,6 +239,24 @@ final class HabitTest extends KernelTestCase
         }
 
         throw new LogicException('The habit is not in the list.');
+    }
+
+    private function drink(int $volumeInMillilitres): HydrationDayDataOutput
+    {
+        return self::getContainer()->get(CreateHydrationEntryUseCase::class)->execute(
+            $this->idOf($this->alice), new CreateHydrationEntryDataInput($volumeInMillilitres),
+        );
+    }
+
+    private function entryId(HydrationDayDataOutput $day, int $volumeInMillilitres): int
+    {
+        foreach ($day->entries as $entry) {
+            if ($volumeInMillilitres === $entry->volumeInMillilitres) {
+                return $entry->id;
+            }
+        }
+
+        throw new LogicException('No such drink that day.');
     }
 
     private function habitId(string $reference): int

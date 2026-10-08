@@ -22,7 +22,6 @@ final readonly class DeleteWorkoutUseCase implements UseCaseInterface
         private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutPersisterGateway $workoutPersisterGateway,
-        private SyncWorkoutHabitsUseCase $syncWorkoutHabits,
     ) {
     }
 
@@ -41,12 +40,7 @@ final readonly class DeleteWorkoutUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $finishedAt = $workout->finishedAt;
-
+        // The habits watching workouts, and the records, follow on the persister's event.
         $this->workoutPersisterGateway->delete($workout);
-
-        if (null !== $finishedAt) {
-            $this->syncWorkoutHabits->execute($owner, $finishedAt);
-        }
     }
 }

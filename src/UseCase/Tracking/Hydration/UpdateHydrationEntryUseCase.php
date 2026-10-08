@@ -14,11 +14,9 @@ use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationEntryPersisterGatew
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationDayProviderGateway;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationEntryProviderGateway;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
-use App\Domain\Registry\Habits\HabitTrackerRegistry;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Tracking\Hydration\UpdateHydrationEntryValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
-use App\UseCase\Habits\SyncTrackerHabitsUseCase;
 use App\UseCase\UseCaseInterface;
 
 final readonly class UpdateHydrationEntryUseCase implements UseCaseInterface
@@ -31,7 +29,6 @@ final readonly class UpdateHydrationEntryUseCase implements UseCaseInterface
         private HydrationDayProviderGateway $hydrationDayProviderGateway,
         private HydrationDayOutputFactory $outputFactory,
         private DayClock $clock,
-        private SyncTrackerHabitsUseCase $syncTrackerHabits,
     ) {
     }
 
@@ -59,9 +56,6 @@ final readonly class UpdateHydrationEntryUseCase implements UseCaseInterface
         // Re-read so the total counts every entry, not just the one in hand.
         $today = $this->clock->today();
         $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($owner, $today) ?? $entry->hydrationDay;
-
-        // The day's total changed: habits watching hydration are kept, or unkept, to match.
-        $this->syncTrackerHabits->execute($ownerId, HabitTrackerRegistry::HYDRATION, $day->getTotalInMillilitres(), $today);
 
         return $this->outputFactory->buildOne($day);
     }

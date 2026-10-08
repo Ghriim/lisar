@@ -30,7 +30,6 @@ final readonly class FinishWorkoutUseCase implements UseCaseInterface
         private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutPersisterGateway $workoutPersisterGateway,
-        private SyncWorkoutHabitsUseCase $syncWorkoutHabits,
         private WorkoutOutputFactory $outputFactory,
         private DayClock $clock,
     ) {
@@ -64,9 +63,8 @@ final readonly class FinishWorkoutUseCase implements UseCaseInterface
 
         $finishedAt = $this->clock->now();
         $workout->finishedAt = $finishedAt;
+        // The habits watching workouts follow, on the persister's event.
         $this->workoutPersisterGateway->update($workout);
-
-        $this->syncWorkoutHabits->execute($owner, $finishedAt);
 
         return $this->outputFactory->buildOne($workout);
     }

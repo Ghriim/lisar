@@ -11,6 +11,7 @@ use App\Domain\DTO\DataModel\Training\MuscleDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockDataInput;
+use App\Domain\DTO\Input\Training\AddWorkoutBlockExerciseDataInput;
 use App\Domain\DTO\Input\Training\Admin\ListMovementsForAdminDataInput;
 use App\Domain\DTO\Input\Training\CreateMovementDataInput;
 use App\Domain\DTO\Input\Training\CreateMovementFamilyDataInput;
@@ -366,7 +367,7 @@ final class MovementBackOfficeTest extends KernelTestCase
         $aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
 
         $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($aliceId, new StartWorkoutDataInput());
-        self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($aliceId, $workout->id, new AddWorkoutBlockDataInput([$id]));
+        self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($aliceId, $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($id)]));
 
         try {
             self::getContainer()->get(DeleteMovementUseCase::class)->execute($id);

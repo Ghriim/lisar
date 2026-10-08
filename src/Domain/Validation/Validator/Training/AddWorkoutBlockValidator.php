@@ -27,7 +27,7 @@ final readonly class AddWorkoutBlockValidator extends AbstractBaseValidator
     public function validate(AddWorkoutBlockDataInput $input, array $offered): void
     {
         $violations = $this->getViolations($input);
-        $violations = WorkoutMovementsOfferedConstraint::validate($input->movementIds, $offered, 'movementIds', $violations);
+        $violations = WorkoutMovementsOfferedConstraint::validate($input->movementIds(), $offered, 'exercises', $violations);
 
         if (false === empty($violations)) {
             throw new ValidationException(self::ERROR_CODE, $violations);

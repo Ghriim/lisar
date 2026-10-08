@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\Factory\OutputFactory\Training;
 
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
+use App\Domain\Factory\OutputFactory\Training\PersonalBestOutputFactory;
 use App\Domain\Factory\OutputFactory\Training\WorkoutStatsOutputFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -14,7 +15,7 @@ final class WorkoutStatsOutputFactoryTest extends TestCase
 
     public function testAnEmptyWorkoutAmountsToNothing(): void
     {
-        $stats = (new WorkoutStatsOutputFactory())->buildOne($this->workout(7));
+        $stats = $this->factory()->buildOne($this->workout(7));
 
         self::assertSame(7, $stats->workoutId);
         self::assertSame(0, $stats->setCount);
@@ -33,7 +34,7 @@ final class WorkoutStatsOutputFactoryTest extends TestCase
         $exercise = $this->exercise($this->block($workout, 1, 0), 1, 0, $pushUp);
         $this->set($exercise, 1, 0, reps: 15);
 
-        $stats = (new WorkoutStatsOutputFactory())->buildOne($workout);
+        $stats = $this->factory()->buildOne($workout);
 
         self::assertSame(1, $stats->setCount);
         self::assertNull($stats->volumeInKilograms);
@@ -51,7 +52,7 @@ final class WorkoutStatsOutputFactoryTest extends TestCase
         $exercise = $this->exercise($this->block($workout, 1, 0), 1, 0, $lunge);
         $this->set($exercise, 1, 0, reps: 10)->weightInKilograms = 20.0;
 
-        self::assertSame(400.0, (new WorkoutStatsOutputFactory())->buildOne($workout)->volumeInKilograms);
+        self::assertSame(400.0, $this->factory()->buildOne($workout)->volumeInKilograms);
     }
 
     public function testDurationsAndDistancesAddUp(): void
@@ -67,7 +68,7 @@ final class WorkoutStatsOutputFactoryTest extends TestCase
             $set->distanceInMetres = 2000;
         }
 
-        $stats = (new WorkoutStatsOutputFactory())->buildOne($workout);
+        $stats = $this->factory()->buildOne($workout);
 
         self::assertSame(1200, $stats->durationInSeconds);
         self::assertSame(4000, $stats->distanceInMetres);
@@ -85,7 +86,7 @@ final class WorkoutStatsOutputFactoryTest extends TestCase
         $this->set($exercise, 1, 0, reps: 8);
         $this->set($exercise, 2, 1, reps: 8);
 
-        $muscles = (new WorkoutStatsOutputFactory())->buildOne($workout)->muscles;
+        $muscles = $this->factory()->buildOne($workout)->muscles;
 
         self::assertSame(
             [['Mid chest', 2.0, 50.0], ['Front delts', 1.0, 25.0], ['Triceps', 1.0, 25.0]],
@@ -101,5 +102,10 @@ final class WorkoutStatsOutputFactoryTest extends TestCase
         $muscle->name = $name;
 
         return $muscle;
+    }
+
+    private function factory(): WorkoutStatsOutputFactory
+    {
+        return new WorkoutStatsOutputFactory(new PersonalBestOutputFactory($this->mapper()));
     }
 }

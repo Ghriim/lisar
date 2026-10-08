@@ -13,12 +13,10 @@ use App\Domain\Factory\OutputFactory\Tracking\Step\StepDayOutputFactory;
 use App\Domain\Gateway\Persister\Tracking\Step\StepDayPersisterGateway;
 use App\Domain\Gateway\Provider\Tracking\Step\StepDayProviderGateway;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
-use App\Domain\Registry\Habits\HabitTrackerRegistry;
 use App\Domain\Registry\Tracking\Step\StepSourceRegistry;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Tracking\Step\SaveStepDayValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
-use App\UseCase\Habits\SyncTrackerHabitsUseCase;
 use App\UseCase\UseCaseInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
@@ -40,7 +38,6 @@ final readonly class SaveStepDayUseCase implements UseCaseInterface
         private StepDayPersisterGateway $stepDayPersisterGateway,
         private StepDayOutputFactory $outputFactory,
         private DayClock $clock,
-        private SyncTrackerHabitsUseCase $syncTrackerHabits,
         #[Autowire('%step_daily_goal%')]
         private int $defaultGoalInSteps,
     ) {
@@ -81,9 +78,6 @@ final readonly class SaveStepDayUseCase implements UseCaseInterface
         } else {
             $this->stepDayPersisterGateway->update($stepDay);
         }
-
-        // The figure changed: the habits that watch the step count are kept, or unkept, to match.
-        $this->syncTrackerHabits->execute($ownerId, HabitTrackerRegistry::STEPS, $stepDay->countInSteps, $today);
 
         return $this->outputFactory->buildOne($stepDay);
     }

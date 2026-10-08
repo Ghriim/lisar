@@ -14,6 +14,7 @@ use App\Domain\DTO\Input\Training\UpdateWorkoutDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutExerciseDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
 use App\Domain\DTO\Output\Training\MovementDataOutput;
+use App\Domain\DTO\Output\Training\PersonalBestBoardDataOutput;
 use App\Domain\DTO\Output\Training\SetTypeDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutCopyDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutDataOutput;
@@ -35,6 +36,7 @@ use App\UseCase\Training\FinishWorkoutUseCase;
 use App\UseCase\Training\GetCurrentWorkoutUseCase;
 use App\UseCase\Training\GetWorkoutStatsUseCase;
 use App\UseCase\Training\GetWorkoutUseCase;
+use App\UseCase\Training\ListPersonalBestsUseCase;
 use App\UseCase\Training\ListWorkoutMovementsUseCase;
 use App\UseCase\Training\ListWorkoutPreviousPerformancesUseCase;
 use App\UseCase\Training\ListWorkoutSetTypesUseCase;
@@ -201,9 +203,18 @@ final class WorkoutController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
+    #[Route('/api/workouts/personal-bests', methods: Request::METHOD_GET)]
+    #[OA\Response(response: Response::HTTP_OK, description: 'The account\'s records: those of whole workouts, then movement by movement, each with its progression.', content: new OA\JsonContent(ref: new Model(type: PersonalBestBoardDataOutput::class)))]
+    public function listPersonalBests(
+        #[CurrentUser] SecurityUser $securityUser,
+        ListPersonalBestsUseCase $useCase,
+    ): JsonResponse {
+        return new JsonResponse($useCase->execute($securityUser->id));
+    }
+
     #[Route('/api/workouts/{id}/stats', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
-    #[OA\Response(response: Response::HTTP_OK, description: 'What it amounts to: sets, load, time, distance, and the share of each muscle.', content: new OA\JsonContent(ref: new Model(type: WorkoutStatsDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_OK, description: 'What it amounts to: sets, load, time, distance, the share of each muscle, and the personal bests it beat.', content: new OA\JsonContent(ref: new Model(type: WorkoutStatsDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such workout on this account.')]
     public function getWorkoutStats(
         int $id,

@@ -18,4 +18,7 @@ final class SetTypeDataOutput
 
     /** The one a set takes when it is logged without one. Exactly one type carries it. */
     public bool $isDefaultType;
+
+    /** Whether its sets can set a personal best. */
+    public bool $countsForPersonalBests;
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Factory\OutputFactory\Training;
 
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
+use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\Output\Training\WorkoutMuscleShareDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutStatsDataOutput;
@@ -22,7 +23,14 @@ final readonly class WorkoutStatsOutputFactory
     public const float PRIMARY_SHARE = 1.0;
     public const float SECONDARY_SHARE = 0.5;
 
-    public function buildOne(WorkoutDataModel $workout): WorkoutStatsDataOutput
+    public function __construct(private PersonalBestOutputFactory $personalBestOutputFactory)
+    {
+    }
+
+    /**
+     * @param list<PersonalBestDataModel> $personalBests the records that workout beat
+     */
+    public function buildOne(WorkoutDataModel $workout, array $personalBests = []): WorkoutStatsDataOutput
     {
         $output = new WorkoutStatsDataOutput();
         $output->workoutId = (int) $workout->id;
@@ -61,6 +69,7 @@ final readonly class WorkoutStatsOutputFactory
         }
 
         $output->muscles = $this->rank($shares);
+        $output->personalBests = $this->personalBestOutputFactory->buildMany($personalBests);
 
         return $output;
     }

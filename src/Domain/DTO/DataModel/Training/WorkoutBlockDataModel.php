@@ -67,4 +67,21 @@ class WorkoutBlockDataModel implements DataModelInterface
 
         return $exercises;
     }
+
+    /**
+     * The movements it holds, each once.
+     *
+     * @return list<MovementDataModel>
+     */
+    public function movements(): array
+    {
+        $movements = [];
+        foreach ($this->exercises as $exercise) {
+            if (false === in_array($exercise->movement, $movements, true)) {
+                $movements[] = $exercise->movement;
+            }
+        }
+
+        return $movements;
+    }
 }

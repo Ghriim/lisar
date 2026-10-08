@@ -1,26 +1,42 @@
 import { type FormEvent, useState } from 'react'
-import type { WorkoutMovementChoice } from '../../api/types'
-import { Alert, Button, EmptyState, Field, FormActions, Loader, Stack, TextInput, ToggleChip } from '../../components'
+import type { WorkoutBlockExercisePayload, WorkoutMovementChoice } from '../../api/types'
+import {
+    Alert,
+    Button,
+    EmptyState,
+    Field,
+    FormActions,
+    Loader,
+    Stack,
+    TextInput,
+    ToggleChip,
+    useViolations,
+} from '../../components'
 import { useWorkoutMovements } from './queries'
-import { failureOf } from './workoutFormat'
+import { failureOf, parseDuration } from './workoutFormat'
 
 interface MovementPickerProps {
     /** How many may be picked: one when a movement joins a block, up to six for a new block. */
     max: number
     pending: boolean
     failure: unknown
-    onSubmit: (movementIds: number[]) => void
+    /** Where the API puts what it says about the rest of the movement picked `index`-th. */
+    restFieldOf: (index: number) => string
+    onSubmit: (exercises: WorkoutBlockExercisePayload[]) => void
     onCancel: () => void
 }
 
 /**
  * The movements on offer, by family, each a chip to pick. Picking several makes a superset, in
- * the order they were picked — which the line above the chips says back.
+ * the order they were picked — which the line above the chips says back. Each one picked gets a
+ * rest of its own, empty until someone types one: none means no timer after its sets.
  */
-export function MovementPicker({ max, pending, failure, onSubmit, onCancel }: MovementPickerProps) {
+export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, onCancel }: MovementPickerProps) {
     const movements = useWorkoutMovements()
     const [search, setSearch] = useState('')
     const [picked, setPicked] = useState<number[]>([])
+    const [rests, setRests] = useState<Record<number, string>>({})
+    const violations = useViolations(failure)
 
     const all = movements.data ?? []
     const byId = new Map(all.map((movement) => [movement.id, movement]))
@@ -38,10 +54,12 @@ export function MovementPicker({ max, pending, failure, onSubmit, onCancel }: Mo
 
     const submit = (event: FormEvent) => {
         event.preventDefault()
-        onSubmit(picked)
+        onSubmit(picked.map((movementId) => ({ movementId, restInSeconds: parseDuration(rests[movementId] ?? '') })))
     }
 
-    const error = failureOf(failure)
+    const restErrors = picked.map((_, index) => violations.for(restFieldOf(index)))
+    // A rest refused is said under its field; anything else, once, above the buttons.
+    const error = restErrors.some((errors) => errors.length > 0) ? null : failureOf(failure)
 
     return (
         <form className="form-grid" onSubmit={submit}>
@@ -81,6 +99,21 @@ export function MovementPicker({ max, pending, failure, onSubmit, onCancel }: Mo
                     ))}
                 </Stack>
             )}
+
+            {picked.map((id, index) => (
+                <Field
+                    key={id}
+                    label={`Repos${max === 1 ? '' : ` · ${byId.get(id)?.name ?? ''}`} (s ou m:ss, facultatif)`}
+                    errors={restErrors[index]}
+                >
+                    <TextInput
+                        inputMode="numeric"
+                        placeholder="1:30"
+                        value={rests[id] ?? ''}
+                        onChange={(event) => setRests({ ...rests, [id]: event.target.value })}
+                    />
+                </Field>
+            ))}
 
             {error !== null && <Alert>{error}</Alert>}
 

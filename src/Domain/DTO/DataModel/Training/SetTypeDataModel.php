@@ -41,6 +41,10 @@ class SetTypeDataModel implements DataModelInterface
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     public bool $isDefaultType = false;
 
+    // Whether a set of this type can set a personal best. A warm-up cannot: it is light on purpose.
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
+    public bool $countsForPersonalBests = true;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     public ?DateTimeImmutable $createdAt = null;
 

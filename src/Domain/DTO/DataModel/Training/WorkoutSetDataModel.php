@@ -6,6 +6,8 @@ namespace App\Domain\DTO\DataModel\Training;
 
 use App\Domain\DTO\DataModel\DataModelInterface;
 use DateTimeImmutable;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -60,9 +62,26 @@ class WorkoutSetDataModel implements DataModelInterface
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     public bool $isComplete = false;
 
+    // The personal bests this set established. Removed with it in memory too, like a workout's
+    // children: a record left in the identity map would point at a set that is gone.
+    /** @var Collection<int, PersonalBestDataModel> */
+    #[ORM\OneToMany(targetEntity: PersonalBestDataModel::class, mappedBy: 'set', cascade: ['remove'])]
+    public Collection $personalBests;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     public ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     public ?DateTimeImmutable $updatedAt = null;
+
+    public function __construct()
+    {
+        $this->personalBests = new ArrayCollection();
+    }
+
+    /** Whether it may set a personal best: done, and of a type that counts. */
+    public function countsForPersonalBests(): bool
+    {
+        return true === $this->isComplete && true === $this->setType->countsForPersonalBests;
+    }
 }

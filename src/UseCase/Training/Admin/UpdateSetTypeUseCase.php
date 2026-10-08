@@ -18,7 +18,8 @@ use App\UseCase\UseCaseInterface;
 /**
  * Renaming or recolouring a set type, or making it the default. The sets already carrying it
  * follow: they point at the row, not at a copy of its name. Becoming the default takes it from the
- * type that had it; the default is never unset, only given away.
+ * type that had it; the default is never unset, only given away. Switching whether it counts for
+ * personal bests rebuilds the records of every set carrying it.
  */
 final readonly class UpdateSetTypeUseCase implements UseCaseInterface
 {
@@ -44,6 +45,7 @@ final readonly class UpdateSetTypeUseCase implements UseCaseInterface
         $this->validator->validate($input, $setType, $this->setTypeProviderGateway->findOneByName($input->name));
         $setType->name = $input->name;
         $setType->colour = $input->colour;
+        $setType->countsForPersonalBests = $input->countsForPersonalBests;
 
         $changed = [$setType];
         if (true === $input->isDefaultType && false === $setType->isDefaultType) {

@@ -36,14 +36,23 @@ editable once finished.
 - **Adding** — the plus of « Exercices » for a new block, or a block's own plus — opens a picker:
   a search (accents and case aside) over the movements on offer, grouped by family, each a chip.
   For a new block, picking several makes a superset **in the order they were picked**, said back
-  above the chips.
-- **Each movement** shows its note, a « Retiré » chip if it was retired since, and **the last
-  time**: one chip per set from the previous workout it was done in, or « Jamais fait avant. »
-  Its plus logs a set, its pencil edits its note; inside a superset, a bin removes it alone.
+  above the chips. Under the chips, **one « Repos » field per movement picked**, optional and
+  empty: the [rest](#the-rest-between-sets) after each of its sets, in seconds (« 90 ») or as a
+  stopwatch reads (« 1:30 »).
+- **Each movement** shows its note, its rest as a chip — « Repos 1:30 », or « Repos 0 s » when
+  it has none, so every movement reads the same way — and a « Retiré » chip if it was retired
+  since. What it gave the last time is shown beside each set, not here. Its plus logs a set, its
+  pencil edits its rest and its note; inside a superset, a bin removes it alone.
 - **Each set** is one line: its rank in a small frame, **in its type's colour** — the type's name
   on hover — then its measures, in full white: « 10 reps · 60 kg », « 10 reps / côté » for a
   unilateral movement, durations as « 45 s » or « 1:30 », distances as « 800 m » or « 5,2 km ».
   An RPE follows on the same line, dimmed and unframed: « RPE 8,5 ».
+  Under it, **the set of the same rank [the last time](#the-last-time)** — set 1 beside set 1,
+  set 2 beside set 2, as plain text: « Dernière fois : 8 reps · 60 kg ». A set ranked past what was done then has none, and a set done then but not
+  logged yet is not shown.
+  A set that beat a [personal best](records.md) carries a gold chip per record under it, named
+  alone — « 5RM » — from the moment it is ticked. Once the workout is finished, the chip opens
+  the records page on that record.
   A set is corrected with its pencil and **removed without a question**: it is logged again in
   one gesture.
 - **« Terminer »**, a button with the check icon, centred under the exercises — in progress only —
@@ -53,6 +62,27 @@ editable once finished.
   is done; a done set gets **a green left edge**, its measures still in full view, and its check
   becomes **« Décocher »**, for a mis-tap. A movement whose sets are all done gets one
   too. A finished workout shows neither the checks nor the green: every set in it was done.
+
+### The rest between sets
+
+A movement in a workout may carry **a rest**, from 1 second to an hour (`rest_invalid`): typed
+when it is added, corrected or cleared with its pencil. None means no timer for it.
+
+- **Ticking a set starts its movement's rest** — on the tap, not once the server answers: that is
+  when the set was over. A superset changes nothing: each movement uses its own rest, so a movement
+  without one starts none.
+- **A bar held at the bottom of the screen** counts it down, as a stopwatch: « 1:30 », « 0:45 ».
+  **« −15 s »** and **« +15 s »** move its end; −15 s goes no lower than zero. **« Passer »** ends
+  it.
+- **At zero** it beeps three times and buzzes, where the browser allows it — a phone often keeps
+  both from a tab in the background, and iOS never buzzes — then **the bar disappears**. It never
+  counts past zero.
+- **Ticking another set** starts that one's rest instead; one whose movement has no rest ends the
+  rest under way, since the next set is done. **Unticking the set that started it** stops it, and
+  so does a tick the server refused.
+- **Nothing of it is stored.** The rest really taken is not recorded, and the timer lives in the
+  page: leaving the workout's page, or reloading it, loses it. A rest that ended while the tab
+  was asleep closes without a sound — a beep minutes late would mean nothing.
 
 ### Closing a workout
 
@@ -67,7 +97,9 @@ to its page.
     distance. A total no set measures is not shown — it is not zero, it does not exist;
   - **the share of each muscle**, the most worked first, as a bar and a percentage: a set counts
     **1 for the movement's primary muscle and 0.5 for each secondary one**, and the percentages
-    are out of all those counts together, so they add up to 100.
+    are out of all those counts together, so they add up to 100;
+  - **« Records battus »**, when it beat any: each [personal best](records.md) it beat, by one of
+    its sets or as a whole, with its value.
 
 ### Logging a set
 
@@ -112,7 +144,8 @@ workout, as two separate entries.
 - A movement can be added to an existing block, which turns it into a superset.
 - **A block never stays empty**: removing its last movement removes it too. A whole block can
   also be removed at once.
-- Each movement in a workout carries its own **note** (5000 characters at most).
+- Each movement in a workout carries its own **note** (5000 characters at most) and its own
+  [rest](#the-rest-between-sets).
 
 **Only what is offered can be added**: an active movement in an active family
 (`movement_unavailable` otherwise). A movement already in a workout and retired since stays
@@ -161,7 +194,7 @@ A finished workout of the history can be **done again**: « Refaire » starts a 
 laid out like that one, and goes straight to its page.
 
 - **What it takes over**: the name, the blocks and their movements in the same order, each
-  movement's note, and **every set as something to do**: same measures, RPE and type, **not
+  movement's note and rest, and **every set as something to do**: same measures, RPE and type, **not
   ticked**. The sets are what is about to be lifted, as when one is logged before it is done:
   the load is adjusted if need be, then each set is ticked.
 - **What it leaves**: the workout's own note and feeling, and its two moments. They tell what
@@ -179,10 +212,11 @@ laid out like that one, and goes straight to its page.
 
 ## The last time
 
-Next to each movement, the workout shows **what it gave the last time**: the sets of the latest
-finished workout, started before this one, in which that movement was done. If it came twice in
-that workout, the sets of both are shown. A movement never done before shows nothing. Opened on
-a past workout, it shows the workout before that one.
+Beside each set, the workout shows **what the same set gave the last time**, taken from the sets
+of the latest finished workout, started before this one, in which that movement was done. If it
+came twice in that workout, the sets of both follow one another, and are matched to this
+workout's sets in that order. A movement never done before shows nothing beside its sets. Opened
+on a past workout, it shows the workout before that one.
 
 ## The habit it keeps
 
@@ -191,4 +225,5 @@ mark of workouts were **finished** that day. Deleting a finished workout recount
 
 ## Not here yet
 
-Workout templates and programs, a rest timer, people's own movements, and statistics or records.
+Workout templates and programs, a timer during a set (a plank, an interval), people's own
+movements, and statistics.

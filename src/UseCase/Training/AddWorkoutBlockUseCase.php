@@ -23,7 +23,7 @@ use App\UseCase\UseCaseInterface;
 
 /**
  * Adding a block at the end of a workout: one movement, or several back to back — a superset, in
- * the order given. Each must be offered now.
+ * the order given, each with its own rest. Each must be offered now.
  */
 final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
 {
@@ -55,7 +55,7 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
         }
 
         $offered = [];
-        foreach ($input->movementIds as $movementId) {
+        foreach ($input->movementIds() as $movementId) {
             $movement = $this->movementProviderGateway->findOneOfferedById($movementId);
             if (null !== $movement) {
                 $offered[] = $movement;
@@ -70,11 +70,13 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
         $this->workoutBlockPersisterGateway->create($block);
         $workout->blocks->add($block);
 
+        // Every movement asked for is offered past the validator, so the two lists line up.
         foreach ($offered as $position => $movement) {
             $exercise = new WorkoutExerciseDataModel();
             $exercise->block = $block;
             $exercise->movement = $movement;
             $exercise->position = $position;
+            $exercise->restInSeconds = $input->exercises[$position]->restInSeconds;
             $this->workoutExercisePersisterGateway->create($exercise);
             $block->exercises->add($exercise);
         }

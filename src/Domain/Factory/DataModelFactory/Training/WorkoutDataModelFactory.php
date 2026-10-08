@@ -19,8 +19,8 @@ final readonly class WorkoutDataModelFactory
 {
     /**
      * A new workout in progress, laid out like `$source`: its name, its blocks and movements in
-     * order, each movement's note, and every set as one still to do — same measures, RPE and type,
-     * not ticked. The workout's own note and feeling stay behind: they tell what happened that day.
+     * order, each movement's note and rest, and every set as one still to do — same measures, RPE
+     * and type, not ticked. The workout's own note and feeling stay behind: they tell what happened that day.
      *
      * Only what is offered now is taken over: a movement retired since is left out, and a block
      * left empty with it. A set type retired since gives way to `$defaultSetType`. A set keeps only
@@ -80,6 +80,7 @@ final readonly class WorkoutDataModelFactory
         $exercise->movement = $source->movement;
         $exercise->position = $block->nextExercisePosition();
         $exercise->note = $source->note;
+        $exercise->restInSeconds = $source->restInSeconds;
 
         foreach ($source->orderedSets() as $sourceSet) {
             $set = $this->copySet($sourceSet, $exercise, $defaultSetType);

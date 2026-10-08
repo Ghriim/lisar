@@ -102,6 +102,7 @@ export function SetTypesPage() {
                             <Row gap={8}>
                                 {setType.name}
                                 {setType.isDefaultType && <Tag colour="blue">défaut</Tag>}
+                                {!setType.countsForPersonalBests && <Tag colour="default">hors records</Tag>}
                             </Row>
                         ),
                     },
@@ -171,7 +172,12 @@ export function SetTypesPage() {
                     onSubmit={(values) =>
                         save.mutate({
                             id: editing?.id ?? null,
-                            payload: { name: values.name, colour: values.colour, isDefaultType: values.isDefaultType },
+                            payload: {
+                                name: values.name,
+                                colour: values.colour,
+                                isDefaultType: values.isDefaultType,
+                                countsForPersonalBests: values.countsForPersonalBests,
+                            },
                         })
                     }
                     // Nothing preselected on a creation: the administrator picks the colour.
@@ -179,6 +185,7 @@ export function SetTypesPage() {
                         name: editing?.name ?? '',
                         colour: editing?.colour,
                         isDefaultType: editing?.isDefaultType ?? false,
+                        countsForPersonalBests: editing?.countsForPersonalBests ?? true,
                     }}
                 >
                     <TextField name="name" label="Nom" required autoFocus />
@@ -202,6 +209,11 @@ export function SetTypesPage() {
                         label="Type par défaut"
                         disabled={editing?.isDefaultType === true}
                         hint="Le donner à celui-ci le retire à celui qui l’avait. Il ne se retire jamais seul."
+                    />
+                    <SwitchField
+                        name="countsForPersonalBests"
+                        label="Compte pour les records"
+                        hint="Éteint, ses séries ne battent aucun record — un échauffement, par exemple. Le changer recalcule les records des séries qui le portent."
                     />
                 </FormModal>
             )}

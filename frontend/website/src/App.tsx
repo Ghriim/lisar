@@ -10,6 +10,7 @@ import { TodoPage } from './pages/TodoPage'
 import { WorkoutCompletePage } from './pages/WorkoutCompletePage'
 import { WorkoutPage } from './pages/WorkoutPage'
 import { WorkoutsPage } from './pages/WorkoutsPage'
+import { RecordsPage } from './pages/RecordsPage'
 
 export function App() {
     const { status } = useAuth()
@@ -38,6 +39,7 @@ export function App() {
                 <Route path="/workouts" element={<WorkoutsPage />} />
                 <Route path="/workouts/:id" element={<WorkoutPage />} />
                 <Route path="/workouts/:id/complete" element={<WorkoutCompletePage />} />
+                <Route path="/records" element={<RecordsPage />} />
                 <Route path="/statistiques" element={<ComingSoonPage title="Statistiques" />} />
                 <Route path="/messages" element={<ComingSoonPage title="Messages" />} />
                 <Route path="/amis" element={<ComingSoonPage title="Amis" />} />

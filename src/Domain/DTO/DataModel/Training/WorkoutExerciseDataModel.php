@@ -38,6 +38,10 @@ class WorkoutExerciseDataModel implements DataModelInterface
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     public ?string $note = null;
 
+    // The rest planned after each of its sets, which the timer counts down. None: no timer.
+    #[ORM\Column(nullable: true)]
+    public ?int $restInSeconds = null;
+
     // Removed with it in memory too, not only by the database's cascade: a child left in the
     // identity map would be found again, orphaned, at the next flush.
     /** @var Collection<int, WorkoutSetDataModel> */

@@ -30,4 +30,12 @@ final class WorkoutStatsDataOutput
      * @var list<WorkoutMuscleShareDataOutput>
      */
     public array $muscles = [];
+
+    /**
+     * The personal bests this workout beat, by one of its sets or as a whole, in the order they
+     * are listed in.
+     *
+     * @var list<PersonalBestDataOutput>
+     */
+    public array $personalBests = [];
 }

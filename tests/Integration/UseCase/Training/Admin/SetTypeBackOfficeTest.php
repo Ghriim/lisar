@@ -8,6 +8,7 @@ use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockDataInput;
+use App\Domain\DTO\Input\Training\AddWorkoutBlockExerciseDataInput;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\DTO\Input\Training\Admin\ListSetTypesForAdminDataInput;
 use App\Domain\DTO\Input\Training\CreateSetTypeDataInput;
@@ -168,7 +169,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
         $pushUpId = $this->getReference(MovementFixtures::PUSH_UP, MovementDataModel::class)->id ?? 0;
 
         $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($aliceId, new StartWorkoutDataInput());
-        $workout = self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($aliceId, $workout->id, new AddWorkoutBlockDataInput([$pushUpId]));
+        $workout = self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($aliceId, $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($pushUpId)]));
         self::getContainer()->get(AddWorkoutSetUseCase::class)->execute(
             $aliceId, $workout->id, $workout->blocks[0]->exercises[0]->id, new AddWorkoutSetDataInput(reps: 10, setTypeId: $id),
         );

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repository\Training;
 
+use App\Domain\DTO\Aggregate\Training\WorkoutTally;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
@@ -147,6 +148,85 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->getSingleScalarResult();
     }
 
+    /** @return list<WorkoutSetDataModel> */
+    public function findSetsCountingForPersonalBests(UserDataModel $owner, MovementDataModel $movement): array
+    {
+        return $this->getEntityManager()->createQueryBuilder()
+            ->select('workoutSet', 'exercise', 'block', 'workout', 'setType')
+            ->from(WorkoutSetDataModel::class, 'workoutSet')
+            ->innerJoin('workoutSet.setType', 'setType')
+            ->innerJoin('workoutSet.exercise', 'exercise')
+            ->innerJoin('exercise.block', 'block')
+            ->innerJoin('block.workout', 'workout')
+            ->andWhere('workout.owner = :owner')
+            ->andWhere('exercise.movement = :movement')
+            ->andWhere('workoutSet.isComplete = true')
+            ->andWhere('setType.countsForPersonalBests = true')
+            ->setParameter('owner', $owner)
+            ->setParameter('movement', $movement)
+            ->orderBy('workout.startedAt', 'ASC')
+            ->addOrderBy('workout.id', 'ASC')
+            ->addOrderBy('block.position', 'ASC')
+            ->addOrderBy('block.id', 'ASC')
+            ->addOrderBy('exercise.position', 'ASC')
+            ->addOrderBy('exercise.id', 'ASC')
+            ->addOrderBy('workoutSet.position', 'ASC')
+            ->addOrderBy('workoutSet.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<WorkoutTally> */
+    public function findTalliesForOwner(UserDataModel $owner): array
+    {
+        $counts = 'workoutSet.isComplete = true AND setType.countsForPersonalBests = true';
+        $carriesLoad = $counts.' AND workoutSet.reps IS NOT NULL AND workoutSet.weightInKilograms IS NOT NULL';
+
+        /** @var list<array{0: WorkoutDataModel, setCount: string|int, loadedSetCount: string|int, volume: string|float|null}> $rows */
+        $rows = $this->createQueryBuilder('workout')
+            ->addSelect("SUM(CASE WHEN {$counts} THEN 1 ELSE 0 END) AS setCount")
+            ->addSelect("SUM(CASE WHEN {$carriesLoad} THEN 1 ELSE 0 END) AS loadedSetCount")
+            ->addSelect("SUM(CASE WHEN {$carriesLoad} THEN workoutSet.reps * workoutSet.weightInKilograms ELSE 0 END) AS volume")
+            ->leftJoin('workout.blocks', 'block')
+            ->leftJoin('block.exercises', 'exercise')
+            ->leftJoin('exercise.sets', 'workoutSet')
+            ->leftJoin('workoutSet.setType', 'setType')
+            ->andWhere('workout.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->groupBy('workout.id')
+            ->orderBy('workout.startedAt', 'ASC')
+            ->addOrderBy('workout.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $tallies = [];
+        foreach ($rows as $row) {
+            $tallies[] = new WorkoutTally(
+                $row[0],
+                (int) $row['setCount'],
+                0 === (int) $row['loadedSetCount'] ? null : (float) $row['volume'],
+            );
+        }
+
+        return $tallies;
+    }
+
+    /** @return list<WorkoutExerciseDataModel> */
+    public function findExercisesWithSetType(SetTypeDataModel $setType): array
+    {
+        return $this->getEntityManager()->createQueryBuilder()
+            ->select('exercise', 'movement', 'block', 'workout', 'owner')
+            ->from(WorkoutExerciseDataModel::class, 'exercise')
+            ->innerJoin('exercise.movement', 'movement')
+            ->innerJoin('exercise.block', 'block')
+            ->innerJoin('block.workout', 'workout')
+            ->innerJoin('workout.owner', 'owner')
+            ->andWhere('EXISTS (SELECT 1 FROM '.WorkoutSetDataModel::class.' typedSet WHERE typedSet.exercise = exercise AND typedSet.setType = :setType)')
+            ->setParameter('setType', $setType)
+            ->getQuery()
+            ->getResult();
+    }
+
     /** A workout with everything its output reads, joined and selected. */
     private function whole(): QueryBuilder
     {
@@ -156,7 +236,8 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->leftJoin('exercise.movement', 'movement')
             ->leftJoin('exercise.sets', 'workoutSet')
             ->leftJoin('workoutSet.setType', 'setType')
-            ->addSelect('block', 'exercise', 'movement', 'workoutSet', 'setType');
+            ->leftJoin('workoutSet.personalBests', 'setPersonalBest')
+            ->addSelect('block', 'exercise', 'movement', 'workoutSet', 'setType', 'setPersonalBest');
     }
 
     private function finished(UserDataModel $owner): QueryBuilder

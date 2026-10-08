@@ -3,7 +3,7 @@ import { useState } from 'react'
 import type { Workout, WorkoutBlock, WorkoutExercise, WorkoutSet } from '../../api/types'
 import { Alert, ConfirmDialog, EmptyState, IconButton, Modal, Row, SystemPanel } from '../../components'
 import { ExerciseCard } from './ExerciseCard'
-import { ExerciseNoteForm } from './ExerciseNoteForm'
+import { ExerciseDetailsForm } from './ExerciseDetailsForm'
 import { MovementPicker } from './MovementPicker'
 import {
     useAddWorkoutBlock,
@@ -17,6 +17,7 @@ import {
     useUncompleteWorkoutSet,
 } from './queries'
 import { SetForm } from './SetForm'
+import type { RestTimer } from './useRestTimer'
 import { failureOf } from './workoutFormat'
 
 /** A superset takes six movements at most — the API's bound, said here so the picker stops there. */
@@ -26,7 +27,7 @@ const MAX_MOVEMENTS_PER_BLOCK = 6
 type Panel =
     | { kind: 'add-block' }
     | { kind: 'add-exercise'; block: WorkoutBlock }
-    | { kind: 'note'; exercise: WorkoutExercise }
+    | { kind: 'details'; exercise: WorkoutExercise }
     | { kind: 'set'; exercise: WorkoutExercise; editing: WorkoutSet | null; previous: WorkoutSet | null }
     | { kind: 'delete-block'; block: WorkoutBlock }
     | { kind: 'delete-exercise'; exercise: WorkoutExercise }
@@ -35,9 +36,10 @@ type Panel =
 /**
  * What a workout is made of: its blocks in order, their movements, the sets of each and what each
  * gave the last time — with everything that adds to, corrects or reorders them. The same card logs
- * the workout in progress and corrects a finished one; only ticking sets is kept for the first.
+ * the workout in progress and corrects a finished one; only ticking sets is kept for the first,
+ * and ticking one starts the rest its movement plans.
  */
-export function WorkoutExercisesCard({ workout }: { workout: Workout }) {
+export function WorkoutExercisesCard({ workout, restTimer }: { workout: Workout; restTimer: RestTimer }) {
     const [panel, setPanel] = useState<Panel>(null)
     const close = () => setPanel(null)
 
@@ -61,6 +63,19 @@ export function WorkoutExercisesCard({ workout }: { workout: Workout }) {
         const ids = workout.blocks.map((block) => block.id)
         ;[ids[index], ids[index + offset]] = [ids[index + offset], ids[index]]
         reorder.mutate({ id: workout.id, blockIds: ids })
+    }
+
+    /** The rest starts on the tap, not on the answer: that is when the set was over. */
+    const toggleSet = (exercise: WorkoutExercise, set: WorkoutSet) => {
+        if (set.isComplete) {
+            restTimer.cancel(set)
+            uncompleteSet.mutate({ id: workout.id, setId: set.id })
+
+            return
+        }
+
+        restTimer.start(exercise, set)
+        completeSet.mutate({ id: workout.id, setId: set.id }, { onError: () => restTimer.cancel(set) })
     }
 
     /** Logging a set opens on the one before it: in this workout, or else the last time. */
@@ -137,14 +152,12 @@ export function WorkoutExercisesCard({ workout }: { workout: Workout }) {
                                         previous={lastTimes.get(exercise.movement.id)}
                                         removable={isSuperset}
                                         inProgress={workout.isInProgress}
-                                        onToggleSet={(set) =>
-                                            (set.isComplete ? uncompleteSet : completeSet).mutate({ id: workout.id, setId: set.id })
-                                        }
+                                        onToggleSet={(set) => toggleSet(exercise, set)}
                                         busy={busy}
                                         onAddSet={() => openNewSet(exercise)}
                                         onEditSet={(set) => setPanel({ kind: 'set', exercise, editing: set, previous: null })}
                                         onDeleteSet={(set) => removeSet.mutate({ id: workout.id, setId: set.id })}
-                                        onEditNote={() => setPanel({ kind: 'note', exercise })}
+                                        onEditDetails={() => setPanel({ kind: 'details', exercise })}
                                         onDelete={() =>
                                             exercise.sets.length === 0
                                                 ? removeExercise.mutate({ id: workout.id, exerciseId: exercise.id })
@@ -164,8 +177,9 @@ export function WorkoutExercisesCard({ workout }: { workout: Workout }) {
                         max={MAX_MOVEMENTS_PER_BLOCK}
                         pending={addBlock.isPending}
                         failure={addBlock.error}
+                        restFieldOf={(index) => `exercises[${index}].restInSeconds`}
                         onCancel={close}
-                        onSubmit={(movementIds) => addBlock.mutate({ id: workout.id, movementIds }, { onSuccess: close })}
+                        onSubmit={(exercises) => addBlock.mutate({ id: workout.id, exercises }, { onSuccess: close })}
                     />
                 </Modal>
             )}
@@ -176,17 +190,18 @@ export function WorkoutExercisesCard({ workout }: { workout: Workout }) {
                         max={1}
                         pending={addExercise.isPending}
                         failure={addExercise.error}
+                        restFieldOf={() => 'restInSeconds'}
                         onCancel={close}
-                        onSubmit={([movementId]) =>
-                            addExercise.mutate({ id: workout.id, blockId: panel.block.id, movementId }, { onSuccess: close })
+                        onSubmit={([exercise]) =>
+                            addExercise.mutate({ id: workout.id, blockId: panel.block.id, exercise }, { onSuccess: close })
                         }
                     />
                 </Modal>
             )}
 
-            {panel?.kind === 'note' && (
-                <Modal title={`Note · ${panel.exercise.movement.name}`} onClose={close}>
-                    <ExerciseNoteForm workoutId={workout.id} exercise={panel.exercise} onDone={close} />
+            {panel?.kind === 'details' && (
+                <Modal title={`Modifier le mouvement · ${panel.exercise.movement.name}`} onClose={close}>
+                    <ExerciseDetailsForm workoutId={workout.id} exercise={panel.exercise} onDone={close} />
                 </Modal>
             )}
 

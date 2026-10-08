@@ -13,6 +13,7 @@ final readonly class WorkoutSetOutputFactory
     public function __construct(
         private ObjectMapperInterface $mapper,
         private SetTypeOutputFactory $setTypeOutputFactory,
+        private PersonalBestOutputFactory $personalBestOutputFactory,
     ) {
     }
 
@@ -35,6 +36,7 @@ final readonly class WorkoutSetOutputFactory
     {
         $output = $this->mapper->map($set, WorkoutSetDataOutput::class);
         $output->setType = $this->setTypeOutputFactory->buildOne($set->setType);
+        $output->personalBests = $this->personalBestOutputFactory->buildMany($set->personalBests);
 
         return $output;
     }

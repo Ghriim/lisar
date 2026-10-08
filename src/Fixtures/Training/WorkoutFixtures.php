@@ -58,15 +58,16 @@ final class WorkoutFixtures extends Fixture implements DependentFixtureInterface
 
         $warmUp = $this->getReference(SetTypeFixtures::WARM_UP, SetTypeDataModel::class);
 
-        $bench = $this->exercise($this->block($workout, 0), MovementFixtures::BENCH_PRESS_BARBELL, 0);
+        $bench = $this->exercise($this->block($workout, 0), MovementFixtures::BENCH_PRESS_BARBELL, 0, rest: 150);
         $this->set($bench, 0, reps: 10, weight: 40.0, setType: $warmUp);
         $this->set($bench, 1, reps: 8, weight: 60.0, rpe: 7.5);
         $this->set($bench, 2, reps: 8, weight: 60.0, rpe: 8.0);
         $this->set($bench, 3, reps: 7, weight: 60.0, rpe: 9.0);
 
         $superset = $this->block($workout, 1);
+        // A superset rests after its last movement only: the push-ups carry none.
         $pushUp = $this->exercise($superset, MovementFixtures::PUSH_UP, 0);
-        $farmerWalk = $this->exercise($superset, MovementFixtures::FARMER_WALK_DUMBBELL, 1);
+        $farmerWalk = $this->exercise($superset, MovementFixtures::FARMER_WALK_DUMBBELL, 1, rest: 90);
         $this->set($pushUp, 0, reps: 15);
         $this->set($farmerWalk, 0, weight: 24.0, distance: 40);
         $this->set($pushUp, 1, reps: 12);
@@ -89,12 +90,13 @@ final class WorkoutFixtures extends Fixture implements DependentFixtureInterface
         return $block;
     }
 
-    private function exercise(WorkoutBlockDataModel $block, string $movementReference, int $position): WorkoutExerciseDataModel
+    private function exercise(WorkoutBlockDataModel $block, string $movementReference, int $position, ?int $rest = null): WorkoutExerciseDataModel
     {
         $exercise = new WorkoutExerciseDataModel();
         $exercise->block = $block;
         $exercise->movement = $this->getReference($movementReference, MovementDataModel::class);
         $exercise->position = $position;
+        $exercise->restInSeconds = $rest;
         $this->workoutExercisePersisterGateway->create($exercise);
 
         return $exercise;

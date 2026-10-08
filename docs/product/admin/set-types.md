@@ -11,6 +11,7 @@ to failure. Reference data an administrator maintains; people do not create set 
 | colour | required, **one of a fixed palette**, nothing preselected on a creation |
 | active | inactive: no longer offered to new sets |
 | default | **exactly one type carries it**: the one a set takes when it is logged without one |
+| counts for records | whether its sets can beat a [personal best](../website/records.md); **on** on a creation |
 
 **A set always carries a type.** A set logged or corrected without one takes the default — the
 ordinary working set, `Travail` as seeded.
@@ -41,11 +42,14 @@ window creates or edits a row.
   type cannot take it (`default_set_type_inactive`). The default is marked « défaut » in the list,
   and is **neither deactivated nor deleted** (`set_type_is_the_default`): neither action is offered
   on its row.
+- **« Compte pour les records »** is a second switch. Switched off, the type's sets beat no record
+  — a warm-up is light on purpose; the list marks such a type « hors records ». Switching it
+  either way **rebuilds the records of every set carrying it**, anyone's.
 
 The list is **not paginated**: a handful of rows.
 
 ## Seeded
 
-Five types, all active: `Travail` (blue, **the default**), `Échauffement` (orange), `Dropset`
-(purple), `Échec` (red), `Back-off` (blue). `Travail` is also created by the migration that
+Five types, all active: `Travail` (blue, **the default**), `Échauffement` (orange, **not counting
+for records**), `Dropset` (purple), `Échec` (red), `Back-off` (blue). `Travail` is also created by the migration that
 brought the default in, and every set logged without a type until then was given it.

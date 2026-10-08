@@ -1,11 +1,13 @@
+import { Trophy } from 'lucide-react'
 import type { WorkoutStats } from '../../api/types'
-import { Alert, DefinitionList, Loader, ProgressBar, Stack, SystemPanel, type Definition } from '../../components'
+import { Alert, DefinitionList, ListItem, Loader, ProgressBar, Stack, SystemPanel, type Definition } from '../../components'
+import { formatPersonalBestValue, personalBestLabel } from '../records/personalBestFormat'
 import { useWorkoutStats } from './queries'
 import { formatDistance, formatDuration, formatLoad } from './workoutFormat'
 
 /**
  * What a workout amounts to: its sets, then the load, time and distance — each only when a set
- * measured it — and how its sets fell on the muscles.
+ * measured it — how its sets fell on the muscles, and the records it beat.
  */
 export function WorkoutStatsCard({ workoutId }: { workoutId: number }) {
     const stats = useWorkoutStats(workoutId)
@@ -60,6 +62,21 @@ function StatsBody({ stats }: { stats: WorkoutStats }) {
                             </div>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {stats.personalBests.length > 0 && (
+                <div className="list-group" style={{ marginBottom: 0 }}>
+                    <h2 className="list-group-heading">Records battus</h2>
+
+                    {stats.personalBests.map((record) => (
+                        <ListItem
+                            key={record.id}
+                            icon={<Trophy size={15} strokeWidth={2} aria-hidden />}
+                            title={record.movementName === null ? personalBestLabel(record) : `${record.movementName} · ${personalBestLabel(record)}`}
+                            note={formatPersonalBestValue(record)}
+                        />
+                    ))}
                 </div>
             )}
         </Stack>

@@ -8,6 +8,7 @@ use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Training\WorkoutStatsDataOutput;
 use App\Domain\Factory\OutputFactory\Training\WorkoutStatsOutputFactory;
+use App\Domain\Gateway\Provider\Training\PersonalBestProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -22,6 +23,7 @@ final readonly class GetWorkoutStatsUseCase implements UseCaseInterface
     public function __construct(
         private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private PersonalBestProviderGateway $personalBestProviderGateway,
         private WorkoutStatsOutputFactory $outputFactory,
     ) {
     }
@@ -41,6 +43,6 @@ final readonly class GetWorkoutStatsUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        return $this->outputFactory->buildOne($workout);
+        return $this->outputFactory->buildOne($workout, $this->personalBestProviderGateway->findAllForWorkout($workout));
     }
 }

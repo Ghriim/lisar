@@ -1,8 +1,10 @@
-import { Check, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { Check, Pencil, Plus, RotateCcw, Timer, Trash2, Trophy } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { WorkoutExercise, WorkoutPreviousPerformance, WorkoutSet } from '../../api/types'
-import { Chip, IconButton, IndexBadge, ListItem, Row } from '../../components'
+import { Chip, IconButton, IndexBadge, LinkChip, ListItem } from '../../components'
+import { personalBestLabel, personalBestPath } from '../records/personalBestFormat'
 import { setTypeShade } from './setTypeColours'
-import { formatRpe, formatSetMeasures, formatShortDay } from './workoutFormat'
+import { formatDuration, formatRpe, formatSetMeasures } from './workoutFormat'
 
 interface ExerciseCardProps {
     exercise: WorkoutExercise
@@ -20,13 +22,14 @@ interface ExerciseCardProps {
     onAddSet: () => void
     onEditSet: (set: WorkoutSet) => void
     onDeleteSet: (set: WorkoutSet) => void
-    onEditNote: () => void
+    onEditDetails: () => void
     onDelete: () => void
 }
 
 /**
- * One movement of a workout: its note, what it gave the last time, and its sets in the order they
- * were logged. The sets are always unfolded — during a workout they are the point.
+ * One movement of a workout: its note, its rest, and its sets in the order they were logged —
+ * each beside the set of the same rank the last time, the one it is measured against. The sets are
+ * always unfolded — during a workout they are the point.
  */
 export function ExerciseCard({
     exercise,
@@ -38,7 +41,7 @@ export function ExerciseCard({
     onAddSet,
     onEditSet,
     onDeleteSet,
-    onEditNote,
+    onEditDetails,
     onDelete,
 }: ExerciseCardProps) {
     const { movement } = exercise
@@ -56,14 +59,18 @@ export function ExerciseCard({
             meta={
                 <>
                     {!movement.isActive && <Chip>Retiré</Chip>}
-                    <LastTime previous={previous} isUnilateral={movement.isUnilateral} />
+                    {/* Always there, « 0 s » without one: every movement reads the same way. */}
+                    <Chip>
+                        <Timer size={11} strokeWidth={2} aria-hidden />
+                        Repos {formatDuration(exercise.restInSeconds ?? 0)}
+                    </Chip>
                 </>
             }
             actions={
                 <>
                     <IconButton icon={Plus} label="Ajouter une série" subject={movement.name} onClick={onAddSet} />
-                    {/* The note is all there is to change about a movement once it is in. */}
-                    <IconButton icon={Pencil} label="Modifier la note" subject={movement.name} onClick={onEditNote} />
+                    {/* Its rest and its note are all there is to change about a movement once it is in. */}
+                    <IconButton icon={Pencil} label="Modifier" subject={movement.name} onClick={onEditDetails} />
                     {removable && (
                         <IconButton
                             icon={Trash2}
@@ -95,6 +102,7 @@ export function ExerciseCard({
                         note={set.rpe === null ? undefined : formatRpe(set.rpe)}
                         // Done turns green, and stays readable: the next set is often the same again.
                         done={inProgress && set.isComplete}
+                        meta={setMeta(set, previous?.sets[index], movement.isUnilateral, inProgress)}
                         actions={
                             <>
                                 {inProgress &&
@@ -138,17 +146,40 @@ export function ExerciseCard({
     )
 }
 
-function LastTime({ previous, isUnilateral }: { previous: WorkoutPreviousPerformance | undefined; isUnilateral: boolean }) {
-    if (previous === undefined) {
-        return <span className="tracker-note">Jamais fait avant.</span>
+/**
+ * Under a set: the set of the same rank the last time, when there was one, then the records it
+ * beat, by name alone, in gold. A record shows the moment the set is ticked: the answer carries it.
+ * Once the workout is finished each one opens the records page on it; while it runs the record may
+ * still move with the next tick, so it leads nowhere yet. Nothing of either, no line at all.
+ */
+function setMeta(set: WorkoutSet, before: WorkoutSet | undefined, isUnilateral: boolean, inProgress: boolean): ReactNode {
+    if (before === undefined && set.personalBests.length === 0) {
+        return undefined
     }
 
     return (
-        <Row wrap style={{ gap: 6 }}>
-            <span className="tracker-note">La dernière fois, le {formatShortDay(previous.startedAt)} :</span>
-            {previous.sets.map((set) => (
-                <Chip key={set.id}>{formatSetMeasures(set, { isUnilateral })}</Chip>
-            ))}
-        </Row>
+        <>
+            {before !== undefined && (
+                <span className="set-last-time">Dernière fois : {formatSetMeasures(before, { isUnilateral })}</span>
+            )}
+            {set.personalBests.map((record) => {
+                const content = (
+                    <>
+                        <Trophy size={11} strokeWidth={2} aria-hidden />
+                        {personalBestLabel(record)}
+                    </>
+                )
+
+                return inProgress ? (
+                    <Chip key={record.id} colour="var(--warning)">
+                        {content}
+                    </Chip>
+                ) : (
+                    <LinkChip key={record.id} colour="var(--warning)" to={personalBestPath(record)}>
+                        {content}
+                    </LinkChip>
+                )
+            })}
+        </>
     )
 }

@@ -117,12 +117,15 @@ export interface SetType {
     isActive: boolean
     /** The one a set takes when it is logged without one. Exactly one type carries it. */
     isDefaultType: boolean
+    /** Whether its sets can set a personal best. */
+    countsForPersonalBests: boolean
 }
 
 export interface SetTypePayload {
     name: string
     colour: string
     isDefaultType: boolean
+    countsForPersonalBests: boolean
 }
 
 export interface MuscleGroup {

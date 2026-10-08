@@ -5,7 +5,7 @@
  * components here do, so the look of the System is one decision rather than a hundred.
  */
 export { Button, type ButtonVariant } from './Button'
-export { Chip, DotChip, StateChip, ToggleChip } from './Chip'
+export { Chip, DotChip, LinkChip, StateChip, ToggleChip } from './Chip'
 export { ConfirmDialog } from './ConfirmDialog'
 export { DataList, type ListGroup } from './DataList'
 export { DefinitionList, type Definition } from './DefinitionList'

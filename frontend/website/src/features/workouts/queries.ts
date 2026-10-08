@@ -1,11 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '../../api/endpoints'
-import type { Workout, WorkoutDetailsPayload, WorkoutSetPayload } from '../../api/types'
+import type { Workout, WorkoutBlockExercisePayload, WorkoutDetailsPayload, WorkoutSetPayload } from '../../api/types'
 
 /** Every workout query answers to this key, so a write can reach all of them at once. */
 const WORKOUTS = ['workouts'] as const
 
 const CURRENT = [...WORKOUTS, 'current'] as const
+
+const PERSONAL_BESTS = ['personal-bests'] as const
 
 /** Reference data: it changes in the back-office, not while someone lifts. */
 const REFERENCE_STALE_TIME = 5 * 60 * 1000
@@ -44,6 +46,14 @@ export function useWorkoutStats(id: number) {
     return useQuery({
         queryKey: [...WORKOUTS, 'stats', id],
         queryFn: () => api.fetchWorkoutStats(id),
+    })
+}
+
+/** Every record of the account. Any write on a set may move one, so they all re-read it. */
+export function usePersonalBests() {
+    return useQuery({
+        queryKey: PERSONAL_BESTS,
+        queryFn: api.fetchPersonalBests,
     })
 }
 
@@ -92,7 +102,10 @@ function useStoreWorkout() {
         await Promise.all([
             queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'history'] }),
             queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'previous', workout.id] }),
-            queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'stats', workout.id] }),
+            // Every workout's bilan, not only this one's: rebuilding a record can move which
+            // workout beat it, when an older workout is corrected.
+            queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'stats'] }),
+            queryClient.invalidateQueries({ queryKey: PERSONAL_BESTS }),
             touchesHabits ? queryClient.invalidateQueries({ queryKey: ['habits'] }) : null,
         ])
     }
@@ -137,6 +150,9 @@ export function useDeleteWorkout() {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'history'] }),
                 queryClient.invalidateQueries({ queryKey: ['habits'] }),
+                // Its records go with it, and hand back to the previous holders.
+                queryClient.invalidateQueries({ queryKey: PERSONAL_BESTS }),
+                queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'stats'] }),
             ])
             queryClient.removeQueries({ queryKey: [...WORKOUTS, 'stats', workout.id] })
         },
@@ -144,8 +160,8 @@ export function useDeleteWorkout() {
 }
 
 export function useAddWorkoutBlock() {
-    return useWorkoutMutation(({ id, movementIds }: { id: number; movementIds: number[] }) =>
-        api.addWorkoutBlock(id, movementIds),
+    return useWorkoutMutation(({ id, exercises }: { id: number; exercises: WorkoutBlockExercisePayload[] }) =>
+        api.addWorkoutBlock(id, exercises),
     )
 }
 
@@ -162,14 +178,16 @@ export function useDeleteWorkoutBlock() {
 }
 
 export function useAddWorkoutExercise() {
-    return useWorkoutMutation(({ id, blockId, movementId }: { id: number; blockId: number; movementId: number }) =>
-        api.addWorkoutExercise(id, blockId, movementId),
+    return useWorkoutMutation(
+        ({ id, blockId, exercise }: { id: number; blockId: number; exercise: WorkoutBlockExercisePayload }) =>
+            api.addWorkoutExercise(id, blockId, exercise),
     )
 }
 
 export function useUpdateWorkoutExercise() {
-    return useWorkoutMutation(({ id, exerciseId, note }: { id: number; exerciseId: number; note: string | null }) =>
-        api.updateWorkoutExercise(id, exerciseId, note),
+    return useWorkoutMutation(
+        ({ id, exerciseId, ...payload }: { id: number; exerciseId: number; note: string | null; restInSeconds: number | null }) =>
+            api.updateWorkoutExercise(id, exerciseId, payload),
     )
 }
 

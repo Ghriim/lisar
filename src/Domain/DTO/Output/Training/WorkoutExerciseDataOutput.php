@@ -13,6 +13,8 @@ final class WorkoutExerciseDataOutput
 
     public ?string $note = null;
 
+    public ?int $restInSeconds = null;
+
     /** @var list<WorkoutSetDataOutput> */
     public array $sets = [];
 }

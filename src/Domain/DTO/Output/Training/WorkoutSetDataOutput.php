@@ -27,4 +27,12 @@ final class WorkoutSetDataOutput
 
     /** Ticked as done. Always true in a finished workout. */
     public bool $isComplete = false;
+
+    /**
+     * The personal bests this set beat and still holds the moment of.
+     *
+     * @var list<PersonalBestDataOutput>
+     */
+    #[Map(if: false)]
+    public array $personalBests = [];
 }
