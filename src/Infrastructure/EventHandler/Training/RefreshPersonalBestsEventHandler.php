@@ -66,9 +66,7 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         /** @var array<int, WorkoutDataModel> $workouts */
         $workouts = [];
         foreach ($this->touched($event) as [$owner, $movements]) {
-            foreach ($movements as $movement) {
-                $workouts += $this->refreshMovement($owner, $movement);
-            }
+            $workouts += $this->refreshMovements($owner, $movements);
             $workouts += $this->refreshSessions($owner);
         }
 
@@ -120,24 +118,49 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         return $touched;
     }
 
-    /** @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id */
-    private function refreshMovement(UserDataModel $owner, MovementDataModel $movement): array
+    /**
+     * Every movement touched at once: their rows and their sets read in one query each, the sets
+     * sorted out per movement here.
+     *
+     * @param list<MovementDataModel> $movements
+     *
+     * @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id
+     */
+    private function refreshMovements(UserDataModel $owner, array $movements): array
     {
-        return $this->replace(
-            $this->personalBestProviderGateway->findAllForOwnerAndMovement($owner, $movement),
-            $this->personalBestDataModelFactory->buildMovementProgression(
-                $owner,
-                $movement,
-                $this->workoutProviderGateway->findSetsCountingForPersonalBests($owner, $movement),
-            ),
-        );
+        // Each movement rebuilt once, however the event names them: twice would double its rows.
+        $movementsById = [];
+        foreach ($movements as $movement) {
+            $movementsById[(int) $movement->id] = $movement;
+        }
+
+        if ([] === $movementsById) {
+            return [];
+        }
+
+        $movements = array_values($movementsById);
+
+        $setsByMovementId = [];
+        foreach ($this->workoutProviderGateway->findSetsCountingForPersonalBests($owner, $movements) as $set) {
+            $setsByMovementId[(int) $set->exercise->movement->id][] = $set;
+        }
+
+        $rebuilt = [];
+        foreach ($movements as $movement) {
+            $rebuilt = [
+                ...$rebuilt,
+                ...$this->personalBestDataModelFactory->buildMovementProgression($owner, $movement, $setsByMovementId[(int) $movement->id] ?? []),
+            ];
+        }
+
+        return $this->replace($this->personalBestProviderGateway->findAllForOwnerAndMovements($owner, $movements), $rebuilt);
     }
 
     /** @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id */
     private function refreshSessions(UserDataModel $owner): array
     {
         return $this->replace(
-            $this->personalBestProviderGateway->findAllForOwnerAndMovement($owner, null),
+            $this->personalBestProviderGateway->findAllSessionsForOwner($owner),
             $this->personalBestDataModelFactory->buildSessionProgression(
                 $owner,
                 $this->workoutProviderGateway->findTalliesForOwner($owner),

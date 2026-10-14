@@ -102,6 +102,20 @@ final class MovementRepository extends ServiceEntityRepository implements Moveme
     }
 
     /** @return list<MovementDataModel> */
+    public function findAllOfferedByIds(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
+        }
+
+        return $this->offered()
+            ->andWhere('movement.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<MovementDataModel> */
     public function findAllOffered(): array
     {
         return $this->offered()

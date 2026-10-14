@@ -44,6 +44,16 @@ interface MovementProviderGateway
     public function findOneOfferedById(int $id): ?MovementDataModel;
 
     /**
+     * The offered ones among those ids, in no particular order: an id that is not offered, or
+     * matches nothing, is simply missing.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<MovementDataModel>
+     */
+    public function findAllOfferedByIds(array $ids): array;
+
+    /**
      * Every movement a workout may take on now, by name, everything the output reads joined and
      * selected.
      *

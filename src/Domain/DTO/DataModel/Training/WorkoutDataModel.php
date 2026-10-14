@@ -73,45 +73,6 @@ class WorkoutDataModel implements DataModelInterface
         return null === $this->finishedAt;
     }
 
-    public function findBlock(int $blockId): ?WorkoutBlockDataModel
-    {
-        foreach ($this->blocks as $block) {
-            if ($blockId === $block->id) {
-                return $block;
-            }
-        }
-
-        return null;
-    }
-
-    public function findExercise(int $exerciseId): ?WorkoutExerciseDataModel
-    {
-        foreach ($this->blocks as $block) {
-            foreach ($block->exercises as $exercise) {
-                if ($exerciseId === $exercise->id) {
-                    return $exercise;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public function findSet(int $setId): ?WorkoutSetDataModel
-    {
-        foreach ($this->blocks as $block) {
-            foreach ($block->exercises as $exercise) {
-                foreach ($exercise->sets as $set) {
-                    if ($setId === $set->id) {
-                        return $set;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
     public function countSets(): int
     {
         $count = 0;

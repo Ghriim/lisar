@@ -384,7 +384,8 @@ What used to be a method goes to the class whose job it is:
 
 | Was | Goes to |
 | --- | --- |
-| a query over a data model's own tree — its sets, its blocks in order, a child by id | a **domain service** (§6.17) in the aggregate's perimeter, taking the data model as argument |
+| a child looked up by its id in a data model's tree — a block, a set | its own **provider gateway** (§6.2), `findOneById()` — and the validator checks it is the parent's |
+| a query over a data model's own tree — its sets, its blocks in order | a **domain service** (§6.17) in the aggregate's perimeter, taking the data model as argument |
 | a figure worked out from a data model — a total, a count | the **domain service** or **factory** (§6.9) that needs it |
 | a value derived from a DataInput — an offset from a page, a trimmed or defaulted field | the **use case**, or a domain service shared by the use cases that need it |
 | a field an output does not get from the mapper | the **OutputFactory** (§6.9) |
@@ -504,6 +505,25 @@ rules live in the validator (§6.8): `IsOwnerConstraint` compares the data model
 `$currentUser`. The owner stays in a query only where it is part of what identifies the row —
 a day's entry (`findOneForOwnerAndDay`), a subscription (`findOneForOwnerAndHabit`) — or where
 it scopes a list (`findAllForOwner…`).
+
+**So is a child.** A block, a movement, a set named in a route (`/workouts/{id}/sets/{setId}`)
+comes from its own provider gateway — `WorkoutSetProviderGateway::findOneById($setId)` — never
+from a walk through the parent's collections on the data model (§6.0). The parent of the route
+is loaded by its id too, and whether the child is one of its own is the validator's to say (§6.8).
+Both are managed by the same identity map: the child fetched is the very instance the parent
+already holds, so what the use case changes on it shows in the parent's output.
+
+**No query in a loop.** A gateway call inside a `foreach` — or inside a private method the loop
+calls — is one query per item: the count grows with the data, unseen until it hurts. Three
+shapes come up, and each has its answer:
+
+| In the loop | Instead |
+| --- | --- |
+| a `findOneById()` per id of a list the input carries | one `findAllByIds($ids)` (`findAllOfferedByIds`), then a table by id to walk the input in its own order: the database hands rows back in none, once per id |
+| a `findOne…()` per item of a list just fetched — the entry of each subscription | a **join** in the query that fetched the list. With no collection on that side to fetch-join, the child is joined as a second root (`LEFT JOIN X entry WITH …`, `addSelect('entry')`): the rows come back flat, each parent followed by its child or `null`, and the gateway hands them on as an aggregate (`HabitSubscriptionDay`). Never a collection added to fetch-join it filtered: Doctrine would keep that partial collection as the whole one for the rest of the request |
+| the same query per item — the records of each movement touched, the last time of each movement | one query taking the whole list (`IN (:movements)`), sorted out per item in memory; a « latest per item » is a `NOT EXISTS` on a later row, not a `LIMIT 1` per item |
+
+A list that is empty gets no query: the gateway answers `[]` before building one.
 
 The **one-to-one binding is auto-wired**: because exactly one class implements the interface,
 Symfony resolves it without a `services.yaml` alias. Two implementations of the same gateway is a
@@ -938,6 +958,12 @@ Rules:
   telling someone that a workout that is not theirs is also finished would be telling them about
   it. Both report `['currentUser' => ['not_allowed']]`, and the exception listener answers that
   code with a **401**, not the 422 of a mistake in the payload.
+- **A child named in the route comes right after, alone too.** `/workouts/{id}/sets/{setId}`
+  names a set *of that workout*: its `…InWorkoutConstraint` (`WorkoutSetInWorkoutConstraint`…)
+  reports `['setId' => ['workout_set_not_found']]` when it is one of another workout — someone
+  else's or another of the caller's — and that is thrown by itself, for the same reason: the
+  rules after it would read the measures of a movement that is not in this workout. A child id
+  that matches no row is still a `DataModelNotFoundException`.
 - A data model named in the payload (a parent task, a category) that is someone else's is
   answered like one that does not exist: its `…UsableConstraint` reports `…_not_found`.
 - **The validator runs before any early return.** A use case that answers « already done »
@@ -2131,6 +2157,10 @@ Rejected in review, every time:
   from `getCurrentUser()`.
 - A data model with an id fetched by id **and** owner (`findOneByIdForOwner`): fetch it by id,
   and let `IsOwnerConstraint` refuse it in the validator.
+- A child looked up through its parent's collections (`$workout->findSet($id)`): fetch it by id
+  from its own provider gateway, and let its `…InWorkoutConstraint` check the parent.
+- A gateway call in a loop, directly or through a method the loop calls (§6.2): one
+  `findAllByIds`, a join, or a query taking the whole list.
 - A back-office validator whose first rule is not `IsAdminConstraint`.
 - A use case returning early before its validator has run.
 - A rule written inline in a validator instead of a Constraint class.

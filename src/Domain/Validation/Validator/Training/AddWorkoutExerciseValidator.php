@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Validation\Validator\Training;
 
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutBlockDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutExerciseDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutBlockInWorkoutConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutMovementsOfferedConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 
@@ -25,11 +27,17 @@ final readonly class AddWorkoutExerciseValidator extends AbstractBaseValidator
     /**
      * @throws ValidationException
      */
-    public function validate(UserDataModel $currentUser, WorkoutDataModel $workout, AddWorkoutExerciseDataInput $input, ?MovementDataModel $offered): void
+    public function validate(UserDataModel $currentUser, WorkoutDataModel $workout, WorkoutBlockDataModel $block, AddWorkoutExerciseDataInput $input, ?MovementDataModel $offered): void
     {
         $access = IsOwnerConstraint::validate($currentUser, $workout->owner);
         if ([] !== $access) {
             throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
+        // Alone as well: nothing is said about what another workout holds.
+        $part = WorkoutBlockInWorkoutConstraint::validate($block, $workout);
+        if ([] !== $part) {
+            throw new ValidationException(self::ERROR_CODE, $part);
         }
 
         $violations = $this->getViolations($input);

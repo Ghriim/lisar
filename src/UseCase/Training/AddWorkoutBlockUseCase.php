@@ -47,13 +47,7 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $offered = [];
-        foreach ($input->movementIds() as $movementId) {
-            $movement = $this->movementProviderGateway->findOneOfferedById($movementId);
-            if (null !== $movement) {
-                $offered[] = $movement;
-            }
-        }
+        $offered = $this->movementProviderGateway->findAllOfferedByIds($input->movementIds());
 
         $this->validator->validate($currentUser, $workout, $input, $offered);
 
@@ -62,13 +56,19 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
         $block->position = $workout->nextBlockPosition();
         $this->workoutBlockPersisterGateway->create($block);
 
-        // Every movement asked for is offered past the validator, so the two lists line up.
-        foreach ($offered as $position => $movement) {
+        $offeredById = [];
+        foreach ($offered as $movement) {
+            $offeredById[(int) $movement->id] = $movement;
+        }
+
+        // Every movement asked for is offered past the validator; the block takes them in the
+        // order they were asked for, not the one the database gave them back in.
+        foreach ($input->exercises as $position => $requested) {
             $exercise = new WorkoutExerciseDataModel();
             $exercise->block = $block;
-            $exercise->movement = $movement;
+            $exercise->movement = $offeredById[$requested->movementId];
             $exercise->position = $position;
-            $exercise->restInSeconds = $input->exercises[$position]->restInSeconds;
+            $exercise->restInSeconds = $requested->restInSeconds;
             $this->workoutExercisePersisterGateway->create($exercise);
         }
 

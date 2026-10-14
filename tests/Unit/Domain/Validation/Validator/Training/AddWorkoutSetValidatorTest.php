@@ -9,10 +9,12 @@ use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutExerciseInWorkoutConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\Training\AddWorkoutSetValidator;
 use App\Tests\CurrentUserTrait;
+use App\Tests\WorkoutTreeTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
@@ -20,6 +22,7 @@ use Symfony\Component\Validator\Validation;
 final class AddWorkoutSetValidatorTest extends TestCase
 {
     use CurrentUserTrait;
+    use WorkoutTreeTrait;
 
     private AddWorkoutSetValidator $validator;
 
@@ -41,11 +44,27 @@ final class AddWorkoutSetValidatorTest extends TestCase
     public function testItRefusesSomeoneElsesWorkout(): void
     {
         try {
-            $this->validator->validate($this->currentUser(99), $this->workoutOf($this->anyCurrentUser()), new AddWorkoutSetDataInput(reps: 8, weightInKilograms: 62.5, rpe: 8.5, setTypeId: 1), $this->bench(), $this->setType(true));
+            $workout = $this->workoutOf($this->anyCurrentUser());
+            $this->validator->validate($this->currentUser(99), $workout, $this->exerciseIn($workout, $this->bench()), new AddWorkoutSetDataInput(reps: 8, weightInKilograms: 62.5, rpe: 8.5, setTypeId: 1), $this->setType(true));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(AddWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
+    }
+
+    /** A movement of another of the caller's workouts is answered like one that does not exist, and alone. */
+    public function testItRefusesAMovementOfAnotherWorkout(): void
+    {
+        $workout = $this->workoutOf($this->anyCurrentUser());
+        $other = $this->workoutOf($this->anyCurrentUser());
+
+        try {
+            $this->validator->validate($this->anyCurrentUser(), $workout, $this->exerciseIn($other, $this->bench()), new AddWorkoutSetDataInput(reps: 0), null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(AddWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['exerciseId' => [WorkoutExerciseInWorkoutConstraint::NOT_FOUND]], $exception->violations);
         }
     }
 
@@ -108,7 +127,8 @@ final class AddWorkoutSetValidatorTest extends TestCase
 
     private function validate(AddWorkoutSetDataInput $input, ?SetTypeDataModel $setType): void
     {
-        $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $input, $this->bench(), $setType);
+        $workout = $this->workoutOf($this->anyCurrentUser());
+        $this->validator->validate($this->anyCurrentUser(), $workout, $this->exerciseIn($workout, $this->bench()), $input, $setType);
     }
 
     private function bench(): MovementDataModel

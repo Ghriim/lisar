@@ -32,6 +32,7 @@ use App\Domain\Validation\Constraint\Training\WorkoutFinishableConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutMovementsOfferedConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutNotInProgressConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\Training\AddWorkoutBlockValidator;
@@ -77,6 +78,7 @@ use App\UseCase\Training\UncompleteWorkoutSetUseCase;
 use App\UseCase\Training\UpdateWorkoutExerciseUseCase;
 use App\UseCase\Training\UpdateWorkoutSetUseCase;
 use App\UseCase\Training\UpdateWorkoutUseCase;
+use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -151,6 +153,14 @@ final class WorkoutTest extends KernelTestCase
         self::assertSame(['Bench press (barbell)'], $this->movementNames($output, 0));
         // The superset keeps the order it was given in.
         self::assertSame(['Push-up', 'Farmer walk (dumbbell)'], $this->movementNames($output, 1));
+    }
+
+    /** Given against the order the movements were created in: the block keeps the one given. */
+    public function testASupersetKeepsTheOrderGivenWhateverTheIds(): void
+    {
+        $output = $this->addBlock($this->start(), MovementFixtures::FARMER_WALK_DUMBBELL, MovementFixtures::PUSH_UP);
+
+        self::assertSame(['Farmer walk (dumbbell)', 'Push-up'], $this->movementNames($output, 0));
     }
 
     public function testEachMovementOfASupersetKeepsItsOwnRest(): void
@@ -593,7 +603,28 @@ final class WorkoutTest extends KernelTestCase
         self::assertSame([15, 12], array_map(static fn ($set) => $set->reps, $previous[1]->sets));
     }
 
-    /** Read on the seeded workout itself, there is nothing before it. */
+    /** Done since the seeded « Push », the bench answers its latest workout; the push-ups, the seeded one still. */
+    public function testEachMovementAnswersItsLatestTime(): void
+    {
+        $since = $this->finish($this->addDoneSet($this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL), new AddWorkoutSetDataInput(reps: 3, weightInKilograms: 80.0)));
+        // Started an hour before the next one: two starts in the same second are not one before the other.
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $done = $entityManager->find(WorkoutDataModel::class, $since->id);
+        self::assertNotNull($done);
+        $done->startedAt = $done->startedAt->modify('-1 hour');
+        $entityManager->flush();
+
+        $workout = $this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL);
+        $workout = $this->addBlock($workout, MovementFixtures::PUSH_UP);
+
+        $previous = $this->useCase(ListWorkoutPreviousPerformancesUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
+
+        self::assertCount(2, $previous);
+        self::assertSame([3], array_map(static fn ($set) => $set->reps, $previous[0]->sets));
+        self::assertSame([15, 12], array_map(static fn ($set) => $set->reps, $previous[1]->sets));
+        self::assertNotSame($previous[0]->workoutId, $previous[1]->workoutId);
+    }
+
     /**
      * The seeded « Push »: four bench sets (one warm-up at 40 kg), then push-ups supersetted with
      * a farmer walk — a load carried over a distance, with no reps to multiply it by.
@@ -657,9 +688,21 @@ final class WorkoutTest extends KernelTestCase
         );
         $workout = $this->start();
 
+        try {
+            $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $seeded->blocks[0]->exercises[0]->sets[0]->id);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['setId' => [WorkoutSetInWorkoutConstraint::NOT_FOUND]], $exception->violations);
+        }
+    }
+
+    public function testASetThatDoesNotExistIsNotFound(): void
+    {
+        $workout = $this->start();
+
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $seeded->blocks[0]->exercises[0]->sets[0]->id);
+        $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, 999999);
     }
 
     /** The seeded « Push » done again: same layout, every set still to do, its day left behind. */

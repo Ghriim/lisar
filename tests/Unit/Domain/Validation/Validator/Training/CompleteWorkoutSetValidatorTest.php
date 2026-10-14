@@ -8,27 +8,32 @@ use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
 use App\Domain\Validation\Validator\Training\CompleteWorkoutSetValidator;
 use App\Tests\CurrentUserTrait;
+use App\Tests\WorkoutTreeTrait;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class CompleteWorkoutSetValidatorTest extends TestCase
 {
     use CurrentUserTrait;
+    use WorkoutTreeTrait;
 
     public function testItLetsAValidCaseThrough(): void
     {
         $this->expectNotToPerformAssertions();
 
-        (new CompleteWorkoutSetValidator())->validate($this->anyCurrentUser(), $this->workout(false));
+        $workout = $this->workout(false);
+        (new CompleteWorkoutSetValidator())->validate($this->anyCurrentUser(), $workout, $this->setIn($workout));
     }
 
     /** Someone else's workout: refused on that alone, whatever else the call carries. */
     public function testItRefusesSomeoneElsesWorkout(): void
     {
         try {
-            (new CompleteWorkoutSetValidator())->validate($this->currentUser(99), $this->workout(false));
+            $workout = $this->workout(false);
+            (new CompleteWorkoutSetValidator())->validate($this->currentUser(99), $workout, $this->setIn($workout));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CompleteWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
@@ -36,9 +41,25 @@ final class CompleteWorkoutSetValidatorTest extends TestCase
         }
     }
 
+    /** A set of another of the caller's workouts is answered like one that does not exist, and alone. */
+    public function testItRefusesASetOfAnotherWorkout(): void
+    {
+        $workout = $this->workout(true);
+        $other = $this->workoutOf($this->anyCurrentUser());
+
+        try {
+            (new CompleteWorkoutSetValidator())->validate($this->anyCurrentUser(), $workout, $this->setIn($other));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(CompleteWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['setId' => [WorkoutSetInWorkoutConstraint::NOT_FOUND]], $exception->violations);
+        }
+    }
+
     public function testItRefusesAFinishedWorkout(): void
     {
-        $this->assertRefused(['workout' => [WorkoutInProgressConstraint::FINISHED]], fn () => (new CompleteWorkoutSetValidator())->validate($this->anyCurrentUser(), $this->workout(true)));
+        $workout = $this->workout(true);
+        $this->assertRefused(['workout' => [WorkoutInProgressConstraint::FINISHED]], fn () => (new CompleteWorkoutSetValidator())->validate($this->anyCurrentUser(), $workout, $this->setIn($workout)));
     }
 
     /** @param array<string, list<string>> $violations */

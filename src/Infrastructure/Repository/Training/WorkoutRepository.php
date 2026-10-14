@@ -105,23 +105,69 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->getSingleScalarResult();
     }
 
-    public function findLastFinishedWithMovementBefore(UserDataModel $owner, MovementDataModel $movement, DateTimeImmutable $before): ?WorkoutDataModel
+    /** @return array<int, WorkoutDataModel> */
+    public function findLastFinishedWithMovementsBefore(UserDataModel $owner, array $movements, DateTimeImmutable $before): array
     {
-        $id = $this->finished($owner)
-            ->select('workout.id')
+        if ([] === $movements) {
+            return [];
+        }
+
+        // A workout is the latest for a movement when no finished one of the owner holding that
+        // movement came after it, still before `$before`: started later, or at the same instant
+        // with a greater id — the order the page lists them in.
+        $later = $this->getEntityManager()->createQueryBuilder()
+            ->select('1')
+            ->from(WorkoutExerciseDataModel::class, 'laterExercise')
+            ->innerJoin('laterExercise.block', 'laterBlock')
+            ->innerJoin('laterBlock.workout', 'laterWorkout')
+            ->andWhere('laterExercise.movement = exercise.movement')
+            ->andWhere('laterWorkout.owner = :owner')
+            ->andWhere('laterWorkout.finishedAt IS NOT NULL')
+            ->andWhere('laterWorkout.startedAt < :before')
+            ->andWhere('laterWorkout.startedAt > workout.startedAt OR (laterWorkout.startedAt = workout.startedAt AND laterWorkout.id > workout.id)');
+
+        $queryBuilder = $this->finished($owner);
+        /** @var list<array{movementId: int|string, workoutId: int|string}> $rows */
+        $rows = $queryBuilder
+            ->select('IDENTITY(exercise.movement) AS movementId', 'workout.id AS workoutId')
+            ->distinct()
             ->innerJoin('workout.blocks', 'block')
             ->innerJoin('block.exercises', 'exercise')
-            ->andWhere('exercise.movement = :movement')
+            ->andWhere('exercise.movement IN (:movements)')
             ->andWhere('workout.startedAt < :before')
-            ->setParameter('movement', $movement)
+            ->andWhere($queryBuilder->expr()->not($queryBuilder->expr()->exists($later->getDQL())))
+            ->setParameter('movements', $movements)
             ->setParameter('before', $before)
-            ->orderBy('workout.startedAt', 'DESC')
-            ->addOrderBy('workout.id', 'DESC')
-            ->setMaxResults(1)
             ->getQuery()
-            ->getOneOrNullResult();
+            ->getArrayResult();
 
-        return null === $id ? null : $this->findOneById((int) $id['id']);
+        if ([] === $rows) {
+            return [];
+        }
+
+        $workoutIdByMovementId = [];
+        foreach ($rows as $row) {
+            $workoutIdByMovementId[(int) $row['movementId']] = (int) $row['workoutId'];
+        }
+
+        /** @var list<WorkoutDataModel> $workouts */
+        $workouts = $this->whole()
+            ->andWhere('workout.id IN (:ids)')
+            ->setParameter('ids', array_values(array_unique($workoutIdByMovementId)))
+            ->getQuery()
+            ->getResult();
+
+        $workoutsById = [];
+        foreach ($workouts as $workout) {
+            $workoutsById[(int) $workout->id] = $workout;
+        }
+
+        $latest = [];
+        foreach ($workoutIdByMovementId as $movementId => $workoutId) {
+            $latest[$movementId] = $workoutsById[$workoutId];
+        }
+
+        return $latest;
     }
 
     public function countExercisesForMovement(MovementDataModel $movement): int
@@ -147,8 +193,12 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
     }
 
     /** @return list<WorkoutSetDataModel> */
-    public function findSetsCountingForPersonalBests(UserDataModel $owner, MovementDataModel $movement): array
+    public function findSetsCountingForPersonalBests(UserDataModel $owner, array $movements): array
     {
+        if ([] === $movements) {
+            return [];
+        }
+
         return $this->getEntityManager()->createQueryBuilder()
             ->select('workoutSet', 'exercise', 'block', 'workout', 'setType')
             ->from(WorkoutSetDataModel::class, 'workoutSet')
@@ -157,11 +207,11 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->innerJoin('exercise.block', 'block')
             ->innerJoin('block.workout', 'workout')
             ->andWhere('workout.owner = :owner')
-            ->andWhere('exercise.movement = :movement')
+            ->andWhere('exercise.movement IN (:movements)')
             ->andWhere('workoutSet.isComplete = true')
             ->andWhere('setType.countsForPersonalBests = true')
             ->setParameter('owner', $owner)
-            ->setParameter('movement', $movement)
+            ->setParameter('movements', $movements)
             ->orderBy('workout.startedAt', 'ASC')
             ->addOrderBy('workout.id', 'ASC')
             ->addOrderBy('block.position', 'ASC')

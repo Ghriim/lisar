@@ -43,18 +43,20 @@ final readonly class ListWorkoutPreviousPerformancesUseCase implements UseCaseIn
 
         $this->validator->validate($currentUser, $workout);
 
-        $previousByMovementId = [];
+        // Each movement once, in the order the workout does them.
+        $movementsById = [];
         foreach ($workout->orderedBlocks() as $block) {
             foreach ($block->orderedExercises() as $exercise) {
-                $movement = $exercise->movement;
-                if (true === isset($previousByMovementId[(int) $movement->id])) {
-                    continue;
-                }
+                $movementsById[(int) $exercise->movement->id] ??= $exercise->movement;
+            }
+        }
 
-                $previous = $this->workoutProviderGateway->findLastFinishedWithMovementBefore($currentUser, $movement, $workout->startedAt);
-                if (null !== $previous) {
-                    $previousByMovementId[(int) $movement->id] = [$movement, $previous];
-                }
+        $lastByMovementId = $this->workoutProviderGateway->findLastFinishedWithMovementsBefore($currentUser, array_values($movementsById), $workout->startedAt);
+
+        $previousByMovementId = [];
+        foreach ($movementsById as $movementId => $movement) {
+            if (true === isset($lastByMovementId[$movementId])) {
+                $previousByMovementId[$movementId] = [$movement, $lastByMovementId[$movementId]];
             }
         }
 

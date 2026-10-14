@@ -15,6 +15,7 @@ use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutSetPersisterGateway;
 use App\Domain\Gateway\Provider\Training\SetTypeProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutSetProviderGateway;
 use App\Domain\Validation\Validator\Training\UpdateWorkoutSetValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -27,6 +28,7 @@ final readonly class UpdateWorkoutSetUseCase implements UseCaseInterface
     public function __construct(
         private UpdateWorkoutSetValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private WorkoutSetProviderGateway $workoutSetProviderGateway,
         private SetTypeProviderGateway $setTypeProviderGateway,
         private WorkoutSetPersisterGateway $workoutSetPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
@@ -44,13 +46,13 @@ final readonly class UpdateWorkoutSetUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $set = $workout->findSet($setId);
+        $set = $this->workoutSetProviderGateway->findOneById($setId);
         if (null === $set) {
             throw new DataModelNotFoundException(WorkoutSetDataModel::class);
         }
 
         $setType = null === $input->setTypeId ? null : $this->setTypeProviderGateway->findOneById($input->setTypeId);
-        $this->validator->validate($currentUser, $workout, $input, $set, $setType);
+        $this->validator->validate($currentUser, $workout, $set, $input, $setType);
 
         // No type named: the default one, an ordinary working set.
         $set->setType = $setType ?? $this->findDefaultSetType();

@@ -11,6 +11,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
@@ -27,11 +28,17 @@ final readonly class UpdateWorkoutSetValidator extends AbstractBaseValidator
     /**
      * @throws ValidationException
      */
-    public function validate(UserDataModel $currentUser, WorkoutDataModel $workout, UpdateWorkoutSetDataInput $input, WorkoutSetDataModel $set, ?SetTypeDataModel $setType): void
+    public function validate(UserDataModel $currentUser, WorkoutDataModel $workout, WorkoutSetDataModel $set, UpdateWorkoutSetDataInput $input, ?SetTypeDataModel $setType): void
     {
         $access = IsOwnerConstraint::validate($currentUser, $workout->owner);
         if ([] !== $access) {
             throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
+        // Alone as well: nothing is said about what another workout holds.
+        $part = WorkoutSetInWorkoutConstraint::validate($set, $workout);
+        if ([] !== $part) {
+            throw new ValidationException(self::ERROR_CODE, $part);
         }
 
         $violations = $this->getViolations($input);

@@ -6,15 +6,17 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
-use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\Training\UpdateWorkoutSetValidator;
 use App\Tests\CurrentUserTrait;
+use App\Tests\WorkoutTreeTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
@@ -22,6 +24,7 @@ use Symfony\Component\Validator\Validation;
 final class UpdateWorkoutSetValidatorTest extends TestCase
 {
     use CurrentUserTrait;
+    use WorkoutTreeTrait;
 
     private UpdateWorkoutSetValidator $validator;
 
@@ -43,11 +46,27 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
     public function testItRefusesSomeoneElsesWorkout(): void
     {
         try {
-            $this->validator->validate($this->currentUser(99), $this->workoutOf($this->anyCurrentUser()), new UpdateWorkoutSetDataInput(reps: 8, weightInKilograms: 62.5, rpe: 8.5, setTypeId: 1), $this->set(), $this->setType(true));
+            $workout = $this->workoutOf($this->anyCurrentUser());
+            $this->validator->validate($this->currentUser(99), $workout, $this->set($workout), new UpdateWorkoutSetDataInput(reps: 8, weightInKilograms: 62.5, rpe: 8.5, setTypeId: 1), $this->setType(true));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
+    }
+
+    /** A set of another of the caller's workouts is answered like one that does not exist, and alone. */
+    public function testItRefusesASetOfAnotherWorkout(): void
+    {
+        $workout = $this->workoutOf($this->anyCurrentUser());
+        $other = $this->workoutOf($this->anyCurrentUser());
+
+        try {
+            $this->validator->validate($this->anyCurrentUser(), $workout, $this->set($other), new UpdateWorkoutSetDataInput(reps: 0), null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['setId' => [WorkoutSetInWorkoutConstraint::NOT_FOUND]], $exception->violations);
         }
     }
 
@@ -110,7 +129,8 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
 
     private function validate(UpdateWorkoutSetDataInput $input, ?SetTypeDataModel $setType): void
     {
-        $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $input, $this->set(), $setType);
+        $workout = $this->workoutOf($this->anyCurrentUser());
+        $this->validator->validate($this->anyCurrentUser(), $workout, $this->set($workout), $input, $setType);
     }
 
     private function bench(): MovementDataModel
@@ -132,17 +152,13 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
     }
 
     /** A set carrying the default type: another, retired one is refused on it, like on a new set. */
-    private function set(): WorkoutSetDataModel
+    private function set(WorkoutDataModel $workout): WorkoutSetDataModel
     {
-        $exercise = new WorkoutExerciseDataModel();
-        $exercise->movement = $this->bench();
-
         $default = new SetTypeDataModel();
         $default->id = 2;
         $default->isDefaultType = true;
 
-        $set = new WorkoutSetDataModel();
-        $set->exercise = $exercise;
+        $set = $this->setIn($workout, $this->exerciseIn($workout, $this->bench()));
         $set->setType = $default;
 
         return $set;

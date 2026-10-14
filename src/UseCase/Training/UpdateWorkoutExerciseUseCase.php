@@ -12,6 +12,7 @@ use App\Domain\DTO\Output\Training\WorkoutDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutExercisePersisterGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutExerciseProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Validation\Validator\Training\UpdateWorkoutExerciseValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -25,6 +26,7 @@ final readonly class UpdateWorkoutExerciseUseCase implements UseCaseInterface
     public function __construct(
         private UpdateWorkoutExerciseValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private WorkoutExerciseProviderGateway $workoutExerciseProviderGateway,
         private WorkoutExercisePersisterGateway $workoutExercisePersisterGateway,
         private WorkoutOutputFactory $outputFactory,
     ) {
@@ -41,12 +43,12 @@ final readonly class UpdateWorkoutExerciseUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $exercise = $workout->findExercise($exerciseId);
+        $exercise = $this->workoutExerciseProviderGateway->findOneById($exerciseId);
         if (null === $exercise) {
             throw new DataModelNotFoundException(WorkoutExerciseDataModel::class);
         }
 
-        $this->validator->validate($currentUser, $workout, $input);
+        $this->validator->validate($currentUser, $workout, $exercise, $input);
 
         $exercise->note = $input->getNote();
         $exercise->restInSeconds = $input->restInSeconds;

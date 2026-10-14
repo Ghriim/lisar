@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repository\Training;
 
-use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
@@ -24,17 +23,30 @@ final class PersonalBestRepository extends ServiceEntityRepository implements Pe
     }
 
     /** @return list<PersonalBestDataModel> */
-    public function findAllForOwnerAndMovement(UserDataModel $owner, ?MovementDataModel $movement): array
+    public function findAllForOwnerAndMovements(UserDataModel $owner, array $movements): array
     {
-        $queryBuilder = $this->ordered()->andWhere('personalBest.owner = :owner')->setParameter('owner', $owner);
-
-        if (null === $movement) {
-            $queryBuilder->andWhere('personalBest.movement IS NULL');
-        } else {
-            $queryBuilder->andWhere('personalBest.movement = :movement')->setParameter('movement', $movement);
+        if ([] === $movements) {
+            return [];
         }
 
-        return $queryBuilder->getQuery()->getResult();
+        return $this->ordered()
+            ->andWhere('personalBest.owner = :owner')
+            ->andWhere('personalBest.movement IN (:movements)')
+            ->setParameter('owner', $owner)
+            ->setParameter('movements', $movements)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<PersonalBestDataModel> */
+    public function findAllSessionsForOwner(UserDataModel $owner): array
+    {
+        return $this->ordered()
+            ->andWhere('personalBest.owner = :owner')
+            ->andWhere('personalBest.movement IS NULL')
+            ->setParameter('owner', $owner)
+            ->getQuery()
+            ->getResult();
     }
 
     /** @return list<PersonalBestDataModel> */

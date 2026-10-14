@@ -11,6 +11,7 @@ use App\Domain\DTO\Output\Training\WorkoutDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutBlockPersisterGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutBlockProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Validation\Validator\Training\DeleteWorkoutBlockValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -25,6 +26,7 @@ final readonly class DeleteWorkoutBlockUseCase implements UseCaseInterface
     public function __construct(
         private DeleteWorkoutBlockValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private WorkoutBlockProviderGateway $workoutBlockProviderGateway,
         private WorkoutBlockPersisterGateway $workoutBlockPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
     ) {
@@ -41,12 +43,12 @@ final readonly class DeleteWorkoutBlockUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $block = $workout->findBlock($blockId);
+        $block = $this->workoutBlockProviderGateway->findOneById($blockId);
         if (null === $block) {
             throw new DataModelNotFoundException(WorkoutBlockDataModel::class);
         }
 
-        $this->validator->validate($currentUser, $workout);
+        $this->validator->validate($currentUser, $workout, $block);
 
         $this->workoutBlockPersisterGateway->delete($block);
 

@@ -14,6 +14,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutExercisePersisterGateway;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutBlockProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Validation\Validator\Training\AddWorkoutExerciseValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -28,6 +29,7 @@ final readonly class AddWorkoutExerciseUseCase implements UseCaseInterface
     public function __construct(
         private AddWorkoutExerciseValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private WorkoutBlockProviderGateway $workoutBlockProviderGateway,
         private MovementProviderGateway $movementProviderGateway,
         private WorkoutExercisePersisterGateway $workoutExercisePersisterGateway,
         private WorkoutOutputFactory $outputFactory,
@@ -45,13 +47,13 @@ final readonly class AddWorkoutExerciseUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $block = $workout->findBlock($blockId);
+        $block = $this->workoutBlockProviderGateway->findOneById($blockId);
         if (null === $block) {
             throw new DataModelNotFoundException(WorkoutBlockDataModel::class);
         }
 
         $movement = $this->movementProviderGateway->findOneOfferedById($input->movementId);
-        $this->validator->validate($currentUser, $workout, $input, $movement);
+        $this->validator->validate($currentUser, $workout, $block, $input, $movement);
         if (null === $movement) {
             // Unreachable: the validator refuses a movement that is not offered.
             throw new DataModelNotFoundException(WorkoutExerciseDataModel::class);

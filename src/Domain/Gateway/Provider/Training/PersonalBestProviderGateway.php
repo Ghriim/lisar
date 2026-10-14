@@ -12,11 +12,20 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 interface PersonalBestProviderGateway
 {
     /**
-     * The owner's rows for that movement, or for whole workouts when `$movement` is null.
+     * The owner's rows for those movements.
+     *
+     * @param list<MovementDataModel> $movements
      *
      * @return list<PersonalBestDataModel>
      */
-    public function findAllForOwnerAndMovement(UserDataModel $owner, ?MovementDataModel $movement): array;
+    public function findAllForOwnerAndMovements(UserDataModel $owner, array $movements): array;
+
+    /**
+     * The owner's rows for whole workouts, of no movement.
+     *
+     * @return list<PersonalBestDataModel>
+     */
+    public function findAllSessionsForOwner(UserDataModel $owner): array;
 
     /**
      * Every row of the owner, each record's progression oldest first.

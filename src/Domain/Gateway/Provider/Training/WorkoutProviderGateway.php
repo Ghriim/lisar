@@ -36,8 +36,15 @@ interface WorkoutProviderGateway
     /** How many of the owner's workouts were finished in [`$from`, `$to`). */
     public function countFinishedForOwnerBetween(UserDataModel $owner, DateTimeImmutable $from, DateTimeImmutable $to): int;
 
-    /** The owner's latest finished workout started before `$before` in which that movement was done. */
-    public function findLastFinishedWithMovementBefore(UserDataModel $owner, MovementDataModel $movement, DateTimeImmutable $before): ?WorkoutDataModel;
+    /**
+     * For each of those movements, the owner's latest finished workout started before `$before`
+     * in which it was done, whole, by movement id. A movement never done before is absent.
+     *
+     * @param list<MovementDataModel> $movements
+     *
+     * @return array<int, WorkoutDataModel>
+     */
+    public function findLastFinishedWithMovementsBefore(UserDataModel $owner, array $movements, DateTimeImmutable $before): array;
 
     /** How many logged exercises, anyone's, are of that movement. */
     public function countExercisesForMovement(MovementDataModel $movement): int;
@@ -46,12 +53,15 @@ interface WorkoutProviderGateway
     public function countSetsForSetType(SetTypeDataModel $setType): int;
 
     /**
-     * The owner's sets of that movement that count for personal bests — done, of a type that
-     * counts — in the order they were done: by workout, then block, movement and set.
+     * The owner's sets of those movements that count for personal bests — done, of a type that
+     * counts — in the order they were done: by workout, then block, movement and set. The
+     * movements come mixed: whoever reads them per movement sorts them out, the order holds.
+     *
+     * @param list<MovementDataModel> $movements
      *
      * @return list<WorkoutSetDataModel>
      */
-    public function findSetsCountingForPersonalBests(UserDataModel $owner, MovementDataModel $movement): array;
+    public function findSetsCountingForPersonalBests(UserDataModel $owner, array $movements): array;
 
     /**
      * Each of the owner's workouts with what its sets that count add up to, oldest first.

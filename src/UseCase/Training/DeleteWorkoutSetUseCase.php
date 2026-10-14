@@ -12,6 +12,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutSetPersisterGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutSetProviderGateway;
 use App\Domain\Validation\Validator\Training\DeleteWorkoutSetValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -24,6 +25,7 @@ final readonly class DeleteWorkoutSetUseCase implements UseCaseInterface
     public function __construct(
         private DeleteWorkoutSetValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private WorkoutSetProviderGateway $workoutSetProviderGateway,
         private WorkoutSetPersisterGateway $workoutSetPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
     ) {
@@ -40,12 +42,12 @@ final readonly class DeleteWorkoutSetUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $set = $workout->findSet($setId);
+        $set = $this->workoutSetProviderGateway->findOneById($setId);
         if (null === $set) {
             throw new DataModelNotFoundException(WorkoutSetDataModel::class);
         }
 
-        $this->validator->validate($currentUser, $workout);
+        $this->validator->validate($currentUser, $workout, $set);
 
         $this->workoutSetPersisterGateway->delete($set);
 

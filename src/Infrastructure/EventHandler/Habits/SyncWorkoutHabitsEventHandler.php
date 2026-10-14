@@ -10,7 +10,6 @@ use App\Domain\DTO\Event\Training\WorkoutDeletedEvent;
 use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Domain\Factory\DataModelFactory\Habits\HabitEntryDataModelFactory;
 use App\Domain\Gateway\Persister\Habits\HabitEntryPersisterGateway;
-use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Registry\Habits\HabitTrackerRegistry;
@@ -27,13 +26,12 @@ final readonly class SyncWorkoutHabitsEventHandler extends AbstractTrackerHabits
 {
     public function __construct(
         HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
-        HabitEntryProviderGateway $habitEntryProviderGateway,
         HabitEntryPersisterGateway $habitEntryPersisterGateway,
         HabitEntryDataModelFactory $habitEntryDataModelFactory,
         DayClock $clock,
         private WorkoutProviderGateway $workoutProviderGateway,
     ) {
-        parent::__construct($habitSubscriptionProviderGateway, $habitEntryProviderGateway, $habitEntryPersisterGateway, $habitEntryDataModelFactory, $clock);
+        parent::__construct($habitSubscriptionProviderGateway, $habitEntryPersisterGateway, $habitEntryDataModelFactory, $clock);
     }
 
     public static function getSupportedEvents(): array

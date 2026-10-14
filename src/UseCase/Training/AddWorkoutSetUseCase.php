@@ -15,6 +15,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutSetPersisterGateway;
 use App\Domain\Gateway\Provider\Training\SetTypeProviderGateway;
+use App\Domain\Gateway\Provider\Training\WorkoutExerciseProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Validation\Validator\Training\AddWorkoutSetValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -32,6 +33,7 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
     public function __construct(
         private AddWorkoutSetValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private WorkoutExerciseProviderGateway $workoutExerciseProviderGateway,
         private SetTypeProviderGateway $setTypeProviderGateway,
         private WorkoutSetPersisterGateway $workoutSetPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
@@ -49,13 +51,13 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $exercise = $workout->findExercise($exerciseId);
+        $exercise = $this->workoutExerciseProviderGateway->findOneById($exerciseId);
         if (null === $exercise) {
             throw new DataModelNotFoundException(WorkoutExerciseDataModel::class);
         }
 
         $setType = null === $input->setTypeId ? null : $this->setTypeProviderGateway->findOneById($input->setTypeId);
-        $this->validator->validate($currentUser, $workout, $input, $exercise->movement, $setType);
+        $this->validator->validate($currentUser, $workout, $exercise, $input, $setType);
 
         $set = new WorkoutSetDataModel();
         $set->exercise = $exercise;

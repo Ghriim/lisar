@@ -42,9 +42,11 @@ final readonly class ReorderWorkoutBlocksUseCase implements UseCaseInterface
 
         $this->validator->validate($currentUser, $input, $workout);
 
-        foreach ($input->blockIds as $position => $blockId) {
-            $block = $workout->findBlock($blockId);
-            if (null !== $block && $position !== $block->position) {
+        // The validator saw to it that the list names every block of the workout, each once.
+        $positions = array_flip($input->blockIds);
+        foreach ($workout->blocks as $block) {
+            $position = $positions[$block->id] ?? $block->position;
+            if ($position !== $block->position) {
                 $block->position = $position;
                 $this->workoutBlockPersisterGateway->update($block);
             }

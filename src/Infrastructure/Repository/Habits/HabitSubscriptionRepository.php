@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repository\Habits;
 
+use App\Domain\DTO\Aggregate\Habits\HabitSubscriptionDay;
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
+use App\Domain\DTO\DataModel\Habits\HabitEntryDataModel;
 use App\Domain\DTO\DataModel\Habits\HabitSubscriptionDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -43,16 +48,28 @@ final class HabitSubscriptionRepository extends ServiceEntityRepository implemen
             ->getResult();
     }
 
-    /** @return list<HabitSubscriptionDataModel> */
-    public function findActiveForOwnerAndTracker(UserDataModel $owner, string $trackerKind): array
+    /** @return list<HabitSubscriptionDay> */
+    public function findActiveForOwnerAndTrackerWithEntryOn(UserDataModel $owner, string $trackerKind, DateTimeImmutable $day): array
     {
-        return $this->activeForOwner($owner)
+        // No collection of entries on a subscription: the entry is joined as a second root, and
+        // the rows come back flat, each subscription followed by its entry, or by null.
+        $rows = $this->activeForOwner($owner)
+            ->leftJoin(HabitEntryDataModel::class, 'entry', Join::WITH, 'entry.subscription = subscription AND entry.day = :day')
+            ->addSelect('entry')
             ->andWhere('habit.sourceKind = :tracker')
             ->andWhere('habit.trackerKind = :trackerKind')
             ->setParameter('tracker', HabitSourceRegistry::TRACKER)
             ->setParameter('trackerKind', $trackerKind)
+            ->setParameter('day', $day, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
+
+        $days = [];
+        foreach (array_chunk($rows, 2) as [$subscription, $entry]) {
+            $days[] = new HabitSubscriptionDay($subscription, $entry);
+        }
+
+        return $days;
     }
 
     /**
