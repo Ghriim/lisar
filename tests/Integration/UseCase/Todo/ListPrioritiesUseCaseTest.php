@@ -6,12 +6,14 @@ namespace App\Tests\Integration\UseCase\Todo;
 
 use App\Fixtures\Todo\PriorityFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\ListPrioritiesUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ListPrioritiesUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListPrioritiesUseCase $useCase;
 
@@ -26,7 +28,7 @@ final class ListPrioritiesUseCaseTest extends KernelTestCase
 
     public function testItReturnsEveryPriorityLightestWeightFirst(): void
     {
-        $priorities = $this->useCase->execute();
+        $priorities = $this->useCase->execute($this->anyCurrentUser());
 
         self::assertSame(['High', 'Normal', 'Low'], array_map(
             static fn ($priority) => $priority->label,
@@ -40,7 +42,7 @@ final class ListPrioritiesUseCaseTest extends KernelTestCase
 
     public function testExactlyOnePriorityIsTheDefault(): void
     {
-        $defaults = array_filter($this->useCase->execute(), static fn ($priority) => $priority->isDefault);
+        $defaults = array_filter($this->useCase->execute($this->anyCurrentUser()), static fn ($priority) => $priority->isDefault);
 
         self::assertCount(1, $defaults);
     }

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Validation\Validator\Training;
 
+use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\UpdateWorkoutDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 
 /**
@@ -20,8 +23,13 @@ final readonly class UpdateWorkoutValidator extends AbstractBaseValidator
     /**
      * @throws ValidationException
      */
-    public function validate(UpdateWorkoutDataInput $input): void
+    public function validate(UserDataModel $currentUser, WorkoutDataModel $workout, UpdateWorkoutDataInput $input): void
     {
+        $access = IsOwnerConstraint::validate($currentUser, $workout->owner);
+        if ([] !== $access) {
+            throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
         $violations = $this->getViolations($input);
 
         if (false === empty($violations)) {

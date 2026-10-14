@@ -43,6 +43,7 @@ const MESSAGES: Record<string, string> = {
     sleep_too_short: 'Trente minutes au minimum.',
     sleep_too_long: 'Seize heures au maximum — vérifie l’heure du coucher.',
     action_failed: 'Le System n’a pas pu le faire. Réessaie dans un instant.',
+    not_allowed: 'Le System te refuse l’accès.',
     workout_already_in_progress: 'Une séance est déjà en cours.',
     workout_empty: 'Une séance se termine avec au moins une série.',
     workout_has_incomplete_sets: 'Une série n’est pas encore validée : valide-la ou supprime-la.',

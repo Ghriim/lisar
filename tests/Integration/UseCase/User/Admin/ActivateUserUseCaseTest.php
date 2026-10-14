@@ -11,6 +11,7 @@ use App\Domain\Registry\User\SessionAudienceRegistry;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\ActivateUserUseCase;
 use App\UseCase\User\LoginUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -18,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ActivateUserUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ActivateUserUseCase $useCase;
     private UserProviderGateway $userProviderGateway;
@@ -37,7 +39,7 @@ final class ActivateUserUseCaseTest extends KernelTestCase
         $bob = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class);
         self::assertNotNull($bob->id);
 
-        $output = $this->useCase->execute($bob->id);
+        $output = $this->useCase->execute($this->currentAdmin(), $bob->id);
 
         self::assertTrue($output->isActive);
 
@@ -51,7 +53,7 @@ final class ActivateUserUseCaseTest extends KernelTestCase
         $bob = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class);
         self::assertNotNull($bob->id);
 
-        $this->useCase->execute($bob->id);
+        $this->useCase->execute($this->currentAdmin(), $bob->id);
 
         $session = self::getContainer()->get(LoginUseCase::class)->execute(new LoginDataInput(
             email: 'bob@lisar.test',
@@ -65,6 +67,6 @@ final class ActivateUserUseCaseTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->useCase->execute(123456789);
+        $this->useCase->execute($this->currentAdmin(), 123456789);
     }
 }

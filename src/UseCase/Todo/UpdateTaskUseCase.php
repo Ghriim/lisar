@@ -18,7 +18,6 @@ use App\Domain\Gateway\Provider\Todo\CategoryProviderGateway;
 use App\Domain\Gateway\Provider\Todo\PriorityProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Todo\UpdateTaskValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -27,7 +26,6 @@ final readonly class UpdateTaskUseCase implements UseCaseInterface
 {
     public function __construct(
         private UpdateTaskValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private PriorityProviderGateway $priorityProviderGateway,
         private CategoryProviderGateway $categoryProviderGateway,
         private TaskProviderGateway $taskProviderGateway,
@@ -43,14 +41,9 @@ final readonly class UpdateTaskUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $taskId, UpdateTaskDataInput $input): TaskDataOutput
+    public function execute(UserDataModel $currentUser, int $taskId, UpdateTaskDataInput $input): TaskDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $task = $this->taskProviderGateway->findOneByIdForOwner($taskId, $owner);
+        $task = $this->taskProviderGateway->findOneById($taskId);
         if (null === $task) {
             throw new DataModelNotFoundException(TaskDataModel::class);
         }
@@ -63,7 +56,7 @@ final readonly class UpdateTaskUseCase implements UseCaseInterface
             ? null
             : $this->categoryProviderGateway->findOneById($input->categoryId);
 
-        $this->validator->validate($input, $priority, $category, $owner);
+        $this->validator->validate($currentUser, $task, $input, $priority, $category, $currentUser);
 
         $task->title = $input->title;
         $task->description = $input->description;
@@ -75,7 +68,7 @@ final readonly class UpdateTaskUseCase implements UseCaseInterface
         // The tags are the whole set: what the caller left out is taken off the task. The tag
         // itself stays on the account, which is what lets it be offered again.
         $task->tags->clear();
-        foreach ($this->resolveTags($input->getTagLabels(), $owner) as $tag) {
+        foreach ($this->resolveTags($input->getTagLabels(), $currentUser) as $tag) {
             $task->tags->add($tag);
         }
 
@@ -89,14 +82,14 @@ final readonly class UpdateTaskUseCase implements UseCaseInterface
      *
      * @return list<TagDataModel>
      */
-    private function resolveTags(array $labels, UserDataModel $owner): array
+    private function resolveTags(array $labels, UserDataModel $currentUser): array
     {
         if ([] === $labels) {
             return [];
         }
 
-        $existingTags = $this->tagProviderGateway->findAllByLabelsForOwner($owner, $labels);
-        $newTags = $this->tagDataModelFactory->buildMany($labels, $owner, $existingTags);
+        $existingTags = $this->tagProviderGateway->findAllByLabelsForOwner($currentUser, $labels);
+        $newTags = $this->tagDataModelFactory->buildMany($labels, $currentUser, $existingTags);
 
         if ([] !== $newTags) {
             $this->tagPersisterGateway->createMany($newTags);

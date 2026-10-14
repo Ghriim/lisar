@@ -8,6 +8,7 @@ use App\Domain\DTO\Input\Training\Admin\ListMusclesForAdminDataInput;
 use App\Domain\DTO\Input\Training\CreateMuscleDataInput;
 use App\Domain\DTO\Input\Training\UpdateMuscleDataInput;
 use App\Domain\DTO\Output\Training\MuscleDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Training\Admin\ActivateMuscleUseCase;
 use App\UseCase\Training\Admin\CreateMuscleUseCase;
@@ -17,7 +18,6 @@ use App\UseCase\Training\Admin\ListMusclesForAdminUseCase;
 use App\UseCase\Training\Admin\UpdateMuscleUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,7 +28,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * gated by the firewall (^/api/admin → ROLE_ADMIN), so no check lives here.
  */
 #[OA\Tag(name: 'Admin — workout muscles')]
-final class AdminMuscleController extends AbstractController
+final class AdminMuscleController extends AbstractBaseController
 {
     #[Route('/api/admin/workout/muscles', methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'isActive', in: 'query', required: false, schema: new OA\Schema(type: 'boolean'))]
@@ -42,7 +42,7 @@ final class AdminMuscleController extends AbstractController
         #[MapDataInput] ListMusclesForAdminDataInput $input,
         ListMusclesForAdminUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input));
     }
 
     #[Route('/api/admin/workout/muscles', methods: Request::METHOD_POST)]
@@ -53,7 +53,7 @@ final class AdminMuscleController extends AbstractController
         #[MapDataInput] CreateMuscleDataInput $input,
         CreateMuscleUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/workout/muscles/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -67,7 +67,7 @@ final class AdminMuscleController extends AbstractController
         #[MapDataInput] UpdateMuscleDataInput $input,
         UpdateMuscleUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/admin/workout/muscles/{id}/deactivate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -76,7 +76,7 @@ final class AdminMuscleController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such muscle.')]
     public function deactivateMuscle(int $id, DeactivateMuscleUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/workout/muscles/{id}/activate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -85,7 +85,7 @@ final class AdminMuscleController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such muscle.')]
     public function activateMuscle(int $id, ActivateMuscleUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/workout/muscles/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -95,7 +95,7 @@ final class AdminMuscleController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A movement targets it.')]
     public function deleteMuscle(int $id, DeleteMuscleUseCase $useCase): JsonResponse
     {
-        $useCase->execute($id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

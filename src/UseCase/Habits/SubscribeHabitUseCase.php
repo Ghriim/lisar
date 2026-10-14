@@ -12,7 +12,7 @@ use App\Domain\Factory\OutputFactory\Habits\HabitCatalogItemOutputFactory;
 use App\Domain\Gateway\Persister\Habits\HabitSubscriptionPersisterGateway;
 use App\Domain\Gateway\Provider\Habits\HabitProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Habits\SubscribeHabitValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -23,7 +23,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class SubscribeHabitUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private SubscribeHabitValidator $validator,
         private HabitProviderGateway $habitProviderGateway,
         private HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
         private HabitSubscriptionPersisterGateway $habitSubscriptionPersisterGateway,
@@ -34,23 +34,20 @@ final readonly class SubscribeHabitUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId, int $habitId): HabitCatalogItemDataOutput
+    public function execute(UserDataModel $currentUser, int $habitId): HabitCatalogItemDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
         $habit = $this->habitProviderGateway->findOneById($habitId);
         if (null === $habit || false === $habit->isActive) {
             throw new DataModelNotFoundException(HabitDataModel::class);
         }
 
-        $subscription = $this->habitSubscriptionProviderGateway->findOneForOwnerAndHabit($owner, $habit);
+        $this->validator->validate($currentUser);
+
+        $subscription = $this->habitSubscriptionProviderGateway->findOneForOwnerAndHabit($currentUser, $habit);
 
         if (null === $subscription) {
             $subscription = new HabitSubscriptionDataModel();
-            $subscription->owner = $owner;
+            $subscription->owner = $currentUser;
             $subscription->habit = $habit;
             $subscription->isActive = true;
 

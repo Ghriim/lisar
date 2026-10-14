@@ -6,18 +6,16 @@ namespace App\Infrastructure\Controller\Tracking\Weight;
 
 use App\Domain\DTO\Input\Tracking\Weight\SaveWeightDataInput;
 use App\Domain\DTO\Output\Tracking\Weight\WeightDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\Infrastructure\Security\SecurityUser;
 use App\UseCase\Tracking\Weight\GetLatestWeightUseCase;
 use App\UseCase\Tracking\Weight\SaveWeightUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Two routes, because there are two things to do: see the last weight, and record today's.
@@ -27,7 +25,7 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  * server decides which one is in progress.
  */
 #[OA\Tag(name: 'Weight')]
-final class WeightController extends AbstractController
+final class WeightController extends AbstractBaseController
 {
     #[Route('/api/weight/latest', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -35,9 +33,9 @@ final class WeightController extends AbstractController
         description: 'The last known weight with the day it belongs to. Every field is null when none was ever recorded.',
         content: new OA\JsonContent(ref: new Model(type: WeightDataOutput::class)),
     )]
-    public function getLatest(#[CurrentUser] SecurityUser $securityUser, GetLatestWeightUseCase $useCase): JsonResponse
+    public function getLatest(GetLatestWeightUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($securityUser->id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/weight/today', methods: Request::METHOD_PUT)]
@@ -49,10 +47,9 @@ final class WeightController extends AbstractController
     )]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Weight out of range.')]
     public function saveToday(
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] SaveWeightDataInput $input,
         SaveWeightUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input));
     }
 }

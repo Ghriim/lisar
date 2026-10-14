@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Validation\Constraint\Todo;
 
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 
 /**
  * There is one level of subtasks and one only, so a subtask cannot be given subtasks of its own.
@@ -20,13 +21,14 @@ final readonly class ParentTaskUsableConstraint
      *
      * @return array<string, list<string>>
      */
-    public static function validate(?int $requestedId, ?TaskDataModel $parent, array $violations = []): array
+    public static function validate(?int $requestedId, ?TaskDataModel $parent, UserDataModel $currentUser, array $violations = []): array
     {
         if (null === $requestedId) {
             return $violations;
         }
 
-        if (null === $parent) {
+        // Someone else's task is answered like one that does not exist: its id says nothing.
+        if (null === $parent || $currentUser->id !== $parent->owner->id) {
             $violations['parentId'][] = self::PARENT_TASK_NOT_FOUND;
 
             return $violations;

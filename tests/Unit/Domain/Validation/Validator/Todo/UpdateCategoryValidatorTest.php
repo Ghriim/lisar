@@ -10,11 +10,14 @@ use App\Domain\DTO\Input\Todo\UpdateCategoryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Todo\CategoryEditableConstraint;
 use App\Domain\Validation\Validator\Todo\UpdateCategoryValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class UpdateCategoryValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateCategoryValidator $validator;
 
     protected function setUp(): void
@@ -28,7 +31,7 @@ final class UpdateCategoryValidatorTest extends TestCase
 
     public function testItAcceptsRenamingAPersonalCategory(): void
     {
-        $this->validator->validate(new UpdateCategoryDataInput('Sport'), $this->buildPersonal(1), null, null);
+        $this->validator->validate($this->anyCurrentUser(), new UpdateCategoryDataInput('Sport'), $this->buildPersonal(1), null, null);
 
         $this->expectNotToPerformAssertions();
     }
@@ -37,7 +40,7 @@ final class UpdateCategoryValidatorTest extends TestCase
     {
         $category = $this->buildPersonal(7);
 
-        $this->validator->validate(new UpdateCategoryDataInput('Sport'), $category, null, $category);
+        $this->validator->validate($this->anyCurrentUser(), new UpdateCategoryDataInput('Sport'), $category, null, $category);
 
         $this->expectNotToPerformAssertions();
     }
@@ -49,7 +52,7 @@ final class UpdateCategoryValidatorTest extends TestCase
         $category->owner = null;
 
         try {
-            $this->validator->validate(new UpdateCategoryDataInput('Maison'), $category, null, null);
+            $this->validator->validate($this->anyCurrentUser(), new UpdateCategoryDataInput('Maison'), $category, null, null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateCategoryValidator::ERROR_CODE, $exception->errorCode);
@@ -64,7 +67,7 @@ final class UpdateCategoryValidatorTest extends TestCase
         $reference->owner = null;
 
         try {
-            $this->validator->validate(new UpdateCategoryDataInput(''), $reference, $reference, null);
+            $this->validator->validate($this->anyCurrentUser(), new UpdateCategoryDataInput(''), $reference, $reference, null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('label', $exception->violations);

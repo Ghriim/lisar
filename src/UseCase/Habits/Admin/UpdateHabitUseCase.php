@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Habits\Admin;
 
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Habits\UpdateHabitDataInput;
 use App\Domain\DTO\Output\Habits\HabitAdminDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -34,14 +35,14 @@ final readonly class UpdateHabitUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, UpdateHabitDataInput $input): HabitAdminDataOutput
+    public function execute(UserDataModel $currentUser, int $id, UpdateHabitDataInput $input): HabitAdminDataOutput
     {
         $habit = $this->habitProviderGateway->findOneById($id);
         if (null === $habit) {
             throw new DataModelNotFoundException(HabitDataModel::class);
         }
 
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $habit->name = $input->name;
         $habit->icon = $input->icon;

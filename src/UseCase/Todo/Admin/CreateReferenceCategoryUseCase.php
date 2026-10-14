@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Todo\Admin;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\Admin\CreateReferenceCategoryDataInput;
 use App\Domain\DTO\Output\Todo\CategoryDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -27,9 +28,10 @@ final readonly class CreateReferenceCategoryUseCase implements UseCaseInterface
     /**
      * @throws ValidationException
      */
-    public function execute(CreateReferenceCategoryDataInput $input): CategoryDataOutput
+    public function execute(UserDataModel $currentUser, CreateReferenceCategoryDataInput $input): CategoryDataOutput
     {
         $this->validator->validate(
+            $currentUser,
             $input,
             $this->categoryProviderGateway->findOneByLabelForOwner($input->label, null),
         );

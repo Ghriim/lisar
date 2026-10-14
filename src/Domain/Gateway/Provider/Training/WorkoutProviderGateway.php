@@ -19,8 +19,8 @@ use DateTimeImmutable;
  */
 interface WorkoutProviderGateway
 {
-    /** Someone else's workout is absent, exactly like one that does not exist. */
-    public function findOneByIdForOwner(int $id, UserDataModel $owner): ?WorkoutDataModel;
+    /** Whoever it belongs to: whether the caller may touch it is the validator's to say. */
+    public function findOneById(int $id): ?WorkoutDataModel;
 
     public function findOneInProgressForOwner(UserDataModel $owner): ?WorkoutDataModel;
 

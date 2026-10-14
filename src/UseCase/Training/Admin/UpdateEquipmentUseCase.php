@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\EquipmentDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\UpdateEquipmentDataInput;
 use App\Domain\DTO\Output\Training\EquipmentDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -33,14 +34,14 @@ final readonly class UpdateEquipmentUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, UpdateEquipmentDataInput $input): EquipmentDataOutput
+    public function execute(UserDataModel $currentUser, int $id, UpdateEquipmentDataInput $input): EquipmentDataOutput
     {
         $equipment = $this->equipmentProviderGateway->findOneById($id);
         if (null === $equipment) {
             throw new DataModelNotFoundException(EquipmentDataModel::class);
         }
 
-        $this->validator->validate($input, $equipment, $this->equipmentProviderGateway->findOneByName($input->name));
+        $this->validator->validate($currentUser, $input, $equipment, $this->equipmentProviderGateway->findOneByName($input->name));
         $equipment->name = $input->name;
         $equipment->hasWeight = $input->hasWeight;
         $equipment->hasDistance = $input->hasDistance;

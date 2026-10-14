@@ -7,6 +7,7 @@ namespace App\Infrastructure\Controller\Todo\Admin;
 use App\Domain\DTO\Input\Todo\Admin\CreatePriorityDataInput;
 use App\Domain\DTO\Input\Todo\Admin\UpdatePriorityDataInput;
 use App\Domain\DTO\Output\Todo\PriorityDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Todo\Admin\CreatePriorityUseCase;
 use App\UseCase\Todo\Admin\DeletePriorityUseCase;
@@ -14,7 +15,6 @@ use App\UseCase\Todo\Admin\UpdatePriorityUseCase;
 use App\UseCase\Todo\ListPrioritiesUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * The priority reference set. Everyone picks from it; only this surface writes it.
  */
 #[OA\Tag(name: 'Admin — priorities')]
-final class AdminPriorityController extends AbstractController
+final class AdminPriorityController extends AbstractBaseController
 {
     #[Route('/api/admin/priorities', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -34,7 +34,7 @@ final class AdminPriorityController extends AbstractController
     )]
     public function listPriorities(ListPrioritiesUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/admin/priorities', methods: Request::METHOD_POST)]
@@ -49,7 +49,7 @@ final class AdminPriorityController extends AbstractController
         #[MapDataInput] CreatePriorityDataInput $input,
         CreatePriorityUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/priorities/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -67,7 +67,7 @@ final class AdminPriorityController extends AbstractController
         #[MapDataInput] UpdatePriorityDataInput $input,
         UpdatePriorityUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/admin/priorities/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -77,7 +77,7 @@ final class AdminPriorityController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Still in use, or the default one.')]
     public function deletePriority(int $id, DeletePriorityUseCase $useCase): JsonResponse
     {
-        $useCase->execute($id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

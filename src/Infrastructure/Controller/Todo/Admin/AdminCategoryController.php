@@ -7,6 +7,7 @@ namespace App\Infrastructure\Controller\Todo\Admin;
 use App\Domain\DTO\Input\Todo\Admin\CreateReferenceCategoryDataInput;
 use App\Domain\DTO\Input\Todo\Admin\UpdateReferenceCategoryDataInput;
 use App\Domain\DTO\Output\Todo\CategoryDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Todo\Admin\CreateReferenceCategoryUseCase;
 use App\UseCase\Todo\Admin\DeleteReferenceCategoryUseCase;
@@ -14,7 +15,6 @@ use App\UseCase\Todo\Admin\ListReferenceCategoriesUseCase;
 use App\UseCase\Todo\Admin\UpdateReferenceCategoryUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,7 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * The common categories. What people create for themselves never appears here.
  */
 #[OA\Tag(name: 'Admin — categories')]
-final class AdminCategoryController extends AbstractController
+final class AdminCategoryController extends AbstractBaseController
 {
     #[Route('/api/admin/categories', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -34,7 +34,7 @@ final class AdminCategoryController extends AbstractController
     )]
     public function listReferenceCategories(ListReferenceCategoriesUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/admin/categories', methods: Request::METHOD_POST)]
@@ -49,7 +49,7 @@ final class AdminCategoryController extends AbstractController
         #[MapDataInput] CreateReferenceCategoryDataInput $input,
         CreateReferenceCategoryUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/categories/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -67,7 +67,7 @@ final class AdminCategoryController extends AbstractController
         #[MapDataInput] UpdateReferenceCategoryDataInput $input,
         UpdateReferenceCategoryUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/admin/categories/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -77,7 +77,7 @@ final class AdminCategoryController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Tasks still sit in it.')]
     public function deleteReferenceCategory(int $id, DeleteReferenceCategoryUseCase $useCase): JsonResponse
     {
-        $useCase->execute($id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

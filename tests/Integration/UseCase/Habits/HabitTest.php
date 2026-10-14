@@ -21,6 +21,7 @@ use App\Fixtures\Habits\HabitSubscriptionFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Habits\CompleteHabitUseCase;
 use App\UseCase\Habits\ListHabitCatalogUseCase;
 use App\UseCase\Habits\ListHabitsUseCase;
@@ -38,6 +39,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class HabitTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListHabitsUseCase $list;
     private CompleteHabitUseCase $complete;
@@ -69,7 +71,7 @@ final class HabitTest extends KernelTestCase
 
     public function testItListsTheHabitsOneKeepsEachWithAWeek(): void
     {
-        $habits = $this->list->execute($this->idOf($this->alice));
+        $habits = $this->list->execute($this->currentUser($this->idOf($this->alice)));
 
         self::assertCount(2, $habits);
         // By habit name: "Lire" before "Marcher 5000 pas".
@@ -81,12 +83,12 @@ final class HabitTest extends KernelTestCase
 
     public function testSomeoneWhoKeepsNoHabitHasAnEmptyList(): void
     {
-        self::assertCount(0, $this->list->execute($this->idOf($this->bob)));
+        self::assertCount(0, $this->list->execute($this->currentUser($this->idOf($this->bob))));
     }
 
     public function testTickingAManualHabitKeepsToday(): void
     {
-        $output = $this->complete->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::READING));
+        $output = $this->complete->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::READING));
 
         self::assertTrue($output->isCompletedToday);
         self::assertTrue($output->days[HabitOutputFactory::WINDOW_IN_DAYS - 1]->isCompleted);
@@ -94,8 +96,8 @@ final class HabitTest extends KernelTestCase
 
     public function testTickingTwiceKeepsItOnce(): void
     {
-        $this->complete->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::READING));
-        $this->complete->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::READING));
+        $this->complete->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::READING));
+        $this->complete->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::READING));
 
         $subscription = $this->getReference(HabitSubscriptionFixtures::ALICE_READING, HabitSubscriptionDataModel::class);
         $since = self::getContainer()->get(DayClock::class)->today();
@@ -110,8 +112,8 @@ final class HabitTest extends KernelTestCase
     {
         $reading = $this->habitId(HabitFixtures::READING);
 
-        $this->complete->execute($this->idOf($this->alice), $reading);
-        $output = $this->uncomplete->execute($this->idOf($this->alice), $reading);
+        $this->complete->execute($this->currentUser($this->idOf($this->alice)), $reading);
+        $output = $this->uncomplete->execute($this->currentUser($this->idOf($this->alice)), $reading);
 
         self::assertFalse($output->isCompletedToday);
         self::assertFalse($output->days[HabitOutputFactory::WINDOW_IN_DAYS - 1]->isCompleted);
@@ -120,7 +122,7 @@ final class HabitTest extends KernelTestCase
     /** Un-ticking a day that was never kept changes nothing. */
     public function testUnTickingADayNeverKeptIsANoOp(): void
     {
-        $output = $this->uncomplete->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::READING));
+        $output = $this->uncomplete->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::READING));
 
         self::assertFalse($output->isCompletedToday);
     }
@@ -129,26 +131,26 @@ final class HabitTest extends KernelTestCase
     {
         $this->expectException(ValidationException::class);
 
-        $this->uncomplete->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::WALK));
+        $this->uncomplete->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::WALK));
     }
 
     public function testATrackerHabitIsNotTickedByHand(): void
     {
         $this->expectException(ValidationException::class);
 
-        $this->complete->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::WALK));
+        $this->complete->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::WALK));
     }
 
     public function testCompletingAHabitOneDoesNotKeepIsNotFound(): void
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->complete->execute($this->idOf($this->bob), $this->habitId(HabitFixtures::READING));
+        $this->complete->execute($this->currentUser($this->idOf($this->bob)), $this->habitId(HabitFixtures::READING));
     }
 
     public function testTheStepTrackerKeepsItsHabitWhenItCrossesTheMark(): void
     {
-        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(5000));
+        $this->saveSteps->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(5000));
 
         self::assertTrue($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);
     }
@@ -156,8 +158,8 @@ final class HabitTest extends KernelTestCase
     public function testTheStepTrackerUnkeepsWhenCorrectedBelowTheMark(): void
     {
         // Over the 5000-step mark first, then corrected under it.
-        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(6000));
-        $this->saveSteps->execute($this->idOf($this->alice), new SaveStepDayDataInput(4000));
+        $this->saveSteps->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(6000));
+        $this->saveSteps->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(4000));
 
         self::assertFalse($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);
     }
@@ -165,7 +167,7 @@ final class HabitTest extends KernelTestCase
     /** The day's total counts every drink, the one just logged with the others: 1000 + 600 crosses 1500. */
     public function testTheHydrationTrackerKeepsItsHabitWhenTheDayCrossesTheMark(): void
     {
-        $this->subscribe->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::DRINK));
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::DRINK));
 
         $this->drink(1000);
         self::assertFalse($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
@@ -176,12 +178,12 @@ final class HabitTest extends KernelTestCase
 
     public function testTheHydrationTrackerUnkeepsWhenADrinkIsCorrectedBelowTheMark(): void
     {
-        $this->subscribe->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::DRINK));
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::DRINK));
         $this->drink(1000);
         $day = $this->drink(600);
 
         self::getContainer()->get(UpdateHydrationEntryUseCase::class)->execute(
-            $this->idOf($this->alice), $this->entryId($day, 600), new UpdateHydrationEntryDataInput(300),
+            $this->currentUser($this->idOf($this->alice)), $this->entryId($day, 600), new UpdateHydrationEntryDataInput(300),
         );
 
         self::assertFalse($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
@@ -189,11 +191,11 @@ final class HabitTest extends KernelTestCase
 
     public function testTheHydrationTrackerUnkeepsWhenADrinkIsRemovedBelowTheMark(): void
     {
-        $this->subscribe->execute($this->idOf($this->alice), $this->habitId(HabitFixtures::DRINK));
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::DRINK));
         $this->drink(1000);
         $day = $this->drink(600);
 
-        self::getContainer()->get(DeleteHydrationEntryUseCase::class)->execute($this->idOf($this->alice), $this->entryId($day, 600));
+        self::getContainer()->get(DeleteHydrationEntryUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $this->entryId($day, 600));
 
         self::assertFalse($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
     }
@@ -203,22 +205,22 @@ final class HabitTest extends KernelTestCase
     {
         $meditate = $this->habitId(HabitFixtures::MEDITATE);
 
-        $this->subscribe->execute($this->idOf($this->alice), $meditate);
-        $this->complete->execute($this->idOf($this->alice), $meditate);
-        $this->unsubscribe->execute($this->idOf($this->alice), $meditate);
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $meditate);
+        $this->complete->execute($this->currentUser($this->idOf($this->alice)), $meditate);
+        $this->unsubscribe->execute($this->currentUser($this->idOf($this->alice)), $meditate);
 
         // Dropped: it no longer shows.
-        self::assertCount(2, $this->list->execute($this->idOf($this->alice)));
+        self::assertCount(2, $this->list->execute($this->currentUser($this->idOf($this->alice))));
 
         // Resumed: it is back, and today is still kept.
-        $this->subscribe->execute($this->idOf($this->alice), $meditate);
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $meditate);
         self::assertTrue($this->habitOf($this->alice, HabitFixtures::MEDITATE)->isCompletedToday);
     }
 
     public function testTheCatalogFlagsWhatIsKept(): void
     {
         $subscribed = [];
-        foreach ($this->catalog->execute($this->idOf($this->alice)) as $item) {
+        foreach ($this->catalog->execute($this->currentUser($this->idOf($this->alice))) as $item) {
             $subscribed[$item->name] = $item->isSubscribed;
         }
 
@@ -232,7 +234,7 @@ final class HabitTest extends KernelTestCase
     private function habitOf(UserDataModel $owner, string $habitReference): HabitDataOutput
     {
         $wanted = $this->habitId($habitReference);
-        foreach ($this->list->execute($this->idOf($owner)) as $habit) {
+        foreach ($this->list->execute($this->currentUser($this->idOf($owner))) as $habit) {
             if ($wanted === $habit->habitId) {
                 return $habit;
             }
@@ -244,7 +246,7 @@ final class HabitTest extends KernelTestCase
     private function drink(int $volumeInMillilitres): HydrationDayDataOutput
     {
         return self::getContainer()->get(CreateHydrationEntryUseCase::class)->execute(
-            $this->idOf($this->alice), new CreateHydrationEntryDataInput($volumeInMillilitres),
+            $this->currentUser($this->idOf($this->alice)), new CreateHydrationEntryDataInput($volumeInMillilitres),
         );
     }
 

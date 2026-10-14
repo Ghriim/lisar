@@ -7,10 +7,11 @@ namespace App\UseCase\Todo;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Todo\TaskDataOutput;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Todo\ReopenTaskValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -21,7 +22,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ReopenTaskUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ReopenTaskValidator $validator,
         private TaskProviderGateway $taskProviderGateway,
         private TaskPersisterGateway $taskPersisterGateway,
         private TaskOutputFactory $outputFactory,
@@ -30,18 +31,16 @@ final readonly class ReopenTaskUseCase implements UseCaseInterface
 
     /**
      * @throws DataModelNotFoundException
+     * @throws ValidationException
      */
-    public function execute(int $ownerId, int $taskId): TaskDataOutput
+    public function execute(UserDataModel $currentUser, int $taskId): TaskDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $task = $this->taskProviderGateway->findOneByIdForOwner($taskId, $owner);
+        $task = $this->taskProviderGateway->findOneById($taskId);
         if (null === $task) {
             throw new DataModelNotFoundException(TaskDataModel::class);
         }
+
+        $this->validator->validate($currentUser, $task);
 
         if (false === $task->isDone()) {
             return $this->outputFactory->buildOne($task);

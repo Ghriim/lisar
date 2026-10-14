@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Tracking\Weight;
 use App\Domain\DTO\Input\Tracking\Weight\SaveWeightDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Validator\Tracking\Weight\SaveWeightValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -14,6 +15,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 /** The one shape the weight domain accepts, and the typos it refuses. */
 final class SaveWeightValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private ValidatorInterface $validator;
 
     protected function setUp(): void
@@ -25,7 +28,7 @@ final class SaveWeightValidatorTest extends TestCase
 
     public function testItAcceptsAPlausibleWeight(): void
     {
-        (new SaveWeightValidator($this->validator))->validate(new SaveWeightDataInput(72.4));
+        (new SaveWeightValidator($this->validator))->validate($this->anyCurrentUser(), new SaveWeightDataInput(72.4));
 
         $this->expectNotToPerformAssertions();
     }
@@ -35,8 +38,8 @@ final class SaveWeightValidatorTest extends TestCase
     {
         $validator = new SaveWeightValidator($this->validator);
 
-        $validator->validate(new SaveWeightDataInput(20.0));
-        $validator->validate(new SaveWeightDataInput(400.0));
+        $validator->validate($this->anyCurrentUser(), new SaveWeightDataInput(20.0));
+        $validator->validate($this->anyCurrentUser(), new SaveWeightDataInput(400.0));
 
         $this->expectNotToPerformAssertions();
     }
@@ -55,7 +58,7 @@ final class SaveWeightValidatorTest extends TestCase
     private function assertRefusesWeight(float $weightInKilograms): void
     {
         try {
-            (new SaveWeightValidator($this->validator))->validate(new SaveWeightDataInput($weightInKilograms));
+            (new SaveWeightValidator($this->validator))->validate($this->anyCurrentUser(), new SaveWeightDataInput($weightInKilograms));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(SaveWeightValidator::ERROR_CODE, $exception->errorCode);

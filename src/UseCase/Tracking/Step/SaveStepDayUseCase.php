@@ -12,7 +12,6 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Tracking\Step\StepDayOutputFactory;
 use App\Domain\Gateway\Persister\Tracking\Step\StepDayPersisterGateway;
 use App\Domain\Gateway\Provider\Tracking\Step\StepDayProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Registry\Tracking\Step\StepSourceRegistry;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Tracking\Step\SaveStepDayValidator;
@@ -33,7 +32,6 @@ final readonly class SaveStepDayUseCase implements UseCaseInterface
 {
     public function __construct(
         private SaveStepDayValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private StepDayProviderGateway $stepDayProviderGateway,
         private StepDayPersisterGateway $stepDayPersisterGateway,
         private StepDayOutputFactory $outputFactory,
@@ -47,22 +45,17 @@ final readonly class SaveStepDayUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, SaveStepDayDataInput $input): StepDayDataOutput
+    public function execute(UserDataModel $currentUser, SaveStepDayDataInput $input): StepDayDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $today = $this->clock->today();
-        $stepDay = $this->stepDayProviderGateway->findOneForOwnerAndDay($owner, $today);
+        $stepDay = $this->stepDayProviderGateway->findOneForOwnerAndDay($currentUser, $today);
         $isFirstNoteOfTheDay = null === $stepDay;
 
         if (null === $stepDay) {
             $stepDay = new StepDayDataModel();
-            $stepDay->owner = $owner;
+            $stepDay->owner = $currentUser;
             $stepDay->day = $today;
             // Frozen on creation, never rewritten: a later goal change must not rewrite a day
             // that is already counted.

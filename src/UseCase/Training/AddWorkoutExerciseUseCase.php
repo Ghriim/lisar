@@ -15,7 +15,6 @@ use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutExercisePersisterGateway;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Training\AddWorkoutExerciseValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -28,7 +27,6 @@ final readonly class AddWorkoutExerciseUseCase implements UseCaseInterface
 {
     public function __construct(
         private AddWorkoutExerciseValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private MovementProviderGateway $movementProviderGateway,
         private WorkoutExercisePersisterGateway $workoutExercisePersisterGateway,
@@ -40,14 +38,9 @@ final readonly class AddWorkoutExerciseUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId, int $blockId, AddWorkoutExerciseDataInput $input): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId, int $blockId, AddWorkoutExerciseDataInput $input): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
@@ -58,7 +51,7 @@ final readonly class AddWorkoutExerciseUseCase implements UseCaseInterface
         }
 
         $movement = $this->movementProviderGateway->findOneOfferedById($input->movementId);
-        $this->validator->validate($input, $movement);
+        $this->validator->validate($currentUser, $workout, $input, $movement);
         if (null === $movement) {
             // Unreachable: the validator refuses a movement that is not offered.
             throw new DataModelNotFoundException(WorkoutExerciseDataModel::class);

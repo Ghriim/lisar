@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\EquipmentDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\CreateEquipmentDataInput;
 use App\Domain\DTO\Output\Training\EquipmentDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -30,9 +31,9 @@ final readonly class CreateEquipmentUseCase implements UseCaseInterface
     /**
      * @throws ValidationException
      */
-    public function execute(CreateEquipmentDataInput $input): EquipmentDataOutput
+    public function execute(UserDataModel $currentUser, CreateEquipmentDataInput $input): EquipmentDataOutput
     {
-        $this->validator->validate($input, $this->equipmentProviderGateway->findOneByName($input->name));
+        $this->validator->validate($currentUser, $input, $this->equipmentProviderGateway->findOneByName($input->name));
 
         $equipment = new EquipmentDataModel();
         $equipment->name = $input->name;

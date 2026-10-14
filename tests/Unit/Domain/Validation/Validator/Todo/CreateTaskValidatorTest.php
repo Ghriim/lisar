@@ -14,11 +14,14 @@ use App\Domain\Validation\Constraint\Todo\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\ParentTaskUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\PriorityExistsConstraint;
 use App\Domain\Validation\Validator\Todo\CreateTaskValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class CreateTaskValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private CreateTaskValidator $validator;
     private UserDataModel $owner;
 
@@ -36,7 +39,7 @@ final class CreateTaskValidatorTest extends TestCase
 
     public function testItAcceptsATaskWithNothingButATitle(): void
     {
-        $this->validator->validate(new CreateTaskDataInput('Buy milk'), null, null, null, $this->owner);
+        $this->validator->validate($this->anyCurrentUser(), new CreateTaskDataInput('Buy milk'), null, null, null, $this->owner);
 
         $this->expectNotToPerformAssertions();
     }
@@ -82,6 +85,7 @@ final class CreateTaskValidatorTest extends TestCase
 
         try {
             $this->validator->validate(
+                $this->anyCurrentUser(),
                 new CreateTaskDataInput('Buy milk', categoryId: 9),
                 null,
                 $category,
@@ -97,10 +101,12 @@ final class CreateTaskValidatorTest extends TestCase
     public function testItRejectsASubtaskOfASubtask(): void
     {
         $parent = new TaskDataModel();
+        $parent->owner = $this->anyCurrentUser();
         $parent->parent = new TaskDataModel();
 
         try {
             $this->validator->validate(
+                $this->anyCurrentUser(),
                 new CreateTaskDataInput('Buy milk', parentId: 9),
                 null,
                 null,
@@ -122,6 +128,7 @@ final class CreateTaskValidatorTest extends TestCase
         $category->owner = null;
 
         $this->validator->validate(
+            $this->anyCurrentUser(),
             new CreateTaskDataInput('Buy milk', priorityId: 1, categoryId: 2),
             new PriorityDataModel(),
             $category,
@@ -136,6 +143,7 @@ final class CreateTaskValidatorTest extends TestCase
     {
         try {
             $this->validator->validate(
+                $this->anyCurrentUser(),
                 new CreateTaskDataInput('', dueDate: 'nope', priorityId: 404, categoryId: 404, parentId: 404),
                 null,
                 null,
@@ -170,7 +178,7 @@ final class CreateTaskValidatorTest extends TestCase
     private function assertViolatesOn(CreateTaskDataInput $input, string $propertyPath, string $errorCode): void
     {
         try {
-            $this->validator->validate($input, null, null, null, $this->owner);
+            $this->validator->validate($this->anyCurrentUser(), $input, null, null, null, $this->owner);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateTaskValidator::ERROR_CODE, $exception->errorCode);

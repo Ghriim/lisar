@@ -8,13 +8,17 @@ use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\UpdateTaskDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Todo\PriorityExistsConstraint;
 use App\Domain\Validation\Validator\Todo\UpdateTaskValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class UpdateTaskValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateTaskValidator $validator;
     private UserDataModel $owner;
 
@@ -32,15 +36,27 @@ final class UpdateTaskValidatorTest extends TestCase
 
     public function testItAcceptsATitleOnly(): void
     {
-        $this->validator->validate(new UpdateTaskDataInput('Buy oat milk'), null, null, $this->owner);
+        $this->validator->validate($this->anyCurrentUser(), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput('Buy oat milk'), null, null, $this->owner);
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** Someone else's task: refused on that alone, whatever else the call carries. */
+    public function testItRefusesSomeoneElsesTask(): void
+    {
+        try {
+            $this->validator->validate($this->currentUser(99), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput('Buy oat milk'), null, null, $this->owner);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateTaskValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItRejectsABlankTitle(): void
     {
         try {
-            $this->validator->validate(new UpdateTaskDataInput(''), null, null, $this->owner);
+            $this->validator->validate($this->anyCurrentUser(), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput(''), null, null, $this->owner);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateTaskValidator::ERROR_CODE, $exception->errorCode);
@@ -52,6 +68,8 @@ final class UpdateTaskValidatorTest extends TestCase
     {
         try {
             $this->validator->validate(
+                $this->anyCurrentUser(),
+                $this->taskOf($this->anyCurrentUser()),
                 new UpdateTaskDataInput('Buy oat milk', priorityId: 404),
                 null,
                 null,
@@ -72,6 +90,8 @@ final class UpdateTaskValidatorTest extends TestCase
         $category->owner = null;
 
         $this->validator->validate(
+            $this->anyCurrentUser(),
+            $this->taskOf($this->anyCurrentUser()),
             new UpdateTaskDataInput('Buy oat milk', categoryId: 2),
             null,
             $category,
@@ -85,6 +105,8 @@ final class UpdateTaskValidatorTest extends TestCase
     {
         try {
             $this->validator->validate(
+                $this->anyCurrentUser(),
+                $this->taskOf($this->anyCurrentUser()),
                 new UpdateTaskDataInput('', dueDate: 'nope', priorityId: 404, categoryId: 404),
                 null,
                 null,

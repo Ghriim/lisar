@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Validation\Validator\Training;
+
+use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
+
+final readonly class UncompleteWorkoutSetValidator
+{
+    public const string ERROR_CODE = 'uncomplete_workout_set_invalid';
+
+    /**
+     * @throws ValidationException
+     */
+    public function validate(UserDataModel $currentUser, WorkoutDataModel $workout): void
+    {
+        $access = IsOwnerConstraint::validate($currentUser, $workout->owner);
+        if ([] !== $access) {
+            throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
+        $violations = [];
+        $violations = WorkoutInProgressConstraint::validate($workout, $violations);
+
+        if (false === empty($violations)) {
+            throw new ValidationException(self::ERROR_CODE, $violations);
+        }
+    }
+}

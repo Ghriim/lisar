@@ -12,7 +12,6 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Tracking\Weight\WeightOutputFactory;
 use App\Domain\Gateway\Persister\Tracking\Weight\WeightEntryPersisterGateway;
 use App\Domain\Gateway\Provider\Tracking\Weight\WeightEntryProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Tracking\Weight\SaveWeightValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -33,7 +32,6 @@ final readonly class SaveWeightUseCase implements UseCaseInterface
 {
     public function __construct(
         private SaveWeightValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WeightEntryProviderGateway $weightEntryProviderGateway,
         private WeightEntryPersisterGateway $weightEntryPersisterGateway,
         private WeightOutputFactory $outputFactory,
@@ -45,23 +43,18 @@ final readonly class SaveWeightUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, SaveWeightDataInput $input): WeightDataOutput
+    public function execute(UserDataModel $currentUser, SaveWeightDataInput $input): WeightDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $today = $this->clock->today();
         $weightInKilograms = round($input->weightInKilograms, SaveWeightDataInput::DECIMALS);
 
-        $entry = $this->weightEntryProviderGateway->findOneForOwnerAndDay($owner, $today);
+        $entry = $this->weightEntryProviderGateway->findOneForOwnerAndDay($currentUser, $today);
 
         if (null === $entry) {
             $entry = new WeightEntryDataModel();
-            $entry->owner = $owner;
+            $entry->owner = $currentUser;
             $entry->day = $today;
             // Set once, here: a correction is not a new measurement, so it must not move the
             // moment the person stepped on the scale.

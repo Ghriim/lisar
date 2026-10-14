@@ -9,7 +9,9 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Registry\Habits\HabitTrackerRegistry;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Validator\Habits\CreateHabitValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -17,6 +19,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 /** The shapes the habit catalogue accepts, and the incoherent ones it refuses. */
 final class CreateHabitValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private ValidatorInterface $validator;
 
     protected function setUp(): void
@@ -29,15 +33,34 @@ final class CreateHabitValidatorTest extends TestCase
     public function testItAcceptsAManualHabit(): void
     {
         $this->validatorUnderTest()->validate(
+            $this->currentAdmin(),
             new CreateHabitDataInput('Lire', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL),
         );
 
         $this->expectNotToPerformAssertions();
     }
 
+    /** A user's token on the back-office: refused on that alone. */
+    public function testItRefusesANonAdministrator(): void
+    {
+        try {
+            $this->validatorUnderTest()->validate($this->anyCurrentUser(), new CreateHabitDataInput(
+                'Marcher',
+                HabitIconRegistry::RUN,
+                HabitSourceRegistry::TRACKER,
+                HabitTrackerRegistry::STEPS,
+                5000,
+            ));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(CreateHabitValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
+    }
+
     public function testItAcceptsATrackerHabit(): void
     {
-        $this->validatorUnderTest()->validate(new CreateHabitDataInput(
+        $this->validatorUnderTest()->validate($this->currentAdmin(), new CreateHabitDataInput(
             'Marcher',
             HabitIconRegistry::RUN,
             HabitSourceRegistry::TRACKER,
@@ -52,6 +75,7 @@ final class CreateHabitValidatorTest extends TestCase
     {
         try {
             $this->validatorUnderTest()->validate(
+                $this->currentAdmin(),
                 new CreateHabitDataInput('Lire', 'unicorn', HabitSourceRegistry::MANUAL),
             );
             self::fail('Expected ValidationException');
@@ -66,6 +90,7 @@ final class CreateHabitValidatorTest extends TestCase
     {
         try {
             $this->validatorUnderTest()->validate(
+                $this->currentAdmin(),
                 new CreateHabitDataInput('Marcher', HabitIconRegistry::RUN, HabitSourceRegistry::TRACKER),
             );
             self::fail('Expected ValidationException');
@@ -79,6 +104,7 @@ final class CreateHabitValidatorTest extends TestCase
     {
         try {
             $this->validatorUnderTest()->validate(
+                $this->currentAdmin(),
                 new CreateHabitDataInput('', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL),
             );
             self::fail('Expected ValidationException');

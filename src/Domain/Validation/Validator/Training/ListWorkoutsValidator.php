@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Validation\Validator\Training;
 
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\ListWorkoutsDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
@@ -20,7 +21,7 @@ final readonly class ListWorkoutsValidator extends AbstractBaseValidator
     /**
      * @throws ValidationException
      */
-    public function validate(ListWorkoutsDataInput $input): void
+    public function validate(UserDataModel $currentUser, ListWorkoutsDataInput $input): void
     {
         $violations = $this->getViolations($input);
 

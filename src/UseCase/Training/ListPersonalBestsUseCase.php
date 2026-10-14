@@ -9,7 +9,7 @@ use App\Domain\DTO\Output\Training\PersonalBestBoardDataOutput;
 use App\Domain\Factory\OutputFactory\Training\PersonalBestOutputFactory;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
 use App\Domain\Gateway\Provider\Training\PersonalBestProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Training\ListPersonalBestsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -21,7 +21,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListPersonalBestsUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ListPersonalBestsValidator $validator,
         private PersonalBestProviderGateway $personalBestProviderGateway,
         private MovementProviderGateway $movementProviderGateway,
         private PersonalBestOutputFactory $outputFactory,
@@ -31,15 +31,12 @@ final readonly class ListPersonalBestsUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): PersonalBestBoardDataOutput
+    public function execute(UserDataModel $currentUser): PersonalBestBoardDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
         return $this->outputFactory->buildBoard(
-            $this->personalBestProviderGateway->findAllForOwner($owner),
+            $this->personalBestProviderGateway->findAllForOwner($currentUser),
             $this->movementProviderGateway->findAllOffered(),
         );
     }

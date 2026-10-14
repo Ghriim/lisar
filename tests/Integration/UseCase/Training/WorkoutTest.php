@@ -26,6 +26,7 @@ use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Registry\Habits\HabitTrackerRegistry;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutBlockOrderConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutFinishableConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
@@ -35,7 +36,11 @@ use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\Training\AddWorkoutBlockValidator;
 use App\Domain\Validation\Validator\Training\AddWorkoutSetValidator;
+use App\Domain\Validation\Validator\Training\CompleteWorkoutSetValidator;
+use App\Domain\Validation\Validator\Training\CopyWorkoutValidator;
+use App\Domain\Validation\Validator\Training\FinishWorkoutValidator;
 use App\Domain\Validation\Validator\Training\StartWorkoutValidator;
+use App\Domain\Validation\Validator\Training\UncompleteWorkoutSetValidator;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\SetTypeFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
@@ -43,6 +48,7 @@ use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Infrastructure\HttpKernel\ArgumentResolver\DataInputValueResolver;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Habits\Admin\CreateHabitUseCase;
 use App\UseCase\Habits\ListHabitsUseCase;
 use App\UseCase\Habits\SubscribeHabitUseCase;
@@ -83,6 +89,7 @@ use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 final class WorkoutTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private UserDataModel $alice;
     private UserDataModel $bob;
@@ -106,12 +113,12 @@ final class WorkoutTest extends KernelTestCase
         self::assertNull($output->finishedAt);
         self::assertSame([], $output->blocks);
 
-        self::assertSame($output->id, $this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->idOf($this->alice))?->id);
+        self::assertSame($output->id, $this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)))?->id);
     }
 
     public function testThereIsNoCurrentWorkoutWhenNoneIsInProgress(): void
     {
-        self::assertNull($this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->idOf($this->alice)));
+        self::assertNull($this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice))));
     }
 
     /** A blank name is no name: each front end words its own default. */
@@ -148,7 +155,7 @@ final class WorkoutTest extends KernelTestCase
 
     public function testEachMovementOfASupersetKeepsItsOwnRest(): void
     {
-        $output = $this->useCase(AddWorkoutBlockUseCase::class)->execute($this->idOf($this->alice), $this->start()->id, new AddWorkoutBlockDataInput([
+        $output = $this->useCase(AddWorkoutBlockUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $this->start()->id, new AddWorkoutBlockDataInput([
             new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::PUSH_UP)),
             new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::FARMER_WALK_DUMBBELL), 90),
         ]));
@@ -177,7 +184,7 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL);
 
         $output = $this->useCase(AddWorkoutExerciseUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $workout->blocks[0]->id,
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $workout->blocks[0]->id,
             new AddWorkoutExerciseDataInput($this->movementId(MovementFixtures::PUSH_UP)),
         );
 
@@ -189,7 +196,7 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL);
 
         $output = $this->useCase(AddWorkoutExerciseUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $workout->blocks[0]->id,
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $workout->blocks[0]->id,
             new AddWorkoutExerciseDataInput($this->movementId(MovementFixtures::PUSH_UP), 75),
         );
 
@@ -201,7 +208,7 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP);
         $exerciseId = $workout->blocks[0]->exercises[0]->id;
         $update = fn (UpdateWorkoutExerciseDataInput $input): WorkoutDataOutput => $this->useCase(UpdateWorkoutExerciseUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $exerciseId, $input,
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $exerciseId, $input,
         );
 
         $corrected = $update(new UpdateWorkoutExerciseDataInput('Coudes serrés', 120));
@@ -225,7 +232,7 @@ final class WorkoutTest extends KernelTestCase
     public function testItRefusesAMovementNoLongerOffered(): void
     {
         $workout = $this->start();
-        $this->useCase(DeactivateMovementUseCase::class)->execute($this->movementId(MovementFixtures::PUSH_UP));
+        $this->useCase(DeactivateMovementUseCase::class)->execute($this->currentAdmin(), $this->movementId(MovementFixtures::PUSH_UP));
 
         try {
             $this->addBlock($workout, MovementFixtures::BENCH_PRESS_BARBELL, MovementFixtures::PUSH_UP);
@@ -252,7 +259,7 @@ final class WorkoutTest extends KernelTestCase
         self::assertSame('Dropset', $set->setType->name);
 
         // Read back from the database, not from what the use case held.
-        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
         self::assertSame(62.5, $reread->blocks[0]->exercises[0]->sets[0]->weightInKilograms);
     }
 
@@ -267,11 +274,11 @@ final class WorkoutTest extends KernelTestCase
         self::assertTrue($set->setType->isDefaultType);
 
         $workout = $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $set->id,
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $set->id,
             new UpdateWorkoutSetDataInput(reps: 10, setTypeId: $this->setTypeId(SetTypeFixtures::DROPSET)),
         );
         $output = $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $set->id, new UpdateWorkoutSetDataInput(reps: 10),
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $set->id, new UpdateWorkoutSetDataInput(reps: 10),
         );
 
         self::assertSame('Travail', $output->blocks[0]->exercises[0]->sets[0]->setType->name);
@@ -294,7 +301,7 @@ final class WorkoutTest extends KernelTestCase
     public function testASetRefusesARetiredSetType(): void
     {
         $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP);
-        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->setTypeId(SetTypeFixtures::DROPSET));
+        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->currentAdmin(), $this->setTypeId(SetTypeFixtures::DROPSET));
 
         try {
             $this->addSet($workout, new AddWorkoutSetDataInput(reps: 10, setTypeId: $this->setTypeId(SetTypeFixtures::DROPSET)));
@@ -309,10 +316,10 @@ final class WorkoutTest extends KernelTestCase
     {
         $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP);
         $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 10, setTypeId: $this->setTypeId(SetTypeFixtures::DROPSET)));
-        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->setTypeId(SetTypeFixtures::DROPSET));
+        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->currentAdmin(), $this->setTypeId(SetTypeFixtures::DROPSET));
 
         $output = $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $workout->blocks[0]->exercises[0]->sets[0]->id,
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $workout->blocks[0]->exercises[0]->sets[0]->id,
             new UpdateWorkoutSetDataInput(reps: 12, setTypeId: $this->setTypeId(SetTypeFixtures::DROPSET)),
         );
 
@@ -331,7 +338,7 @@ final class WorkoutTest extends KernelTestCase
         $sets = $workout->blocks[0]->exercises[0]->sets;
         self::assertSame([15, 12, 10], array_map(static fn ($set) => $set->reps, $sets));
 
-        $output = $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->idOf($this->alice), $workout->id, $sets[1]->id);
+        $output = $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $sets[1]->id);
 
         self::assertSame([15, 10], array_map(static fn ($set) => $set->reps, $output->blocks[0]->exercises[0]->sets));
     }
@@ -342,19 +349,19 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP, MovementFixtures::FARMER_WALK_DUMBBELL);
         $exercises = $workout->blocks[0]->exercises;
 
-        $output = $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->idOf($this->alice), $workout->id, $exercises[0]->id);
+        $output = $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $exercises[0]->id);
         self::assertSame(['Farmer walk (dumbbell)'], $this->movementNames($output, 0));
 
-        $output = $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->idOf($this->alice), $workout->id, $exercises[1]->id);
+        $output = $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $exercises[1]->id);
         self::assertSame([], $output->blocks);
-        self::assertSame([], $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id)->blocks);
+        self::assertSame([], $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id)->blocks);
     }
 
     public function testItRemovesAWholeBlock(): void
     {
         $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP, MovementFixtures::FARMER_WALK_DUMBBELL);
 
-        $output = $this->useCase(DeleteWorkoutBlockUseCase::class)->execute($this->idOf($this->alice), $workout->id, $workout->blocks[0]->id);
+        $output = $this->useCase(DeleteWorkoutBlockUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $workout->blocks[0]->id);
 
         self::assertSame([], $output->blocks);
     }
@@ -365,12 +372,12 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addBlock($workout, MovementFixtures::PUSH_UP);
 
         $output = $this->useCase(ReorderWorkoutBlocksUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id,
+            $this->currentUser($this->idOf($this->alice)), $workout->id,
             new ReorderWorkoutBlocksDataInput([$workout->blocks[1]->id, $workout->blocks[0]->id]),
         );
 
         self::assertSame(['Push-up'], $this->movementNames($output, 0));
-        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
         self::assertSame(['Push-up'], $this->movementNames($reread, 0));
     }
 
@@ -381,7 +388,7 @@ final class WorkoutTest extends KernelTestCase
 
         try {
             $this->useCase(ReorderWorkoutBlocksUseCase::class)->execute(
-                $this->idOf($this->alice), $workout->id, new ReorderWorkoutBlocksDataInput([$workout->blocks[1]->id]),
+                $this->currentUser($this->idOf($this->alice)), $workout->id, new ReorderWorkoutBlocksDataInput([$workout->blocks[1]->id]),
             );
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
@@ -394,10 +401,10 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP);
 
         $this->useCase(UpdateWorkoutExerciseUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $workout->blocks[0]->exercises[0]->id, new UpdateWorkoutExerciseDataInput('Coudes serrés'),
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $workout->blocks[0]->exercises[0]->id, new UpdateWorkoutExerciseDataInput('Coudes serrés'),
         );
         $output = $this->useCase(UpdateWorkoutUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, new UpdateWorkoutDataInput('Haut du corps', 'Bonne énergie', 5),
+            $this->currentUser($this->idOf($this->alice)), $workout->id, new UpdateWorkoutDataInput('Haut du corps', 'Bonne énergie', 5),
         );
 
         self::assertSame('Haut du corps', $output->name);
@@ -415,7 +422,7 @@ final class WorkoutTest extends KernelTestCase
             $this->finish($workout);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(FinishWorkoutUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(FinishWorkoutValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([WorkoutFinishableConstraint::EMPTY], $exception->violations['workout']);
         }
     }
@@ -428,7 +435,7 @@ final class WorkoutTest extends KernelTestCase
 
         self::assertFalse($output->isInProgress);
         self::assertNotNull($output->finishedAt);
-        self::assertNull($this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->idOf($this->alice)));
+        self::assertNull($this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice))));
         // Finishing twice changes nothing: its moment is not rewritten.
         self::assertSame($output->finishedAt, $this->finish($workout)->finishedAt);
         self::assertTrue($this->start()->isInProgress);
@@ -438,7 +445,7 @@ final class WorkoutTest extends KernelTestCase
     public function testAFinishedWorkoutStillTakesASet(): void
     {
         $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
-        $output = $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id ?? 0);
+        $output = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id ?? 0);
 
         $output = $this->addSet($output, new AddWorkoutSetDataInput(reps: 6, weightInKilograms: 60.0));
 
@@ -455,15 +462,15 @@ final class WorkoutTest extends KernelTestCase
         $setId = $workout->blocks[0]->exercises[0]->sets[0]->id;
         self::assertFalse($workout->blocks[0]->exercises[0]->sets[0]->isComplete);
 
-        $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->idOf($this->alice), $workout->id, $setId);
+        $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId);
         // Ticking twice changes nothing.
-        $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->idOf($this->alice), $workout->id, $setId);
+        $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId);
 
         // Read back from the database, not from what the use case held.
-        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
         self::assertTrue($reread->blocks[0]->exercises[0]->sets[0]->isComplete);
 
-        $output = $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->idOf($this->alice), $workout->id, $setId);
+        $output = $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId);
         self::assertFalse($output->blocks[0]->exercises[0]->sets[0]->isComplete);
     }
 
@@ -473,7 +480,7 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addDoneSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10));
 
         $output = $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $workout->blocks[0]->exercises[0]->sets[0]->id, new UpdateWorkoutSetDataInput(reps: 12),
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $workout->blocks[0]->exercises[0]->sets[0]->id, new UpdateWorkoutSetDataInput(reps: 12),
         );
 
         self::assertTrue($output->blocks[0]->exercises[0]->sets[0]->isComplete);
@@ -488,7 +495,7 @@ final class WorkoutTest extends KernelTestCase
             $this->finish($workout);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(FinishWorkoutUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(FinishWorkoutValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([WorkoutFinishableConstraint::INCOMPLETE_SETS], $exception->violations['workout']);
         }
     }
@@ -496,29 +503,33 @@ final class WorkoutTest extends KernelTestCase
     public function testAFinishedWorkoutHasNothingToTickOrUntick(): void
     {
         $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
-        $output = $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id ?? 0);
+        $output = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id ?? 0);
         $setId = $output->blocks[0]->exercises[0]->sets[0]->id;
 
-        foreach ([CompleteWorkoutSetUseCase::class, UncompleteWorkoutSetUseCase::class] as $useCase) {
+        $refusals = [
+            CompleteWorkoutSetUseCase::class => CompleteWorkoutSetValidator::ERROR_CODE,
+            UncompleteWorkoutSetUseCase::class => UncompleteWorkoutSetValidator::ERROR_CODE,
+        ];
+        foreach ($refusals as $useCase => $errorCode) {
             try {
-                $this->useCase($useCase)->execute($this->idOf($this->alice), $output->id, $setId);
+                $this->useCase($useCase)->execute($this->currentUser($this->idOf($this->alice)), $output->id, $setId);
                 self::fail('Expected ValidationException');
             } catch (ValidationException $exception) {
-                self::assertSame($useCase::ERROR_CODE, $exception->errorCode);
+                self::assertSame($errorCode, $exception->errorCode);
                 self::assertSame([WorkoutInProgressConstraint::FINISHED], $exception->violations['workout']);
             }
         }
 
-        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->alice), $output->id);
+        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $output->id);
         self::assertTrue($reread->blocks[0]->exercises[0]->sets[0]->isComplete);
     }
 
     public function testFinishingKeepsTheWorkoutHabitAndDeletingUnkeepsIt(): void
     {
-        $habit = $this->useCase(CreateHabitUseCase::class)->execute(new CreateHabitDataInput(
+        $habit = $this->useCase(CreateHabitUseCase::class)->execute($this->currentAdmin(), new CreateHabitDataInput(
             'Une séance', HabitIconRegistry::DUMBBELL, HabitSourceRegistry::TRACKER, HabitTrackerRegistry::WORKOUT, 1,
         ));
-        $this->useCase(SubscribeHabitUseCase::class)->execute($this->idOf($this->alice), $habit->id);
+        $this->useCase(SubscribeHabitUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $habit->id);
 
         $workout = $this->addDoneSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10));
         self::assertFalse($this->isKeptToday($habit->id));
@@ -526,7 +537,7 @@ final class WorkoutTest extends KernelTestCase
         $this->finish($workout);
         self::assertTrue($this->isKeptToday($habit->id));
 
-        $this->useCase(DeleteWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+        $this->useCase(DeleteWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
         self::assertFalse($this->isKeptToday($habit->id));
     }
 
@@ -534,16 +545,16 @@ final class WorkoutTest extends KernelTestCase
     {
         $workout = $this->addSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10));
 
-        $this->useCase(DeleteWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+        $this->useCase(DeleteWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
 
-        self::assertNull(self::getContainer()->get(WorkoutProviderGateway::class)->findOneByIdForOwner($workout->id, $this->alice));
+        self::assertNull(self::getContainer()->get(WorkoutProviderGateway::class)->findOneById($workout->id));
     }
 
     public function testTheHistoryListsFinishedWorkoutsOnly(): void
     {
         $this->start();
 
-        $page = $this->useCase(ListWorkoutsUseCase::class)->execute($this->idOf($this->alice), new ListWorkoutsDataInput());
+        $page = $this->useCase(ListWorkoutsUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), new ListWorkoutsDataInput());
 
         self::assertSame(1, $page->total);
         $summary = $page->items[0];
@@ -560,7 +571,7 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addDoneSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10));
         $this->finish($workout);
 
-        $page = $this->useCase(ListWorkoutsUseCase::class)->execute($this->idOf($this->alice), new ListWorkoutsDataInput(page: 1, perPage: 1));
+        $page = $this->useCase(ListWorkoutsUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), new ListWorkoutsDataInput(page: 1, perPage: 1));
 
         self::assertSame(2, $page->total);
         self::assertCount(1, $page->items);
@@ -574,7 +585,7 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addBlock($workout, MovementFixtures::PUSH_UP);
         $workout = $this->addBlock($workout, MovementFixtures::FARMER_WALK_DUMBBELL);
 
-        $previous = $this->useCase(ListWorkoutPreviousPerformancesUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+        $previous = $this->useCase(ListWorkoutPreviousPerformancesUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
 
         self::assertCount(3, $previous);
         self::assertSame($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL), $previous[0]->movementId);
@@ -591,7 +602,7 @@ final class WorkoutTest extends KernelTestCase
     {
         $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
 
-        $stats = $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->idOf($this->alice), $workout->id ?? 0);
+        $stats = $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id ?? 0);
 
         self::assertSame(8, $stats->setCount);
         self::assertSame(1780.0, $stats->volumeInKilograms);
@@ -608,41 +619,47 @@ final class WorkoutTest extends KernelTestCase
         ], $shares);
     }
 
-    public function testSomeoneElsesWorkoutHasNoStats(): void
+    public function testSomeoneElsesWorkoutStatsAreRefused(): void
     {
         $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
 
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->idOf($this->bob), $workout->id ?? 0);
+        try {
+            $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->currentUser($this->idOf($this->bob)), $workout->id ?? 0);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testTheFirstTimeHasNoLastTime(): void
     {
         $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
 
-        self::assertSame([], $this->useCase(ListWorkoutPreviousPerformancesUseCase::class)->execute($this->idOf($this->alice), $workout->id ?? 0));
+        self::assertSame([], $this->useCase(ListWorkoutPreviousPerformancesUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id ?? 0));
     }
 
-    public function testSomeoneElsesWorkoutIsNotFound(): void
+    public function testSomeoneElsesWorkoutIsRefused(): void
     {
         $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
 
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->useCase(GetWorkoutUseCase::class)->execute($this->idOf($this->bob), $workout->id ?? 0);
+        try {
+            $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->bob)), $workout->id ?? 0);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testASetOfAnotherWorkoutIsNotFound(): void
     {
         $seeded = $this->useCase(GetWorkoutUseCase::class)->execute(
-            $this->idOf($this->alice), $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0,
+            $this->currentUser($this->idOf($this->alice)), $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0,
         );
         $workout = $this->start();
 
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->idOf($this->alice), $workout->id, $seeded->blocks[0]->exercises[0]->sets[0]->id);
+        $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $seeded->blocks[0]->exercises[0]->sets[0]->id);
     }
 
     /** The seeded « Push » done again: same layout, every set still to do, its day left behind. */
@@ -670,7 +687,7 @@ final class WorkoutTest extends KernelTestCase
         self::assertSame(90, $copy->blocks[1]->exercises[1]->restInSeconds);
 
         // Read back: it is the workout in progress, and nothing in it is done yet.
-        $current = $this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->idOf($this->alice));
+        $current = $this->useCase(GetCurrentWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)));
         self::assertSame($copy->id, $current?->id);
         foreach ($current->blocks as $block) {
             foreach ($block->exercises as $exercise) {
@@ -682,7 +699,7 @@ final class WorkoutTest extends KernelTestCase
 
         // The workout it came from does not move.
         $source = $this->useCase(GetWorkoutUseCase::class)->execute(
-            $this->idOf($this->alice), $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0,
+            $this->currentUser($this->idOf($this->alice)), $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0,
         );
         self::assertFalse($source->isInProgress);
         self::assertSame(4, $source->feeling);
@@ -691,8 +708,8 @@ final class WorkoutTest extends KernelTestCase
 
     public function testACopyLeavesOutWhatIsNoLongerOffered(): void
     {
-        $this->useCase(DeactivateMovementUseCase::class)->execute($this->movementId(MovementFixtures::PUSH_UP));
-        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->setTypeId(SetTypeFixtures::WARM_UP));
+        $this->useCase(DeactivateMovementUseCase::class)->execute($this->currentAdmin(), $this->movementId(MovementFixtures::PUSH_UP));
+        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->currentAdmin(), $this->setTypeId(SetTypeFixtures::WARM_UP));
 
         $output = $this->copy(WorkoutFixtures::ALICE_FINISHED);
 
@@ -710,7 +727,7 @@ final class WorkoutTest extends KernelTestCase
             $this->copy(WorkoutFixtures::ALICE_FINISHED);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(CopyWorkoutUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(CopyWorkoutValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([WorkoutNotInProgressConstraint::ALREADY_IN_PROGRESS], $exception->violations['workout']);
         }
     }
@@ -721,7 +738,7 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->start();
 
         try {
-            $this->useCase(CopyWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+            $this->useCase(CopyWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame([WorkoutNotInProgressConstraint::ALREADY_IN_PROGRESS], $exception->violations['workout']);
@@ -732,18 +749,21 @@ final class WorkoutTest extends KernelTestCase
     {
         $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
 
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->useCase(CopyWorkoutUseCase::class)->execute($this->idOf($this->bob), $workout->id ?? 0);
+        try {
+            $this->useCase(CopyWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->bob)), $workout->id ?? 0);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testThePickersOfferOnlyWhatIsLive(): void
     {
-        $this->useCase(DeactivateMovementUseCase::class)->execute($this->movementId(MovementFixtures::PUSH_UP));
-        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->setTypeId(SetTypeFixtures::DROPSET));
+        $this->useCase(DeactivateMovementUseCase::class)->execute($this->currentAdmin(), $this->movementId(MovementFixtures::PUSH_UP));
+        $this->useCase(DeactivateSetTypeUseCase::class)->execute($this->currentAdmin(), $this->setTypeId(SetTypeFixtures::DROPSET));
 
-        $movements = array_map(static fn ($movement) => $movement->name, $this->useCase(ListWorkoutMovementsUseCase::class)->execute());
-        $setTypes = array_map(static fn ($setType) => $setType->name, $this->useCase(ListWorkoutSetTypesUseCase::class)->execute());
+        $movements = array_map(static fn ($movement) => $movement->name, $this->useCase(ListWorkoutMovementsUseCase::class)->execute($this->anyCurrentUser()));
+        $setTypes = array_map(static fn ($setType) => $setType->name, $this->useCase(ListWorkoutSetTypesUseCase::class)->execute($this->anyCurrentUser()));
 
         self::assertContains('Bench press (barbell)', $movements);
         self::assertNotContains('Push-up', $movements);
@@ -752,28 +772,28 @@ final class WorkoutTest extends KernelTestCase
 
     private function start(?string $name = null): WorkoutDataOutput
     {
-        return $this->useCase(StartWorkoutUseCase::class)->execute($this->idOf($this->alice), new StartWorkoutDataInput($name));
+        return $this->useCase(StartWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), new StartWorkoutDataInput($name));
     }
 
     private function copy(string $workoutReference): WorkoutCopyDataOutput
     {
         $workout = $this->getReference($workoutReference, WorkoutDataModel::class);
 
-        return $this->useCase(CopyWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id ?? 0);
+        return $this->useCase(CopyWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id ?? 0);
     }
 
     private function addBlock(WorkoutDataOutput $workout, string ...$movementReferences): WorkoutDataOutput
     {
         $exercises = array_values(array_map(fn (string $reference) => new AddWorkoutBlockExerciseDataInput($this->movementId($reference)), $movementReferences));
 
-        return $this->useCase(AddWorkoutBlockUseCase::class)->execute($this->idOf($this->alice), $workout->id, new AddWorkoutBlockDataInput($exercises));
+        return $this->useCase(AddWorkoutBlockUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, new AddWorkoutBlockDataInput($exercises));
     }
 
     /** On the first movement of the first block. */
     private function addSet(WorkoutDataOutput $workout, AddWorkoutSetDataInput $input): WorkoutDataOutput
     {
         return $this->useCase(AddWorkoutSetUseCase::class)->execute(
-            $this->idOf($this->alice), $workout->id, $workout->blocks[0]->exercises[0]->id, $input,
+            $this->currentUser($this->idOf($this->alice)), $workout->id, $workout->blocks[0]->exercises[0]->id, $input,
         );
     }
 
@@ -783,12 +803,12 @@ final class WorkoutTest extends KernelTestCase
         $workout = $this->addSet($workout, $input);
         $set = $workout->blocks[0]->exercises[0]->sets[array_key_last($workout->blocks[0]->exercises[0]->sets)];
 
-        return $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->idOf($this->alice), $workout->id, $set->id);
+        return $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $set->id);
     }
 
     private function finish(WorkoutDataOutput $workout): WorkoutDataOutput
     {
-        return $this->useCase(FinishWorkoutUseCase::class)->execute($this->idOf($this->alice), $workout->id);
+        return $this->useCase(FinishWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
     }
 
     /** @return list<string> */
@@ -799,7 +819,7 @@ final class WorkoutTest extends KernelTestCase
 
     private function isKeptToday(int $habitId): bool
     {
-        foreach ($this->useCase(ListHabitsUseCase::class)->execute($this->idOf($this->alice)) as $habit) {
+        foreach ($this->useCase(ListHabitsUseCase::class)->execute($this->currentUser($this->idOf($this->alice))) as $habit) {
             if ($habitId === $habit->habitId) {
                 return $habit->isCompletedToday;
             }

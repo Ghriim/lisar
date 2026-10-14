@@ -9,11 +9,14 @@ use App\Domain\DTO\Input\Todo\CreateCategoryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Todo\CategoryLabelAvailableConstraint;
 use App\Domain\Validation\Validator\Todo\CreateCategoryValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class CreateCategoryValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private CreateCategoryValidator $validator;
 
     protected function setUp(): void
@@ -27,7 +30,7 @@ final class CreateCategoryValidatorTest extends TestCase
 
     public function testItAcceptsAFreeLabel(): void
     {
-        $this->validator->validate(new CreateCategoryDataInput('Sport'), null, null);
+        $this->validator->validate($this->anyCurrentUser(), new CreateCategoryDataInput('Sport'), null, null);
 
         $this->expectNotToPerformAssertions();
     }
@@ -35,7 +38,7 @@ final class CreateCategoryValidatorTest extends TestCase
     public function testItRejectsABlankLabel(): void
     {
         try {
-            $this->validator->validate(new CreateCategoryDataInput(''), null, null);
+            $this->validator->validate($this->anyCurrentUser(), new CreateCategoryDataInput(''), null, null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateCategoryValidator::ERROR_CODE, $exception->errorCode);
@@ -46,7 +49,7 @@ final class CreateCategoryValidatorTest extends TestCase
     public function testItRejectsALabelAlreadyUsed(): void
     {
         try {
-            $this->validator->validate(new CreateCategoryDataInput('Home'), new CategoryDataModel(), null);
+            $this->validator->validate($this->anyCurrentUser(), new CreateCategoryDataInput('Home'), new CategoryDataModel(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(

@@ -9,12 +9,14 @@ use App\Domain\DTO\Output\User\Admin\UserCommentDataOutput;
 use App\Domain\Factory\OutputFactory\User\UserCommentOutputFactory;
 use App\Domain\Gateway\Provider\User\UserCommentProviderGateway;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\User\Admin\ListUserCommentsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
 final readonly class ListUserCommentsUseCase implements UseCaseInterface
 {
     public function __construct(
+        private ListUserCommentsValidator $validator,
         private UserProviderGateway $userProviderGateway,
         private UserCommentProviderGateway $userCommentProviderGateway,
         private UserCommentOutputFactory $outputFactory,
@@ -26,13 +28,15 @@ final readonly class ListUserCommentsUseCase implements UseCaseInterface
      *
      * @throws DataModelNotFoundException
      */
-    public function execute(int $userId): array
+    public function execute(UserDataModel $currentUser, int $userId): array
     {
         $user = $this->userProviderGateway->findOneById($userId);
 
         if (null === $user) {
             throw new DataModelNotFoundException(UserDataModel::class);
         }
+
+        $this->validator->validate($currentUser);
 
         return $this->outputFactory->buildMany($this->userCommentProviderGateway->findAllForUser($user));
     }

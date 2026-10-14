@@ -20,11 +20,13 @@ use App\Domain\Validation\Constraint\Training\MuscleGroupUsableConstraint;
 use App\Domain\Validation\Constraint\Training\MuscleNameAvailableConstraint;
 use App\Domain\Validation\Validator\Training\CreateMuscleGroupValidator;
 use App\Domain\Validation\Validator\Training\CreateMuscleValidator;
+use App\Domain\Validation\Validator\Training\DeleteMuscleGroupValidator;
 use App\Domain\Validation\Validator\Training\UpdateMuscleValidator;
 use App\Fixtures\Training\MuscleFixtures;
 use App\Fixtures\Training\MuscleGroupFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Training\Admin\ActivateMuscleGroupUseCase;
 use App\UseCase\Training\Admin\CreateMuscleGroupUseCase;
 use App\UseCase\Training\Admin\CreateMuscleUseCase;
@@ -44,6 +46,7 @@ use function array_slice;
 final class MuscleBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     /** How many muscles MuscleFixtures seeds. */
     private const int SEEDED_MUSCLES = 25;
@@ -67,13 +70,13 @@ final class MuscleBackOfficeTest extends KernelTestCase
     {
         self::assertSame(
             ['Arms', 'Back', 'Chest', 'Core', 'Glutes', 'Legs', 'Other', 'Shoulders'],
-            array_map(static fn ($group) => $group->name, $this->listGroups()->execute()),
+            array_map(static fn ($group) => $group->name, $this->listGroups()->execute($this->currentAdmin())),
         );
     }
 
     public function testItCreatesAGroup(): void
     {
-        $output = self::getContainer()->get(CreateMuscleGroupUseCase::class)->execute(new CreateMuscleGroupDataInput('Neck'));
+        $output = self::getContainer()->get(CreateMuscleGroupUseCase::class)->execute($this->currentAdmin(), new CreateMuscleGroupDataInput('Neck'));
 
         self::assertSame('Neck', $output->name);
         self::assertTrue($output->isActive);
@@ -83,7 +86,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     public function testItRefusesAGroupNameAlreadyTakenIgnoringCase(): void
     {
         try {
-            self::getContainer()->get(CreateMuscleGroupUseCase::class)->execute(new CreateMuscleGroupDataInput('chest'));
+            self::getContainer()->get(CreateMuscleGroupUseCase::class)->execute($this->currentAdmin(), new CreateMuscleGroupDataInput('chest'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateMuscleGroupValidator::ERROR_CODE, $exception->errorCode);
@@ -94,7 +97,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     public function testItRenamesAGroup(): void
     {
         $output = self::getContainer()->get(UpdateMuscleGroupUseCase::class)
-            ->execute($this->group(MuscleGroupFixtures::OTHER)->id ?? 0, new UpdateMuscleGroupDataInput('Miscellaneous'));
+            ->execute($this->currentAdmin(), $this->group(MuscleGroupFixtures::OTHER)->id ?? 0, new UpdateMuscleGroupDataInput('Miscellaneous'));
 
         self::assertSame('Miscellaneous', $output->name);
         self::assertSame('Miscellaneous', $this->muscleGroupProviderGateway->findOneById($output->id)?->name);
@@ -105,21 +108,21 @@ final class MuscleBackOfficeTest extends KernelTestCase
     {
         $chest = $this->group(MuscleGroupFixtures::CHEST);
 
-        self::assertFalse(self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($chest->id ?? 0)->isActive);
+        self::assertFalse(self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($this->currentAdmin(), $chest->id ?? 0)->isActive);
 
         $upperChest = $this->muscleProviderGateway->findOneById($this->muscle(MuscleFixtures::UPPER_CHEST)->id ?? 0);
         self::assertNotNull($upperChest);
         self::assertTrue($upperChest->isActive);
         self::assertFalse($upperChest->muscleGroup->isActive);
 
-        self::assertTrue(self::getContainer()->get(ActivateMuscleGroupUseCase::class)->execute($chest->id ?? 0)->isActive);
+        self::assertTrue(self::getContainer()->get(ActivateMuscleGroupUseCase::class)->execute($this->currentAdmin(), $chest->id ?? 0)->isActive);
     }
 
     public function testItDeletesAnEmptyGroup(): void
     {
-        $neck = self::getContainer()->get(CreateMuscleGroupUseCase::class)->execute(new CreateMuscleGroupDataInput('Neck'));
+        $neck = self::getContainer()->get(CreateMuscleGroupUseCase::class)->execute($this->currentAdmin(), new CreateMuscleGroupDataInput('Neck'));
 
-        self::getContainer()->get(DeleteMuscleGroupUseCase::class)->execute($neck->id);
+        self::getContainer()->get(DeleteMuscleGroupUseCase::class)->execute($this->currentAdmin(), $neck->id);
 
         self::assertNull($this->muscleGroupProviderGateway->findOneById($neck->id));
     }
@@ -127,13 +130,13 @@ final class MuscleBackOfficeTest extends KernelTestCase
     /** Inactive muscles count too: every muscle sits in a group, whatever its status. */
     public function testItRefusesToDeleteAGroupHoldingMuscles(): void
     {
-        self::getContainer()->get(DeactivateMuscleUseCase::class)->execute($this->muscle(MuscleFixtures::CARDIO)->id ?? 0);
+        self::getContainer()->get(DeactivateMuscleUseCase::class)->execute($this->currentAdmin(), $this->muscle(MuscleFixtures::CARDIO)->id ?? 0);
 
         try {
-            self::getContainer()->get(DeleteMuscleGroupUseCase::class)->execute($this->group(MuscleGroupFixtures::OTHER)->id ?? 0);
+            self::getContainer()->get(DeleteMuscleGroupUseCase::class)->execute($this->currentAdmin(), $this->group(MuscleGroupFixtures::OTHER)->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteMuscleGroupUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteMuscleGroupValidator::ERROR_CODE, $exception->errorCode);
             self::assertContains(MuscleGroupUnusedConstraint::MUSCLE_GROUP_IN_USE, $exception->violations['id']);
         }
     }
@@ -142,14 +145,14 @@ final class MuscleBackOfficeTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        self::getContainer()->get(DeleteMuscleGroupUseCase::class)->execute(123456789);
+        self::getContainer()->get(DeleteMuscleGroupUseCase::class)->execute($this->currentAdmin(), 123456789);
     }
 
     // ----------------------------------------------------------------- muscles
 
     public function testItListsEveryMuscleByGroupThenName(): void
     {
-        $muscles = $this->listMuscles()->execute();
+        $muscles = $this->listMuscles()->execute($this->currentAdmin());
 
         self::assertCount(self::SEEDED_MUSCLES, $muscles);
         // Arms first, and within it Biceps before Forearms before Triceps.
@@ -159,11 +162,11 @@ final class MuscleBackOfficeTest extends KernelTestCase
 
     public function testTheMuscleListFiltersOnTheMusclesOwnFlag(): void
     {
-        self::getContainer()->get(DeactivateMuscleUseCase::class)->execute($this->muscle(MuscleFixtures::LATS)->id ?? 0);
+        self::getContainer()->get(DeactivateMuscleUseCase::class)->execute($this->currentAdmin(), $this->muscle(MuscleFixtures::LATS)->id ?? 0);
         // A deactivated group does not make its muscles inactive in this filter.
-        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($this->group(MuscleGroupFixtures::CHEST)->id ?? 0);
+        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($this->currentAdmin(), $this->group(MuscleGroupFixtures::CHEST)->id ?? 0);
 
-        self::assertCount(self::SEEDED_MUSCLES - 1, $this->listMuscles()->execute(new ListMusclesForAdminDataInput(isActive: true)));
+        self::assertCount(self::SEEDED_MUSCLES - 1, $this->listMuscles()->execute($this->currentAdmin(), new ListMusclesForAdminDataInput(isActive: true)));
         self::assertSame(['Lats'], $this->muscleNames(new ListMusclesForAdminDataInput(isActive: false)));
     }
 
@@ -179,7 +182,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
 
     public function testTheGroupFilterCombinesWithTheStatusOne(): void
     {
-        self::getContainer()->get(DeactivateMuscleUseCase::class)->execute($this->muscle(MuscleFixtures::UPPER_CHEST)->id ?? 0);
+        self::getContainer()->get(DeactivateMuscleUseCase::class)->execute($this->currentAdmin(), $this->muscle(MuscleFixtures::UPPER_CHEST)->id ?? 0);
 
         self::assertSame(
             ['Lower chest', 'Mid chest'],
@@ -190,14 +193,14 @@ final class MuscleBackOfficeTest extends KernelTestCase
     /** An unknown group is a filter matching nothing, not an error. */
     public function testAnUnknownGroupFilterMatchesNothing(): void
     {
-        self::assertSame([], $this->listMuscles()->execute(new ListMusclesForAdminDataInput(muscleGroupId: 123456789)));
+        self::assertSame([], $this->listMuscles()->execute($this->currentAdmin(), new ListMusclesForAdminDataInput(muscleGroupId: 123456789)));
     }
 
     public function testItCreatesAMuscleInAGroup(): void
     {
         $chest = $this->group(MuscleGroupFixtures::CHEST);
 
-        $output = self::getContainer()->get(CreateMuscleUseCase::class)->execute(new CreateMuscleDataInput('Serratus', $chest->id ?? 0));
+        $output = self::getContainer()->get(CreateMuscleUseCase::class)->execute($this->currentAdmin(), new CreateMuscleDataInput('Serratus', $chest->id ?? 0));
 
         self::assertSame('Serratus', $output->name);
         self::assertSame($chest->id, $output->muscleGroupId);
@@ -211,7 +214,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     {
         try {
             self::getContainer()->get(CreateMuscleUseCase::class)
-                ->execute(new CreateMuscleDataInput('lats', $this->group(MuscleGroupFixtures::SHOULDERS)->id ?? 0));
+                ->execute($this->currentAdmin(), new CreateMuscleDataInput('lats', $this->group(MuscleGroupFixtures::SHOULDERS)->id ?? 0));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateMuscleValidator::ERROR_CODE, $exception->errorCode);
@@ -222,7 +225,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     public function testItRefusesAnUnknownGroup(): void
     {
         try {
-            self::getContainer()->get(CreateMuscleUseCase::class)->execute(new CreateMuscleDataInput('Serratus', 123456789));
+            self::getContainer()->get(CreateMuscleUseCase::class)->execute($this->currentAdmin(), new CreateMuscleDataInput('Serratus', 123456789));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(MuscleGroupUsableConstraint::MUSCLE_GROUP_NOT_FOUND, $exception->violations['muscleGroupId']);
@@ -232,10 +235,10 @@ final class MuscleBackOfficeTest extends KernelTestCase
     public function testItRefusesToCreateAMuscleInAnInactiveGroup(): void
     {
         $chest = $this->group(MuscleGroupFixtures::CHEST);
-        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($chest->id ?? 0);
+        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($this->currentAdmin(), $chest->id ?? 0);
 
         try {
-            self::getContainer()->get(CreateMuscleUseCase::class)->execute(new CreateMuscleDataInput('Serratus', $chest->id ?? 0));
+            self::getContainer()->get(CreateMuscleUseCase::class)->execute($this->currentAdmin(), new CreateMuscleDataInput('Serratus', $chest->id ?? 0));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(MuscleGroupUsableConstraint::MUSCLE_GROUP_INACTIVE, $exception->violations['muscleGroupId']);
@@ -247,7 +250,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
         $legs = $this->group(MuscleGroupFixtures::LEGS);
 
         $output = self::getContainer()->get(UpdateMuscleUseCase::class)
-            ->execute($this->muscle(MuscleFixtures::CARDIO)->id ?? 0, new UpdateMuscleDataInput('Cardio', $legs->id ?? 0));
+            ->execute($this->currentAdmin(), $this->muscle(MuscleFixtures::CARDIO)->id ?? 0, new UpdateMuscleDataInput('Cardio', $legs->id ?? 0));
 
         self::assertSame($legs->id, $output->muscleGroupId);
         self::assertSame('Legs', $this->muscleProviderGateway->findOneById($output->id)?->muscleGroup->name);
@@ -256,11 +259,11 @@ final class MuscleBackOfficeTest extends KernelTestCase
     public function testItRefusesToMoveAMuscleIntoAnInactiveGroup(): void
     {
         $chest = $this->group(MuscleGroupFixtures::CHEST);
-        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($chest->id ?? 0);
+        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($this->currentAdmin(), $chest->id ?? 0);
 
         try {
             self::getContainer()->get(UpdateMuscleUseCase::class)
-                ->execute($this->muscle(MuscleFixtures::LATS)->id ?? 0, new UpdateMuscleDataInput('Lats', $chest->id ?? 0));
+                ->execute($this->currentAdmin(), $this->muscle(MuscleFixtures::LATS)->id ?? 0, new UpdateMuscleDataInput('Lats', $chest->id ?? 0));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateMuscleValidator::ERROR_CODE, $exception->errorCode);
@@ -272,10 +275,10 @@ final class MuscleBackOfficeTest extends KernelTestCase
     public function testAMuscleInAnInactiveGroupCanStillBeRenamed(): void
     {
         $chest = $this->group(MuscleGroupFixtures::CHEST);
-        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($chest->id ?? 0);
+        self::getContainer()->get(DeactivateMuscleGroupUseCase::class)->execute($this->currentAdmin(), $chest->id ?? 0);
 
         $output = self::getContainer()->get(UpdateMuscleUseCase::class)
-            ->execute($this->muscle(MuscleFixtures::UPPER_CHEST)->id ?? 0, new UpdateMuscleDataInput('Clavicular chest', $chest->id ?? 0));
+            ->execute($this->currentAdmin(), $this->muscle(MuscleFixtures::UPPER_CHEST)->id ?? 0, new UpdateMuscleDataInput('Clavicular chest', $chest->id ?? 0));
 
         self::assertSame('Clavicular chest', $output->name);
         self::assertFalse($output->muscleGroupIsActive);
@@ -285,7 +288,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     {
         $id = $this->muscle(MuscleFixtures::QUADRICEPS)->id ?? 0;
 
-        self::getContainer()->get(DeleteMuscleUseCase::class)->execute($id);
+        self::getContainer()->get(DeleteMuscleUseCase::class)->execute($this->currentAdmin(), $id);
 
         self::assertNull($this->muscleProviderGateway->findOneById($id));
     }
@@ -295,7 +298,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
         $this->expectException(DataModelNotFoundException::class);
 
         self::getContainer()->get(UpdateMuscleUseCase::class)
-            ->execute(123456789, new UpdateMuscleDataInput('Ghost', $this->group(MuscleGroupFixtures::CHEST)->id ?? 0));
+            ->execute($this->currentAdmin(), 123456789, new UpdateMuscleDataInput('Ghost', $this->group(MuscleGroupFixtures::CHEST)->id ?? 0));
     }
 
     private function listGroups(): ListMuscleGroupsForAdminUseCase
@@ -311,7 +314,7 @@ final class MuscleBackOfficeTest extends KernelTestCase
     /** @return list<string> */
     private function muscleNames(ListMusclesForAdminDataInput $input): array
     {
-        return array_map(static fn ($muscle) => $muscle->name, $this->listMuscles()->execute($input));
+        return array_map(static fn ($muscle) => $muscle->name, $this->listMuscles()->execute($this->currentAdmin(), $input));
     }
 
     private function group(string $reference): MuscleGroupDataModel

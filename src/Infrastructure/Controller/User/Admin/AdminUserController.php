@@ -6,27 +6,25 @@ namespace App\Infrastructure\Controller\User\Admin;
 
 use App\Domain\DTO\Input\User\Admin\ListUsersDataInput;
 use App\Domain\DTO\Output\User\UserDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\Infrastructure\Security\SecurityUser;
 use App\UseCase\User\Admin\ActivateUserUseCase;
 use App\UseCase\User\Admin\DeactivateUserUseCase;
 use App\UseCase\User\Admin\ListUsersUseCase;
 use App\UseCase\User\GetUserUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * The back-office account surface. It serves account metadata and nothing else: a user's own
  * content is never exposed here.
  */
 #[OA\Tag(name: 'Admin — users')]
-final class AdminUserController extends AbstractController
+final class AdminUserController extends AbstractBaseController
 {
     #[Route('/api/admin/users', methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'search', in: 'query', description: 'Matched against the username and the e-mail.', schema: new OA\Schema(type: 'string'))]
@@ -46,7 +44,7 @@ final class AdminUserController extends AbstractController
     #[OA\Response(response: Response::HTTP_FORBIDDEN, description: 'Not an administrator.')]
     public function listUsers(#[MapDataInput] ListUsersDataInput $input, ListUsersUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input));
     }
 
     #[Route('/api/admin/users/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
@@ -56,7 +54,7 @@ final class AdminUserController extends AbstractController
     // Not getUser(): AbstractController already has that name, with another meaning.
     public function getUserAccount(int $id, GetUserUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/users/{id}/deactivate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -70,10 +68,9 @@ final class AdminUserController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'An administrator cannot deactivate their own account.')]
     public function deactivateUser(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         DeactivateUserUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $securityUser->id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/users/{id}/activate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -82,6 +79,6 @@ final class AdminUserController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such account.')]
     public function activateUser(int $id, ActivateUserUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 }

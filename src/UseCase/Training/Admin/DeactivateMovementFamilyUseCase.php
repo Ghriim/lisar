@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\MovementFamilyDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Training\MovementFamilyDataOutput;
 use App\Domain\Factory\OutputFactory\Training\MovementFamilyOutputFactory;
 use App\Domain\Gateway\Persister\Training\MovementFamilyPersisterGateway;
 use App\Domain\Gateway\Provider\Training\MovementFamilyProviderGateway;
+use App\Domain\Validation\Validator\Training\DeactivateMovementFamilyValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -19,6 +21,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class DeactivateMovementFamilyUseCase implements UseCaseInterface
 {
     public function __construct(
+        private DeactivateMovementFamilyValidator $validator,
         private MovementFamilyProviderGateway $movementFamilyProviderGateway,
         private MovementFamilyPersisterGateway $movementFamilyPersisterGateway,
         private MovementFamilyOutputFactory $outputFactory,
@@ -28,12 +31,14 @@ final readonly class DeactivateMovementFamilyUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $id): MovementFamilyDataOutput
+    public function execute(UserDataModel $currentUser, int $id): MovementFamilyDataOutput
     {
         $movementFamily = $this->movementFamilyProviderGateway->findOneById($id);
         if (null === $movementFamily) {
             throw new DataModelNotFoundException(MovementFamilyDataModel::class);
         }
+
+        $this->validator->validate($currentUser);
 
         $movementFamily->isActive = false;
 

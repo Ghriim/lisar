@@ -6,9 +6,10 @@ namespace App\UseCase\Todo;
 
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Todo\DeleteTaskValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -18,7 +19,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class DeleteTaskUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private DeleteTaskValidator $validator,
         private TaskProviderGateway $taskProviderGateway,
         private TaskPersisterGateway $taskPersisterGateway,
     ) {
@@ -26,18 +27,16 @@ final readonly class DeleteTaskUseCase implements UseCaseInterface
 
     /**
      * @throws DataModelNotFoundException
+     * @throws ValidationException
      */
-    public function execute(int $ownerId, int $taskId): void
+    public function execute(UserDataModel $currentUser, int $taskId): void
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $task = $this->taskProviderGateway->findOneByIdForOwner($taskId, $owner);
+        $task = $this->taskProviderGateway->findOneById($taskId);
         if (null === $task) {
             throw new DataModelNotFoundException(TaskDataModel::class);
         }
+
+        $this->validator->validate($currentUser, $task);
 
         $this->taskPersisterGateway->delete($task);
     }

@@ -11,11 +11,12 @@ use App\Domain\DTO\Input\Todo\UpdateTaskDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
-use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\UpdateTaskUseCase;
 use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -23,6 +24,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class UpdateTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private UpdateTaskUseCase $useCase;
     private TaskProviderGateway $taskProviderGateway;
@@ -47,7 +49,7 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
         $work = $this->getReference(CategoryFixtures::WORK, CategoryDataModel::class);
 
-        $output = $this->useCase->execute($this->aliceId(), $task->id ?? 0, new UpdateTaskDataInput(
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput(
             title: 'Buy a better present',
             description: 'A book, maybe.',
             dueDate: '2026-10-15',
@@ -62,7 +64,7 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
         self::assertSame(['gift'], $output->tags);
 
         // Re-read through the gateway: assert it was really persisted.
-        $reread = $this->taskProviderGateway->findOneByIdForOwner($task->id ?? 0, $this->alice);
+        $reread = $this->taskProviderGateway->findOneById($task->id ?? 0);
         self::assertNotNull($reread);
         self::assertSame('Buy a better present', $reread->title);
         self::assertSame('Work', $reread->category?->label);
@@ -76,7 +78,7 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
     {
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
 
-        $output = $this->useCase->execute($this->aliceId(), $task->id ?? 0, new UpdateTaskDataInput('Buy a present'));
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput('Buy a present'));
 
         self::assertNull($output->description);
         self::assertNull($output->dueDate);
@@ -89,7 +91,7 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
     {
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
 
-        $this->useCase->execute($this->aliceId(), $task->id ?? 0, new UpdateTaskDataInput('Buy a present'));
+        $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput('Buy a present'));
 
         // The task no longer carries them, but the account keeps them to be offered again.
         $labels = [];
@@ -104,7 +106,7 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
         $subtask = $this->getReference(TaskFixtures::ALICE_SUBTASK_OPEN, TaskDataModel::class);
         $parentId = $subtask->parent?->id;
 
-        $output = $this->useCase->execute($this->aliceId(), $subtask->id ?? 0, new UpdateTaskDataInput('Pack it all'));
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), $subtask->id ?? 0, new UpdateTaskDataInput('Pack it all'));
 
         self::assertSame('Pack it all', $output->title);
         self::assertSame($parentId, $output->parentId);
@@ -115,9 +117,12 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
         $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
 
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->useCase->execute($admin->id ?? 0, $task->id ?? 0, new UpdateTaskDataInput('Mine now'));
+        try {
+            $this->useCase->execute($this->currentUser($admin->id ?? 0), $task->id ?? 0, new UpdateTaskDataInput('Mine now'));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItRejectsAnInvalidPayload(): void
@@ -125,7 +130,7 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
 
         try {
-            $this->useCase->execute($this->aliceId(), $task->id ?? 0, new UpdateTaskDataInput('', priorityId: 404));
+            $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput('', priorityId: 404));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('title', $exception->violations);

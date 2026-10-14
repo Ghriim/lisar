@@ -20,12 +20,16 @@ final readonly class SecurityUser implements UserInterface, PasswordAuthenticate
 {
     /**
      * @param non-empty-string $email the identifier the firewall works with
+     * @param UserDataModel    $user  the account it was built from, as the provider loaded it in
+     *                                this request: the controllers hand it to the use cases
+     *                                without asking the database again
      */
     public function __construct(
         public int $id,
         public string $email,
         public string $role,
         public bool $isActive,
+        public UserDataModel $user,
         private ?string $passwordHash = null,
     ) {
     }
@@ -42,6 +46,7 @@ final readonly class SecurityUser implements UserInterface, PasswordAuthenticate
             email: $email,
             role: $user->role,
             isActive: $user->isActive,
+            user: $user,
             passwordHash: $user->getIdentityForProvider(IdentityProviderRegistry::PASSWORD)?->passwordHash,
         );
     }

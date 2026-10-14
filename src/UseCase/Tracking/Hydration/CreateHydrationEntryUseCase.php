@@ -14,7 +14,6 @@ use App\Domain\Factory\OutputFactory\Tracking\Hydration\HydrationDayOutputFactor
 use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationDayPersisterGateway;
 use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationEntryPersisterGateway;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationDayProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Tracking\Hydration\CreateHydrationEntryValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -31,7 +30,6 @@ final readonly class CreateHydrationEntryUseCase implements UseCaseInterface
 {
     public function __construct(
         private CreateHydrationEntryValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private HydrationDayProviderGateway $hydrationDayProviderGateway,
         private HydrationDayPersisterGateway $hydrationDayPersisterGateway,
         private HydrationEntryPersisterGateway $hydrationEntryPersisterGateway,
@@ -46,21 +44,16 @@ final readonly class CreateHydrationEntryUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, CreateHydrationEntryDataInput $input): HydrationDayDataOutput
+    public function execute(UserDataModel $currentUser, CreateHydrationEntryDataInput $input): HydrationDayDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $today = $this->clock->today();
-        $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($owner, $today);
+        $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($currentUser, $today);
 
         if (null === $day) {
             $day = new HydrationDayDataModel();
-            $day->owner = $owner;
+            $day->owner = $currentUser;
             $day->day = $today;
             // Frozen here, once: what the goal becomes later must not rewrite what this day was.
             $day->goalInMillilitres = $this->defaultGoalInMillilitres;

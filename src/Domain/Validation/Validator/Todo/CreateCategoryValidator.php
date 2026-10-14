@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Validation\Validator\Todo;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateCategoryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Todo\CategoryLabelAvailableConstraint;
@@ -21,6 +22,7 @@ final readonly class CreateCategoryValidator extends AbstractBaseValidator
      * @throws ValidationException
      */
     public function validate(
+        UserDataModel $currentUser,
         CreateCategoryDataInput $input,
         ?CategoryDataModel $referenceWithSameLabel,
         ?CategoryDataModel $personalWithSameLabel,

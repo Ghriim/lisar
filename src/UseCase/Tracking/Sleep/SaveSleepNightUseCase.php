@@ -13,7 +13,6 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Tracking\Sleep\SleepNightOutputFactory;
 use App\Domain\Gateway\Persister\Tracking\Sleep\SleepNightPersisterGateway;
 use App\Domain\Gateway\Provider\Tracking\Sleep\SleepNightProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Tracking\Sleep\SleepWindow;
 use App\Domain\Validation\Validator\Tracking\Sleep\SaveSleepNightValidator;
@@ -33,7 +32,6 @@ final readonly class SaveSleepNightUseCase implements UseCaseInterface
 {
     public function __construct(
         private SaveSleepNightValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private SleepNightProviderGateway $sleepNightProviderGateway,
         private SleepNightPersisterGateway $sleepNightPersisterGateway,
         private SleepNightOutputFactory $outputFactory,
@@ -45,16 +43,11 @@ final readonly class SaveSleepNightUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, SaveSleepNightDataInput $input): SleepNightDataOutput
+    public function execute(UserDataModel $currentUser, SaveSleepNightDataInput $input): SleepNightDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
         $today = $this->clock->today();
 
-        $this->validator->validate($input, $today);
+        $this->validator->validate($currentUser, $input, $today);
 
         $window = SleepWindow::forWakingDay(
             $today,
@@ -62,12 +55,12 @@ final readonly class SaveSleepNightUseCase implements UseCaseInterface
             $this->minutesOf($input->wakeUpTime),
         );
 
-        $night = $this->sleepNightProviderGateway->findOneForOwnerAndDay($owner, $today);
+        $night = $this->sleepNightProviderGateway->findOneForOwnerAndDay($currentUser, $today);
         $isFirstNoteOfTheDay = null === $night;
 
         if (null === $night) {
             $night = new SleepNightDataModel();
-            $night->owner = $owner;
+            $night->owner = $currentUser;
             $night->day = $today;
         }
 

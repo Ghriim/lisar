@@ -10,15 +10,19 @@ use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\Training\UpdateWorkoutSetValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 /** On a barbell bench press: reps and a weight, nothing else. */
 final class UpdateWorkoutSetValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateWorkoutSetValidator $validator;
 
     protected function setUp(): void
@@ -33,6 +37,18 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
         $this->validate(new UpdateWorkoutSetDataInput(reps: 8, weightInKilograms: 62.5, rpe: 8.5, setTypeId: 1), $this->setType(true));
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** Someone else's workout: refused on that alone, whatever else the call carries. */
+    public function testItRefusesSomeoneElsesWorkout(): void
+    {
+        try {
+            $this->validator->validate($this->currentUser(99), $this->workoutOf($this->anyCurrentUser()), new UpdateWorkoutSetDataInput(reps: 8, weightInKilograms: 62.5, rpe: 8.5, setTypeId: 1), $this->set(), $this->setType(true));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     /** @return iterable<string, array{UpdateWorkoutSetDataInput, string, string}> */
@@ -94,7 +110,7 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
 
     private function validate(UpdateWorkoutSetDataInput $input, ?SetTypeDataModel $setType): void
     {
-        $this->validator->validate($input, $this->set(), $setType);
+        $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $input, $this->set(), $setType);
     }
 
     private function bench(): MovementDataModel

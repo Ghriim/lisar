@@ -6,8 +6,11 @@ namespace App\Domain\Validation\Validator\Training;
 
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
@@ -24,8 +27,13 @@ final readonly class AddWorkoutSetValidator extends AbstractBaseValidator
     /**
      * @throws ValidationException
      */
-    public function validate(AddWorkoutSetDataInput $input, MovementDataModel $movement, ?SetTypeDataModel $setType): void
+    public function validate(UserDataModel $currentUser, WorkoutDataModel $workout, AddWorkoutSetDataInput $input, MovementDataModel $movement, ?SetTypeDataModel $setType): void
     {
+        $access = IsOwnerConstraint::validate($currentUser, $workout->owner);
+        if ([] !== $access) {
+            throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
         $violations = $this->getViolations($input);
         $violations = WorkoutSetMeasuresConstraint::validate($movement, $input->reps, $input->weightInKilograms, $input->durationInSeconds, $input->distanceInMetres, $violations);
         $violations = WorkoutSetTypeUsableConstraint::validate($input->setTypeId, $setType, null, $violations);

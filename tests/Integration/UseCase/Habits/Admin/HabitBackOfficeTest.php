@@ -15,6 +15,7 @@ use App\Domain\Registry\Habits\HabitTrackerRegistry;
 use App\Fixtures\Habits\HabitFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Habits\Admin\ActivateHabitUseCase;
 use App\UseCase\Habits\Admin\CreateHabitUseCase;
 use App\UseCase\Habits\Admin\DeactivateHabitUseCase;
@@ -28,6 +29,7 @@ use function count;
 final class HabitBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListHabitsForAdminUseCase $list;
     private CreateHabitUseCase $create;
@@ -51,7 +53,7 @@ final class HabitBackOfficeTest extends KernelTestCase
         $this->loadFixtures(HabitFixtures::class);
 
         // The five seeded habits, retired one included.
-        self::assertCount(5, $this->list->execute());
+        self::assertCount(5, $this->list->execute($this->currentAdmin()));
     }
 
     public function testTheListFiltersByStatus(): void
@@ -59,14 +61,15 @@ final class HabitBackOfficeTest extends KernelTestCase
         $this->loadFixtures(HabitFixtures::class);
 
         // Four active seeded habits, one retired.
-        self::assertCount(5, $this->list->execute(null));
-        self::assertCount(4, $this->list->execute(true));
-        self::assertCount(1, $this->list->execute(false));
+        self::assertCount(5, $this->list->execute($this->currentAdmin(), null));
+        self::assertCount(4, $this->list->execute($this->currentAdmin(), true));
+        self::assertCount(1, $this->list->execute($this->currentAdmin(), false));
     }
 
     public function testItCreatesAManualHabit(): void
     {
         $output = $this->create->execute(
+            $this->currentAdmin(),
             new CreateHabitDataInput('Écrire', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL),
         );
 
@@ -78,7 +81,7 @@ final class HabitBackOfficeTest extends KernelTestCase
 
     public function testItCreatesATrackerHabit(): void
     {
-        $output = $this->create->execute(new CreateHabitDataInput(
+        $output = $this->create->execute($this->currentAdmin(), new CreateHabitDataInput(
             'Marcher',
             HabitIconRegistry::RUN,
             HabitSourceRegistry::TRACKER,
@@ -96,6 +99,7 @@ final class HabitBackOfficeTest extends KernelTestCase
         $this->expectException(ValidationException::class);
 
         $this->create->execute(
+            $this->currentAdmin(),
             new CreateHabitDataInput('Marcher', HabitIconRegistry::RUN, HabitSourceRegistry::TRACKER),
         );
     }
@@ -107,6 +111,7 @@ final class HabitBackOfficeTest extends KernelTestCase
         $walk = $this->getReference(HabitFixtures::WALK, HabitDataModel::class);
 
         $output = $this->update->execute(
+            $this->currentAdmin(),
             $walk->id ?? 0,
             new UpdateHabitDataInput('Bouger', HabitIconRegistry::RUN, HabitSourceRegistry::MANUAL),
         );
@@ -123,7 +128,7 @@ final class HabitBackOfficeTest extends KernelTestCase
 
         $before = count(self::getContainer()->get(HabitProviderGateway::class)->findAllActive());
 
-        $output = $this->deactivate->execute($reading->id ?? 0);
+        $output = $this->deactivate->execute($this->currentAdmin(), $reading->id ?? 0);
 
         self::assertFalse($output->isActive);
         self::assertSame(
@@ -131,7 +136,7 @@ final class HabitBackOfficeTest extends KernelTestCase
             count(self::getContainer()->get(HabitProviderGateway::class)->findAllActive()),
         );
         // The row stays: the admin list still holds it.
-        self::assertCount(5, $this->list->execute());
+        self::assertCount(5, $this->list->execute($this->currentAdmin()));
     }
 
     public function testActivatingBringsItBack(): void
@@ -139,7 +144,7 @@ final class HabitBackOfficeTest extends KernelTestCase
         $this->loadFixtures(HabitFixtures::class);
         $retired = $this->getReference(HabitFixtures::RETIRED, HabitDataModel::class);
 
-        $output = $this->activate->execute($retired->id ?? 0);
+        $output = $this->activate->execute($this->currentAdmin(), $retired->id ?? 0);
 
         self::assertTrue($output->isActive);
     }
@@ -148,6 +153,6 @@ final class HabitBackOfficeTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->deactivate->execute(123456789);
+        $this->deactivate->execute($this->currentAdmin(), 123456789);
     }
 }

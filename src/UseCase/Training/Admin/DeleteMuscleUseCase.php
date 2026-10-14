@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Persister\Training\MusclePersisterGateway;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
 use App\Domain\Gateway\Provider\Training\MuscleProviderGateway;
-use App\Domain\Validation\Constraint\Training\MuscleUnusedConstraint;
+use App\Domain\Validation\Validator\Training\DeleteMuscleValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -19,9 +20,8 @@ use App\UseCase\UseCaseInterface;
  */
 final readonly class DeleteMuscleUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'delete_muscle_invalid';
-
     public function __construct(
+        private DeleteMuscleValidator $validator,
         private MuscleProviderGateway $muscleProviderGateway,
         private MusclePersisterGateway $musclePersisterGateway,
         private MovementProviderGateway $movementProviderGateway,
@@ -32,18 +32,14 @@ final readonly class DeleteMuscleUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id): void
+    public function execute(UserDataModel $currentUser, int $id): void
     {
         $muscle = $this->muscleProviderGateway->findOneById($id);
         if (null === $muscle) {
             throw new DataModelNotFoundException(MuscleDataModel::class);
         }
 
-        $violations = MuscleUnusedConstraint::validate($this->movementProviderGateway->countForMuscle($muscle));
-
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $this->movementProviderGateway->countForMuscle($muscle));
 
         $this->musclePersisterGateway->delete($muscle);
     }

@@ -7,6 +7,7 @@ namespace App\Infrastructure\Controller\User\Admin;
 use App\Domain\DTO\Input\User\LoginDataInput;
 use App\Domain\DTO\Output\User\SessionDataOutput;
 use App\Domain\Registry\User\SessionAudienceRegistry;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\Factory\RefreshTokenCookieFactory;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\User\LoginUseCase;
@@ -14,7 +15,6 @@ use App\UseCase\User\LogoutUseCase;
 use App\UseCase\User\RefreshSessionUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,7 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * a path and a cookie of their own. Public despite the /api/admin prefix — see security.yaml.
  */
 #[OA\Tag(name: 'Admin — sessions')]
-final class AdminSessionController extends AbstractController
+final class AdminSessionController extends AbstractBaseController
 {
     public function __construct(private readonly RefreshTokenCookieFactory $refreshTokenCookieFactory)
     {

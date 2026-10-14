@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repository\Tracking\Hydration;
 
 use App\Domain\DTO\DataModel\Tracking\HydrationEntryDataModel;
-use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationEntryProviderGateway;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -20,16 +19,15 @@ final class HydrationEntryRepository extends ServiceEntityRepository implements 
         parent::__construct($registry, HydrationEntryDataModel::class);
     }
 
-    public function findOneByIdForOwner(int $id, UserDataModel $owner): ?HydrationEntryDataModel
+    public function findOneById(int $id): ?HydrationEntryDataModel
     {
-        // The day is read downstream, to check the entry belongs to the one in progress.
+        // The day is read downstream: whose it is, and whether it is the one in progress.
         return $this->createQueryBuilder('entry')
             ->innerJoin('entry.hydrationDay', 'hydrationDay')
-            ->addSelect('hydrationDay')
+            ->innerJoin('hydrationDay.owner', 'owner')
+            ->addSelect('hydrationDay', 'owner')
             ->andWhere('entry.id = :id')
-            ->andWhere('hydrationDay.owner = :owner')
             ->setParameter('id', $id)
-            ->setParameter('owner', $owner)
             ->getQuery()
             ->getOneOrNullResult();
     }

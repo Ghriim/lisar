@@ -7,11 +7,14 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 use App\Domain\DTO\Input\Training\ListWorkoutsDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Validator\Training\ListWorkoutsValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class ListWorkoutsValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private ListWorkoutsValidator $validator;
 
     protected function setUp(): void
@@ -23,7 +26,7 @@ final class ListWorkoutsValidatorTest extends TestCase
 
     public function testItAcceptsTheDefaults(): void
     {
-        $this->validator->validate(new ListWorkoutsDataInput());
+        $this->validator->validate($this->anyCurrentUser(), new ListWorkoutsDataInput());
 
         $this->expectNotToPerformAssertions();
     }
@@ -31,7 +34,7 @@ final class ListWorkoutsValidatorTest extends TestCase
     public function testItAccumulatesEveryViolation(): void
     {
         try {
-            $this->validator->validate(new ListWorkoutsDataInput(page: 0, perPage: ListWorkoutsDataInput::MAX_PER_PAGE + 1));
+            $this->validator->validate($this->anyCurrentUser(), new ListWorkoutsDataInput(page: 0, perPage: ListWorkoutsDataInput::MAX_PER_PAGE + 1));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(ListWorkoutsValidator::ERROR_CODE, $exception->errorCode);

@@ -12,8 +12,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutSetPersisterGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
-use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
+use App\Domain\Validation\Validator\Training\UncompleteWorkoutSetValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -24,10 +23,8 @@ use App\UseCase\UseCaseInterface;
  */
 final readonly class UncompleteWorkoutSetUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'uncomplete_workout_set_invalid';
-
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private UncompleteWorkoutSetValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutSetPersisterGateway $workoutSetPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
@@ -38,14 +35,9 @@ final readonly class UncompleteWorkoutSetUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId, int $setId): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId, int $setId): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
@@ -55,10 +47,7 @@ final readonly class UncompleteWorkoutSetUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(WorkoutSetDataModel::class);
         }
 
-        $violations = WorkoutInProgressConstraint::validate($workout);
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $workout);
 
         if (false !== $set->isComplete) {
             $set->isComplete = false;

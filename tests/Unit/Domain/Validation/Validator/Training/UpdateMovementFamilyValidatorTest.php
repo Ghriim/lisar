@@ -7,8 +7,10 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 use App\Domain\DTO\DataModel\Training\MovementFamilyDataModel;
 use App\Domain\DTO\Input\Training\UpdateMovementFamilyDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\MovementFamilyNameAvailableConstraint;
 use App\Domain\Validation\Validator\Training\UpdateMovementFamilyValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
@@ -16,6 +18,8 @@ use function str_repeat;
 
 final class UpdateMovementFamilyValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateMovementFamilyValidator $validator;
 
     protected function setUp(): void
@@ -27,15 +31,27 @@ final class UpdateMovementFamilyValidatorTest extends TestCase
 
     public function testItAcceptsAFreeName(): void
     {
-        $this->validator->validate(new UpdateMovementFamilyDataInput('Bench press'), $this->current(), null);
+        $this->validator->validate($this->currentAdmin(), new UpdateMovementFamilyDataInput('Bench press'), $this->current(), null);
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** A user's token on the back-office: refused on that alone. */
+    public function testItRefusesANonAdministrator(): void
+    {
+        try {
+            $this->validator->validate($this->anyCurrentUser(), new UpdateMovementFamilyDataInput('Bench press'), $this->current(), null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateMovementFamilyValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItRejectsABlankName(): void
     {
         try {
-            $this->validator->validate(new UpdateMovementFamilyDataInput(''), $this->current(), null);
+            $this->validator->validate($this->currentAdmin(), new UpdateMovementFamilyDataInput(''), $this->current(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateMovementFamilyValidator::ERROR_CODE, $exception->errorCode);
@@ -46,7 +62,7 @@ final class UpdateMovementFamilyValidatorTest extends TestCase
     public function testItRejectsATooLongName(): void
     {
         try {
-            $this->validator->validate(new UpdateMovementFamilyDataInput(str_repeat('a', 129)), $this->current(), null);
+            $this->validator->validate($this->currentAdmin(), new UpdateMovementFamilyDataInput(str_repeat('a', 129)), $this->current(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains('name_too_long', $exception->violations['name']);
@@ -56,7 +72,7 @@ final class UpdateMovementFamilyValidatorTest extends TestCase
     public function testItRejectsANameAnotherFamilyCarries(): void
     {
         try {
-            $this->validator->validate(new UpdateMovementFamilyDataInput('Bench press'), $this->current(), $this->family(99));
+            $this->validator->validate($this->currentAdmin(), new UpdateMovementFamilyDataInput('Bench press'), $this->current(), $this->family(99));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateMovementFamilyValidator::ERROR_CODE, $exception->errorCode);
@@ -66,7 +82,7 @@ final class UpdateMovementFamilyValidatorTest extends TestCase
 
     public function testAFamilyMayKeepItsOwnName(): void
     {
-        $this->validator->validate(new UpdateMovementFamilyDataInput('bench press'), $this->current(), $this->current());
+        $this->validator->validate($this->currentAdmin(), new UpdateMovementFamilyDataInput('bench press'), $this->current(), $this->current());
 
         $this->expectNotToPerformAssertions();
     }

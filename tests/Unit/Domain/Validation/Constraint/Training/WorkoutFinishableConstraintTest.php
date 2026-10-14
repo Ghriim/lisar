@@ -9,6 +9,7 @@ use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
 use App\Domain\Validation\Constraint\Training\WorkoutFinishableConstraint;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class WorkoutFinishableConstraintTest extends TestCase
@@ -46,7 +47,15 @@ final class WorkoutFinishableConstraintTest extends TestCase
         self::assertSame([WorkoutFinishableConstraint::INCOMPLETE_SETS], $violations['workout']);
     }
 
-    /** @param list<bool> $sets whether each set is done */
+    /** Finishing one already finished changes nothing: even emptied since, there is nothing to refuse. */
+    public function testAWorkoutAlreadyFinishedIsNotRefusedAgain(): void
+    {
+        $workout = new WorkoutDataModel();
+        $workout->finishedAt = new DateTimeImmutable('2026-10-01T19:00:00+00:00');
+
+        self::assertSame([], WorkoutFinishableConstraint::validate($workout));
+    }
+
     private function workout(array $sets): WorkoutDataModel
     {
         $workout = new WorkoutDataModel();

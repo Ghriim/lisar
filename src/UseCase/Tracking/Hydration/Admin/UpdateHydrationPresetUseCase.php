@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Tracking\Hydration\Admin;
 
 use App\Domain\DTO\DataModel\Tracking\HydrationPresetDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Tracking\Hydration\UpdateHydrationPresetDataInput;
 use App\Domain\DTO\Output\Tracking\Hydration\HydrationPresetDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -33,14 +34,14 @@ final readonly class UpdateHydrationPresetUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, UpdateHydrationPresetDataInput $input): HydrationPresetDataOutput
+    public function execute(UserDataModel $currentUser, int $id, UpdateHydrationPresetDataInput $input): HydrationPresetDataOutput
     {
         $preset = $this->hydrationPresetProviderGateway->findOneById($id);
         if (null === $preset) {
             throw new DataModelNotFoundException(HydrationPresetDataModel::class);
         }
 
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $preset->icon = $input->icon;
         $preset->volumeInMillilitres = $input->volumeInMillilitres;

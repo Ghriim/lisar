@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Habits\Admin;
 
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Habits\CreateHabitDataInput;
 use App\Domain\DTO\Output\Habits\HabitAdminDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -27,9 +28,9 @@ final readonly class CreateHabitUseCase implements UseCaseInterface
     /**
      * @throws ValidationException
      */
-    public function execute(CreateHabitDataInput $input): HabitAdminDataOutput
+    public function execute(UserDataModel $currentUser, CreateHabitDataInput $input): HabitAdminDataOutput
     {
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $habit = new HabitDataModel();
         $habit->name = $input->name;

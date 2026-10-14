@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Persister\Training\SetTypePersisterGateway;
 use App\Domain\Gateway\Provider\Training\SetTypeProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Validation\Constraint\Training\SetTypeNotDefaultConstraint;
-use App\Domain\Validation\Constraint\Training\SetTypeUnusedConstraint;
+use App\Domain\Validation\Validator\Training\DeleteSetTypeValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -21,9 +21,8 @@ use App\UseCase\UseCaseInterface;
  */
 final readonly class DeleteSetTypeUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'delete_set_type_invalid';
-
     public function __construct(
+        private DeleteSetTypeValidator $validator,
         private SetTypeProviderGateway $setTypeProviderGateway,
         private SetTypePersisterGateway $setTypePersisterGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
@@ -34,19 +33,14 @@ final readonly class DeleteSetTypeUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id): void
+    public function execute(UserDataModel $currentUser, int $id): void
     {
         $setType = $this->setTypeProviderGateway->findOneById($id);
         if (null === $setType) {
             throw new DataModelNotFoundException(SetTypeDataModel::class);
         }
 
-        $violations = SetTypeUnusedConstraint::validate($this->workoutProviderGateway->countSetsForSetType($setType));
-        $violations = SetTypeNotDefaultConstraint::validate($setType, $violations);
-
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $setType, $this->workoutProviderGateway->countSetsForSetType($setType));
 
         $this->setTypePersisterGateway->delete($setType);
     }

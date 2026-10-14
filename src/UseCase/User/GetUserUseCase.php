@@ -8,12 +8,14 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\User\UserDataOutput;
 use App\Domain\Factory\OutputFactory\User\UserOutputFactory;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\User\GetUserValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
 final readonly class GetUserUseCase implements UseCaseInterface
 {
     public function __construct(
+        private GetUserValidator $validator,
         private UserProviderGateway $userProviderGateway,
         private UserOutputFactory $outputFactory,
     ) {
@@ -22,13 +24,15 @@ final readonly class GetUserUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $id): UserDataOutput
+    public function execute(UserDataModel $currentUser, int $id): UserDataOutput
     {
         $user = $this->userProviderGateway->findOneById($id);
 
         if (null === $user) {
             throw new DataModelNotFoundException(UserDataModel::class);
         }
+
+        $this->validator->validate($currentUser);
 
         return $this->outputFactory->buildOne($user);
     }

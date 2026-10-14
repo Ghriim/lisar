@@ -8,6 +8,7 @@ use App\Domain\DTO\Input\Tracking\Sleep\SaveSleepNightDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Tracking\Sleep\SleepDurationConstraint;
 use App\Domain\Validation\Validator\Tracking\Sleep\SaveSleepNightValidator;
+use App\Tests\CurrentUserTrait;
 use DateTimeImmutable;
 use DateTimeZone;
 use PHPUnit\Framework\TestCase;
@@ -17,6 +18,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 /** The shape a night is accepted in, and the four ways it is refused. */
 final class SaveSleepNightValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private ValidatorInterface $validator;
 
     protected function setUp(): void
@@ -115,7 +118,7 @@ final class SaveSleepNightValidatorTest extends TestCase
     private function validate(SaveSleepNightDataInput $input): void
     {
         (new SaveSleepNightValidator($this->validator))
-            ->validate($input, new DateTimeImmutable('2026-09-18', new DateTimeZone('Europe/Paris')));
+            ->validate($this->anyCurrentUser(), $input, new DateTimeImmutable('2026-09-18', new DateTimeZone('Europe/Paris')));
     }
 
     /** @return array<string, list<string>> */

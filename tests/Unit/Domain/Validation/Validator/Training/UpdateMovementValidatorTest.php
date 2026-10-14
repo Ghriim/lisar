@@ -11,17 +11,21 @@ use App\Domain\DTO\DataModel\Training\MuscleDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
 use App\Domain\DTO\Input\Training\UpdateMovementDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\MovementEquipmentsConstraint;
 use App\Domain\Validation\Constraint\Training\MovementFamilyUsableConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMeasureConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMusclesConstraint;
 use App\Domain\Validation\Constraint\Training\MovementNameAvailableConstraint;
 use App\Domain\Validation\Validator\Training\UpdateMovementValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class UpdateMovementValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateMovementValidator $validator;
 
     protected function setUp(): void
@@ -34,6 +38,7 @@ final class UpdateMovementValidatorTest extends TestCase
     public function testItAcceptsAWellFormedMovement(): void
     {
         $this->validator->validate(
+            $this->currentAdmin(),
             $this->input(description: 'Lie on the bench.', videoUrl: 'https://example.com/bench-press'), $this->current(),
             null,
             $this->family(1, true),
@@ -45,9 +50,30 @@ final class UpdateMovementValidatorTest extends TestCase
         $this->expectNotToPerformAssertions();
     }
 
+    /** A user's token on the back-office: refused on that alone. */
+    public function testItRefusesANonAdministrator(): void
+    {
+        try {
+            $this->validator->validate(
+                $this->anyCurrentUser(),
+                $this->input(description: 'Lie on the bench.', videoUrl: 'https://example.com/bench-press'), $this->current(),
+                null,
+                $this->family(1, true),
+                $this->muscle(1),
+                [$this->muscle(2)],
+                [$this->equipment(1)],
+            );
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateMovementValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
+    }
+
     public function testItAcceptsABodyweightMovementWithNoSecondaryMuscle(): void
     {
         $this->validator->validate(
+            $this->currentAdmin(),
             $this->input(secondaryMuscleIds: [], equipmentIds: []), $this->current(),
             null,
             $this->family(1, true),
@@ -62,6 +88,7 @@ final class UpdateMovementValidatorTest extends TestCase
     public function testItAcceptsDuplicatedIdsAsOne(): void
     {
         $this->validator->validate(
+            $this->currentAdmin(),
             $this->input(secondaryMuscleIds: [2, 2], equipmentIds: [1, 1]), $this->current(),
             null,
             $this->family(1, true),
@@ -77,6 +104,7 @@ final class UpdateMovementValidatorTest extends TestCase
     {
         try {
             $this->validator->validate(
+                $this->currentAdmin(),
                 $this->input(name: '', description: str_repeat('a', 5001), videoUrl: 'not a url'), $this->current(),
                 null,
                 $this->family(1, true),
@@ -97,6 +125,7 @@ final class UpdateMovementValidatorTest extends TestCase
     {
         try {
             $this->validator->validate(
+                $this->currentAdmin(),
                 $this->input(name: str_repeat('a', 129), videoUrl: 'https://example.com/'.str_repeat('a', 512)), $this->current(),
                 null,
                 $this->family(1, true),
@@ -115,6 +144,7 @@ final class UpdateMovementValidatorTest extends TestCase
     {
         try {
             $this->validator->validate(
+                $this->currentAdmin(),
                 $this->input(), $this->current(),
                 null,
                 null,
@@ -138,6 +168,7 @@ final class UpdateMovementValidatorTest extends TestCase
 
         try {
             $this->validator->validate(
+                $this->currentAdmin(),
                 $this->input(primaryMuscleId: 5, secondaryMuscleIds: [5, 6], equipmentIds: [7], tracksReps: false, tracksWeight: true), $this->current(),
                 $other,
                 $this->family(5, false),
@@ -161,6 +192,7 @@ final class UpdateMovementValidatorTest extends TestCase
     public function testAMovementMayKeepItsOwnName(): void
     {
         $this->validator->validate(
+            $this->currentAdmin(),
             $this->input(),
             $this->current(),
             $this->current(),
@@ -176,6 +208,7 @@ final class UpdateMovementValidatorTest extends TestCase
     public function testWhatWasRetiredSinceMayStay(): void
     {
         $this->validator->validate(
+            $this->currentAdmin(),
             $this->input(),
             $this->current(false),
             null,
@@ -192,6 +225,7 @@ final class UpdateMovementValidatorTest extends TestCase
     {
         try {
             $this->validator->validate(
+                $this->currentAdmin(),
                 $this->input(movementFamilyId: 3, primaryMuscleId: 3, secondaryMuscleIds: [4], equipmentIds: [3]),
                 $this->current(),
                 null,

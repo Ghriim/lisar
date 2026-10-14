@@ -8,11 +8,12 @@ use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Training\WorkoutDataOutput;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutBlockPersisterGateway;
 use App\Domain\Gateway\Persister\Training\WorkoutExercisePersisterGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Training\DeleteWorkoutExerciseValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -23,7 +24,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class DeleteWorkoutExerciseUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private DeleteWorkoutExerciseValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutExercisePersisterGateway $workoutExercisePersisterGateway,
         private WorkoutBlockPersisterGateway $workoutBlockPersisterGateway,
@@ -33,15 +34,11 @@ final readonly class DeleteWorkoutExerciseUseCase implements UseCaseInterface
 
     /**
      * @throws DataModelNotFoundException
+     * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId, int $exerciseId): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId, int $exerciseId): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
@@ -50,6 +47,8 @@ final readonly class DeleteWorkoutExerciseUseCase implements UseCaseInterface
         if (null === $exercise) {
             throw new DataModelNotFoundException(WorkoutExerciseDataModel::class);
         }
+
+        $this->validator->validate($currentUser, $workout);
 
         $block = $exercise->block;
 

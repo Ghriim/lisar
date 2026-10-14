@@ -8,8 +8,10 @@ use App\Domain\DTO\DataModel\Training\EquipmentDataModel;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\MovementFamilyDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\CreateMovementDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\MovementEquipmentsConstraint;
 use App\Domain\Validation\Constraint\Training\MovementFamilyUsableConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMeasureConstraint;
@@ -34,6 +36,7 @@ final readonly class CreateMovementValidator extends AbstractBaseValidator
      * @throws ValidationException
      */
     public function validate(
+        UserDataModel $currentUser,
         CreateMovementDataInput $input,
         ?MovementDataModel $withSameName,
         ?MovementFamilyDataModel $movementFamily,
@@ -41,6 +44,11 @@ final readonly class CreateMovementValidator extends AbstractBaseValidator
         array $secondaryMuscles,
         array $equipments,
     ): void {
+        $access = IsAdminConstraint::validate($currentUser);
+        if ([] !== $access) {
+            throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
         $violations = $this->getViolations($input);
         $violations = MovementNameAvailableConstraint::validate($withSameName, null, $violations);
         $violations = MovementFamilyUsableConstraint::validate($movementFamily, null, $violations);

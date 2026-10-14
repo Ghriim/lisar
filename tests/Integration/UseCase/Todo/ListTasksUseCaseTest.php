@@ -12,6 +12,7 @@ use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\CreateTaskUseCase;
 use App\UseCase\Todo\ListTasksUseCase;
 use LogicException;
@@ -20,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ListTasksUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListTasksUseCase $useCase;
     private UserDataModel $alice;
@@ -37,7 +39,7 @@ final class ListTasksUseCaseTest extends KernelTestCase
 
     public function testItListsTheOpenRootTasksOnly(): void
     {
-        $tasks = $this->useCase->execute($this->aliceId(), new ListTasksDataInput());
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
 
         $titles = array_map(static fn ($task) => $task->title, $tasks);
 
@@ -48,7 +50,7 @@ final class ListTasksUseCaseTest extends KernelTestCase
 
     public function testItNestsTheSubtasksAndDerivesTheState(): void
     {
-        $tasks = $this->useCase->execute($this->aliceId(), new ListTasksDataInput());
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
 
         $move = $tasks[0];
         self::assertSame('Move the flat', $move->title);
@@ -63,16 +65,16 @@ final class ListTasksUseCaseTest extends KernelTestCase
     public function testItSortsByCategoryThenByPriority(): void
     {
         // Both fixtures sit in "Home"; a third one in "Work" must come after them.
-        $tasks = $this->useCase->execute($this->aliceId(), new ListTasksDataInput());
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
         self::assertSame(['Home', 'Home'], array_map(static fn ($task) => $task->category?->label, $tasks));
 
         // Within "Home", "High" (weight 10) comes before "High" — same weight, so add a "Low" one.
-        self::getContainer()->get(CreateTaskUseCase::class)->execute($this->aliceId(), new CreateTaskDataInput(
+        self::getContainer()->get(CreateTaskUseCase::class)->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput(
             title: 'Water the plants',
             categoryId: $this->getReference(CategoryFixtures::WORK, \App\Domain\DTO\DataModel\Todo\CategoryDataModel::class)->id,
         ));
 
-        $tasks = $this->useCase->execute($this->aliceId(), new ListTasksDataInput());
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
 
         self::assertSame(
             ['Home', 'Home', 'Work'],
@@ -83,18 +85,18 @@ final class ListTasksUseCaseTest extends KernelTestCase
     public function testATaskWithoutACategorySortsLast(): void
     {
         self::getContainer()->get(CreateTaskUseCase::class)->execute(
-            $this->aliceId(),
+            $this->currentUser($this->aliceId()),
             new CreateTaskDataInput('Nowhere in particular'),
         );
 
-        $tasks = $this->useCase->execute($this->aliceId(), new ListTasksDataInput());
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
 
         self::assertSame('Nowhere in particular', end($tasks)->title);
     }
 
     public function testTheCompletedViewHoldsTheDoneTasks(): void
     {
-        $tasks = $this->useCase->execute($this->aliceId(), new ListTasksDataInput(isDone: true));
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput(isDone: true));
 
         self::assertSame(['Send the invoice'], array_map(static fn ($task) => $task->title, $tasks));
     }
@@ -103,12 +105,12 @@ final class ListTasksUseCaseTest extends KernelTestCase
     {
         $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
 
-        self::assertSame([], $this->useCase->execute($admin->id ?? 0, new ListTasksDataInput()));
+        self::assertSame([], $this->useCase->execute($this->currentUser($admin->id ?? 0), new ListTasksDataInput()));
     }
 
     public function testItCarriesTheTags(): void
     {
-        $tasks = $this->useCase->execute($this->aliceId(), new ListTasksDataInput());
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
 
         self::assertSame(['errand', 'urgent'], $tasks[1]->tags);
     }

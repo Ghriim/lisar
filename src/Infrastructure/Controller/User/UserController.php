@@ -6,21 +6,19 @@ namespace App\Infrastructure\Controller\User;
 
 use App\Domain\DTO\Input\User\RegisterUserDataInput;
 use App\Domain\DTO\Output\User\UserDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\Infrastructure\Security\SecurityUser;
 use App\UseCase\User\GetUserUseCase;
 use App\UseCase\User\RegisterUserUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[OA\Tag(name: 'Users')]
-final class UserController extends AbstractController
+final class UserController extends AbstractBaseController
 {
     #[Route('/api/users/register', methods: Request::METHOD_POST)]
     #[OA\RequestBody(required: true, content: new Model(type: RegisterUserDataInput::class))]
@@ -42,8 +40,11 @@ final class UserController extends AbstractController
         content: new OA\JsonContent(ref: new Model(type: UserDataOutput::class)),
     )]
     #[OA\Response(response: Response::HTTP_UNAUTHORIZED, description: 'Missing or expired access token.')]
-    public function getCurrentUser(#[CurrentUser] SecurityUser $securityUser, GetUserUseCase $useCase): JsonResponse
+    public function getOwnAccount(GetUserUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($securityUser->id));
+        $currentUser = $this->getCurrentUser();
+
+        // A signed-in account was loaded from the database: it has an id.
+        return new JsonResponse($useCase->execute($currentUser, (int) $currentUser->id));
     }
 }

@@ -7,6 +7,7 @@ namespace App\UseCase\Training\Admin;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\MovementFamilyDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\CreateMovementDataInput;
 use App\Domain\DTO\Output\Training\MovementDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -41,7 +42,7 @@ final readonly class CreateMovementUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(CreateMovementDataInput $input): MovementDataOutput
+    public function execute(UserDataModel $currentUser, CreateMovementDataInput $input): MovementDataOutput
     {
         $movementFamily = $this->movementFamilyProviderGateway->findOneById($input->movementFamilyId);
         $primaryMuscle = $this->muscleProviderGateway->findOneById($input->primaryMuscleId);
@@ -49,6 +50,7 @@ final readonly class CreateMovementUseCase implements UseCaseInterface
         $equipments = $this->equipmentProviderGateway->findByIds($input->getEquipmentIds());
 
         $this->validator->validate(
+            $currentUser,
             $input,
             $this->movementProviderGateway->findOneCommonByName($input->name),
             $movementFamily,

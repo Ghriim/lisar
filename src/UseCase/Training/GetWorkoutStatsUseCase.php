@@ -7,11 +7,12 @@ namespace App\UseCase\Training;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Training\WorkoutStatsDataOutput;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutStatsOutputFactory;
 use App\Domain\Gateway\Provider\Training\PersonalBestProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutSummaryProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Training\GetWorkoutStatsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -22,7 +23,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class GetWorkoutStatsUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private GetWorkoutStatsValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private PersonalBestProviderGateway $personalBestProviderGateway,
         private WorkoutSummaryProviderGateway $workoutSummaryProviderGateway,
@@ -32,18 +33,16 @@ final readonly class GetWorkoutStatsUseCase implements UseCaseInterface
 
     /**
      * @throws DataModelNotFoundException
+     * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId): WorkoutStatsDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId): WorkoutStatsDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
+
+        $this->validator->validate($currentUser, $workout);
 
         return $this->outputFactory->buildOne(
             $workout,

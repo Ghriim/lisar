@@ -27,13 +27,11 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
         parent::__construct($registry, WorkoutDataModel::class);
     }
 
-    public function findOneByIdForOwner(int $id, UserDataModel $owner): ?WorkoutDataModel
+    public function findOneById(int $id): ?WorkoutDataModel
     {
         return $this->whole()
             ->andWhere('workout.id = :id')
-            ->andWhere('workout.owner = :owner')
             ->setParameter('id', $id)
-            ->setParameter('owner', $owner)
             ->getQuery()
             ->getOneOrNullResult();
     }
@@ -52,7 +50,7 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->getQuery()
             ->getOneOrNullResult();
 
-        return null === $id ? null : $this->findOneByIdForOwner((int) $id['id'], $owner);
+        return null === $id ? null : $this->findOneById((int) $id['id']);
     }
 
     /** @return list<WorkoutDataModel> */
@@ -123,7 +121,7 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->getQuery()
             ->getOneOrNullResult();
 
-        return null === $id ? null : $this->findOneByIdForOwner((int) $id['id'], $owner);
+        return null === $id ? null : $this->findOneById((int) $id['id']);
     }
 
     public function countExercisesForMovement(MovementDataModel $movement): int

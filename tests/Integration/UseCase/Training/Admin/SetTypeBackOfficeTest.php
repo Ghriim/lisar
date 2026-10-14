@@ -22,12 +22,15 @@ use App\Domain\Validation\Constraint\Training\SetTypeNameAvailableConstraint;
 use App\Domain\Validation\Constraint\Training\SetTypeNotDefaultConstraint;
 use App\Domain\Validation\Constraint\Training\SetTypeUnusedConstraint;
 use App\Domain\Validation\Validator\Training\CreateSetTypeValidator;
+use App\Domain\Validation\Validator\Training\DeactivateSetTypeValidator;
+use App\Domain\Validation\Validator\Training\DeleteSetTypeValidator;
 use App\Domain\Validation\Validator\Training\UpdateSetTypeValidator;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\SetTypeFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Training\AddWorkoutBlockUseCase;
 use App\UseCase\Training\AddWorkoutSetUseCase;
 use App\UseCase\Training\Admin\ActivateSetTypeUseCase;
@@ -43,6 +46,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class SetTypeBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     /** How many set types SetTypeFixtures seeds. */
     private const int SEEDED = 5;
@@ -77,16 +81,16 @@ final class SetTypeBackOfficeTest extends KernelTestCase
 
     public function testTheListFiltersByStatus(): void
     {
-        $this->deactivate->execute($this->dropset()->id ?? 0);
+        $this->deactivate->execute($this->currentAdmin(), $this->dropset()->id ?? 0);
 
-        self::assertCount(self::SEEDED, $this->list->execute(new ListSetTypesForAdminDataInput()));
-        self::assertCount(self::SEEDED - 1, $this->list->execute(new ListSetTypesForAdminDataInput(isActive: true)));
+        self::assertCount(self::SEEDED, $this->list->execute($this->currentAdmin(), new ListSetTypesForAdminDataInput()));
+        self::assertCount(self::SEEDED - 1, $this->list->execute($this->currentAdmin(), new ListSetTypesForAdminDataInput(isActive: true)));
         self::assertSame(['Dropset'], $this->names(new ListSetTypesForAdminDataInput(isActive: false)));
     }
 
     public function testItCreatesASetType(): void
     {
-        $output = $this->create->execute(new CreateSetTypeDataInput('Rest-pause', SetTypeColourRegistry::TEAL));
+        $output = $this->create->execute($this->currentAdmin(), new CreateSetTypeDataInput('Rest-pause', SetTypeColourRegistry::TEAL));
 
         self::assertSame('Rest-pause', $output->name);
         self::assertSame(SetTypeColourRegistry::TEAL, $output->colour);
@@ -102,7 +106,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     public function testItRefusesANameAlreadyTakenIgnoringCase(): void
     {
         try {
-            $this->create->execute(new CreateSetTypeDataInput('dropset', SetTypeColourRegistry::PINK));
+            $this->create->execute($this->currentAdmin(), new CreateSetTypeDataInput('dropset', SetTypeColourRegistry::PINK));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateSetTypeValidator::ERROR_CODE, $exception->errorCode);
@@ -112,7 +116,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
 
     public function testItUpdatesASetType(): void
     {
-        $output = $this->update->execute($this->dropset()->id ?? 0, new UpdateSetTypeDataInput('Drop set', SetTypeColourRegistry::PINK));
+        $output = $this->update->execute($this->currentAdmin(), $this->dropset()->id ?? 0, new UpdateSetTypeDataInput('Drop set', SetTypeColourRegistry::PINK));
 
         self::assertSame('Drop set', $output->name);
         self::assertSame(SetTypeColourRegistry::PINK, $output->colour);
@@ -126,7 +130,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     /** A set type keeps its own name, and may change only its case. */
     public function testASetTypeMayKeepItsOwnName(): void
     {
-        $output = $this->update->execute($this->dropset()->id ?? 0, new UpdateSetTypeDataInput('DROPSET', SetTypeColourRegistry::PURPLE));
+        $output = $this->update->execute($this->currentAdmin(), $this->dropset()->id ?? 0, new UpdateSetTypeDataInput('DROPSET', SetTypeColourRegistry::PURPLE));
 
         self::assertSame('DROPSET', $output->name);
     }
@@ -134,7 +138,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     public function testItRefusesToRenameOntoAnotherSetType(): void
     {
         try {
-            $this->update->execute($this->dropset()->id ?? 0, new UpdateSetTypeDataInput('Échec', SetTypeColourRegistry::PURPLE));
+            $this->update->execute($this->currentAdmin(), $this->dropset()->id ?? 0, new UpdateSetTypeDataInput('Échec', SetTypeColourRegistry::PURPLE));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateSetTypeValidator::ERROR_CODE, $exception->errorCode);
@@ -146,8 +150,8 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     {
         $id = $this->dropset()->id ?? 0;
 
-        self::assertFalse($this->deactivate->execute($id)->isActive);
-        self::assertTrue($this->activate->execute($id)->isActive);
+        self::assertFalse($this->deactivate->execute($this->currentAdmin(), $id)->isActive);
+        self::assertTrue($this->activate->execute($this->currentAdmin(), $id)->isActive);
         self::assertTrue($this->setTypeProviderGateway->findOneById($id)?->isActive);
     }
 
@@ -155,7 +159,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     {
         $id = $this->dropset()->id ?? 0;
 
-        $this->delete->execute($id);
+        $this->delete->execute($this->currentAdmin(), $id);
 
         self::assertNull($this->setTypeProviderGateway->findOneById($id));
     }
@@ -168,17 +172,17 @@ final class SetTypeBackOfficeTest extends KernelTestCase
         $aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
         $pushUpId = $this->getReference(MovementFixtures::PUSH_UP, MovementDataModel::class)->id ?? 0;
 
-        $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($aliceId, new StartWorkoutDataInput());
-        $workout = self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($aliceId, $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($pushUpId)]));
+        $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($this->currentUser($aliceId), new StartWorkoutDataInput());
+        $workout = self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($this->currentUser($aliceId), $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($pushUpId)]));
         self::getContainer()->get(AddWorkoutSetUseCase::class)->execute(
-            $aliceId, $workout->id, $workout->blocks[0]->exercises[0]->id, new AddWorkoutSetDataInput(reps: 10, setTypeId: $id),
+            $this->currentUser($aliceId), $workout->id, $workout->blocks[0]->exercises[0]->id, new AddWorkoutSetDataInput(reps: 10, setTypeId: $id),
         );
 
         try {
-            $this->delete->execute($id);
+            $this->delete->execute($this->currentAdmin(), $id);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteSetTypeUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteSetTypeValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([SetTypeUnusedConstraint::IN_USE], $exception->violations['id']);
         }
     }
@@ -186,7 +190,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     /** Exactly one default: a type created as the default takes it from the one that had it. */
     public function testASetTypeCreatedAsTheDefaultTakesIt(): void
     {
-        $output = $this->create->execute(new CreateSetTypeDataInput('Rest-pause', SetTypeColourRegistry::TEAL, isDefaultType: true));
+        $output = $this->create->execute($this->currentAdmin(), new CreateSetTypeDataInput('Rest-pause', SetTypeColourRegistry::TEAL, isDefaultType: true));
 
         self::assertTrue($output->isDefaultType);
         self::assertSame($output->id, $this->setTypeProviderGateway->findOneDefault()?->id);
@@ -197,7 +201,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     {
         $id = $this->dropset()->id ?? 0;
 
-        $output = $this->update->execute($id, new UpdateSetTypeDataInput('Dropset', SetTypeColourRegistry::PURPLE, isDefaultType: true));
+        $output = $this->update->execute($this->currentAdmin(), $id, new UpdateSetTypeDataInput('Dropset', SetTypeColourRegistry::PURPLE, isDefaultType: true));
 
         self::assertTrue($output->isDefaultType);
         self::assertSame($id, $this->setTypeProviderGateway->findOneDefault()?->id);
@@ -208,7 +212,7 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     public function testItRefusesToUnsetTheDefault(): void
     {
         try {
-            $this->update->execute($this->working()->id ?? 0, new UpdateSetTypeDataInput('Travail', SetTypeColourRegistry::BLUE));
+            $this->update->execute($this->currentAdmin(), $this->working()->id ?? 0, new UpdateSetTypeDataInput('Travail', SetTypeColourRegistry::BLUE));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateSetTypeValidator::ERROR_CODE, $exception->errorCode);
@@ -221,10 +225,10 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     public function testItRefusesToGiveTheDefaultToARetiredSetType(): void
     {
         $id = $this->dropset()->id ?? 0;
-        $this->deactivate->execute($id);
+        $this->deactivate->execute($this->currentAdmin(), $id);
 
         try {
-            $this->update->execute($id, new UpdateSetTypeDataInput('Dropset', SetTypeColourRegistry::PURPLE, isDefaultType: true));
+            $this->update->execute($this->currentAdmin(), $id, new UpdateSetTypeDataInput('Dropset', SetTypeColourRegistry::PURPLE, isDefaultType: true));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateSetTypeValidator::ERROR_CODE, $exception->errorCode);
@@ -235,10 +239,10 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     public function testItRefusesToDeactivateTheDefault(): void
     {
         try {
-            $this->deactivate->execute($this->working()->id ?? 0);
+            $this->deactivate->execute($this->currentAdmin(), $this->working()->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeactivateSetTypeUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeactivateSetTypeValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([SetTypeNotDefaultConstraint::IS_THE_DEFAULT], $exception->violations['id']);
         }
 
@@ -248,10 +252,10 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     public function testItRefusesToDeleteTheDefault(): void
     {
         try {
-            $this->delete->execute($this->working()->id ?? 0);
+            $this->delete->execute($this->currentAdmin(), $this->working()->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteSetTypeUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteSetTypeValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([SetTypeNotDefaultConstraint::IS_THE_DEFAULT], $exception->violations['id']);
         }
 
@@ -262,13 +266,13 @@ final class SetTypeBackOfficeTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->update->execute(123456789, new UpdateSetTypeDataInput('Ghost', SetTypeColourRegistry::GREY));
+        $this->update->execute($this->currentAdmin(), 123456789, new UpdateSetTypeDataInput('Ghost', SetTypeColourRegistry::GREY));
     }
 
     /** @return list<string> */
     private function names(ListSetTypesForAdminDataInput $input): array
     {
-        return array_map(static fn ($setType) => $setType->name, $this->list->execute($input));
+        return array_map(static fn ($setType) => $setType->name, $this->list->execute($this->currentAdmin(), $input));
     }
 
     private function working(): SetTypeDataModel

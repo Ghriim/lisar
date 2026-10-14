@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\UseCase\Tracking\Hydration\Admin;
 
 use App\Domain\DTO\DataModel\Tracking\HydrationPresetDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationPresetPersisterGateway;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationPresetProviderGateway;
+use App\Domain\Validation\Validator\Tracking\Hydration\DeleteHydrationPresetValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -20,6 +22,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class DeleteHydrationPresetUseCase implements UseCaseInterface
 {
     public function __construct(
+        private DeleteHydrationPresetValidator $validator,
         private HydrationPresetProviderGateway $hydrationPresetProviderGateway,
         private HydrationPresetPersisterGateway $hydrationPresetPersisterGateway,
     ) {
@@ -28,12 +31,14 @@ final readonly class DeleteHydrationPresetUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $id): void
+    public function execute(UserDataModel $currentUser, int $id): void
     {
         $preset = $this->hydrationPresetProviderGateway->findOneById($id);
         if (null === $preset) {
             throw new DataModelNotFoundException(HydrationPresetDataModel::class);
         }
+
+        $this->validator->validate($currentUser);
 
         $this->hydrationPresetPersisterGateway->delete($preset);
     }

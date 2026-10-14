@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\UseCase\Todo;
 
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Todo\PriorityDataOutput;
 use App\Domain\Factory\OutputFactory\Todo\PriorityOutputFactory;
 use App\Domain\Gateway\Provider\Todo\PriorityProviderGateway;
+use App\Domain\Validation\Validator\Todo\ListPrioritiesValidator;
 use App\UseCase\UseCaseInterface;
 
 /**
@@ -16,6 +18,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListPrioritiesUseCase implements UseCaseInterface
 {
     public function __construct(
+        private ListPrioritiesValidator $validator,
         private PriorityProviderGateway $priorityProviderGateway,
         private PriorityOutputFactory $outputFactory,
     ) {
@@ -24,8 +27,10 @@ final readonly class ListPrioritiesUseCase implements UseCaseInterface
     /**
      * @return list<PriorityDataOutput>
      */
-    public function execute(): array
+    public function execute(UserDataModel $currentUser): array
     {
+        $this->validator->validate($currentUser);
+
         return $this->outputFactory->buildMany($this->priorityProviderGateway->findAllOrderedByWeight());
     }
 }

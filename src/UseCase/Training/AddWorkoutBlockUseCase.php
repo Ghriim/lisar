@@ -16,7 +16,6 @@ use App\Domain\Gateway\Persister\Training\WorkoutBlockPersisterGateway;
 use App\Domain\Gateway\Persister\Training\WorkoutExercisePersisterGateway;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Training\AddWorkoutBlockValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -29,7 +28,6 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
 {
     public function __construct(
         private AddWorkoutBlockValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private MovementProviderGateway $movementProviderGateway,
         private WorkoutBlockPersisterGateway $workoutBlockPersisterGateway,
@@ -42,14 +40,9 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId, AddWorkoutBlockDataInput $input): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId, AddWorkoutBlockDataInput $input): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
@@ -62,7 +55,7 @@ final readonly class AddWorkoutBlockUseCase implements UseCaseInterface
             }
         }
 
-        $this->validator->validate($input, $offered);
+        $this->validator->validate($currentUser, $workout, $input, $offered);
 
         $block = new WorkoutBlockDataModel();
         $block->workout = $workout;

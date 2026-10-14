@@ -6,12 +6,16 @@ namespace App\Tests\Unit\Domain\Validation\Validator\User\Admin;
 
 use App\Domain\DTO\Input\User\Admin\CreateUserCommentDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Validator\User\Admin\CreateUserCommentValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class CreateUserCommentValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private CreateUserCommentValidator $validator;
 
     protected function setUp(): void
@@ -25,9 +29,21 @@ final class CreateUserCommentValidatorTest extends TestCase
 
     public function testItAcceptsANote(): void
     {
-        $this->validator->validate(new CreateUserCommentDataInput('Called support back.'));
+        $this->validator->validate($this->currentAdmin(), new CreateUserCommentDataInput('Called support back.'));
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** A user's token on the back-office: refused on that alone. */
+    public function testItRefusesANonAdministrator(): void
+    {
+        try {
+            $this->validator->validate($this->anyCurrentUser(), new CreateUserCommentDataInput('Called support back.'));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(CreateUserCommentValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItRejectsABlankNote(): void
@@ -43,7 +59,7 @@ final class CreateUserCommentValidatorTest extends TestCase
     private function assertViolatesOn(CreateUserCommentDataInput $input, string $errorCode): void
     {
         try {
-            $this->validator->validate($input);
+            $this->validator->validate($this->currentAdmin(), $input);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateUserCommentValidator::ERROR_CODE, $exception->errorCode);

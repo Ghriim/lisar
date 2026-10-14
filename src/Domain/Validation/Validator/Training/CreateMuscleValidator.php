@@ -6,8 +6,10 @@ namespace App\Domain\Validation\Validator\Training;
 
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\CreateMuscleDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\MuscleGroupUsableConstraint;
 use App\Domain\Validation\Constraint\Training\MuscleNameAvailableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
@@ -26,10 +28,16 @@ final readonly class CreateMuscleValidator extends AbstractBaseValidator
      * @throws ValidationException
      */
     public function validate(
+        UserDataModel $currentUser,
         CreateMuscleDataInput $input,
         ?MuscleDataModel $withSameName,
         ?MuscleGroupDataModel $muscleGroup,
     ): void {
+        $access = IsAdminConstraint::validate($currentUser);
+        if ([] !== $access) {
+            throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
         $violations = $this->getViolations($input);
         $violations = MuscleNameAvailableConstraint::validate($withSameName, null, $violations);
         $violations = MuscleGroupUsableConstraint::validate($muscleGroup, null, $violations);

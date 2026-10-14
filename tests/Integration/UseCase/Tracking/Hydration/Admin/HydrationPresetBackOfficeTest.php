@@ -15,6 +15,7 @@ use App\Fixtures\Tracking\Hydration\HydrationPresetFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Tracking\Hydration\Admin\CreateHydrationPresetUseCase;
 use App\UseCase\Tracking\Hydration\Admin\DeleteHydrationPresetUseCase;
 use App\UseCase\Tracking\Hydration\Admin\UpdateHydrationPresetUseCase;
@@ -26,6 +27,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class HydrationPresetBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListHydrationPresetsUseCase $list;
     private CreateHydrationPresetUseCase $create;
@@ -48,25 +50,26 @@ final class HydrationPresetBackOfficeTest extends KernelTestCase
 
         self::assertSame([150, 250, 500], array_map(
             static fn ($preset) => $preset->volumeInMillilitres,
-            $this->list->execute(),
+            $this->list->execute($this->anyCurrentUser()),
         ));
     }
 
     public function testItCreatesAShortcut(): void
     {
         $output = $this->create->execute(
+            $this->currentAdmin(),
             new CreateHydrationPresetDataInput(HydrationIconRegistry::CARAFE, 1000),
         );
 
         self::assertSame(HydrationIconRegistry::CARAFE, $output->icon);
         self::assertSame(1000, $output->volumeInMillilitres);
-        self::assertCount(1, $this->list->execute());
+        self::assertCount(1, $this->list->execute($this->anyCurrentUser()));
     }
 
     public function testItRefusesAnIconTheFrontEndsCouldNotDraw(): void
     {
         try {
-            $this->create->execute(new CreateHydrationPresetDataInput('aquarium', 1000));
+            $this->create->execute($this->currentAdmin(), new CreateHydrationPresetDataInput('aquarium', 1000));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('icon', $exception->violations);
@@ -85,16 +88,17 @@ final class HydrationPresetBackOfficeTest extends KernelTestCase
         $glass = $this->getReference(HydrationPresetFixtures::GLASS, HydrationPresetDataModel::class);
 
         self::getContainer()->get(CreateHydrationEntryUseCase::class)
-            ->execute($alice->id ?? 0, new CreateHydrationEntryDataInput($glass->volumeInMillilitres));
+            ->execute($this->currentUser($alice->id ?? 0), new CreateHydrationEntryDataInput($glass->volumeInMillilitres));
 
         $this->update->execute(
+            $this->currentAdmin(),
             $glass->id ?? 0,
             new UpdateHydrationPresetDataInput(HydrationIconRegistry::GLASS, 200),
         );
 
         self::assertSame(
             250,
-            self::getContainer()->get(GetHydrationDayUseCase::class)->execute($alice->id ?? 0)->totalInMillilitres,
+            self::getContainer()->get(GetHydrationDayUseCase::class)->execute($this->currentUser($alice->id ?? 0))->totalInMillilitres,
         );
     }
 
@@ -110,14 +114,14 @@ final class HydrationPresetBackOfficeTest extends KernelTestCase
         $glass = $this->getReference(HydrationPresetFixtures::GLASS, HydrationPresetDataModel::class);
 
         self::getContainer()->get(CreateHydrationEntryUseCase::class)
-            ->execute($alice->id ?? 0, new CreateHydrationEntryDataInput($glass->volumeInMillilitres));
+            ->execute($this->currentUser($alice->id ?? 0), new CreateHydrationEntryDataInput($glass->volumeInMillilitres));
 
-        $this->delete->execute($glass->id ?? 0);
+        $this->delete->execute($this->currentAdmin(), $glass->id ?? 0);
 
-        self::assertCount(2, $this->list->execute());
+        self::assertCount(2, $this->list->execute($this->anyCurrentUser()));
         self::assertSame(
             250,
-            self::getContainer()->get(GetHydrationDayUseCase::class)->execute($alice->id ?? 0)->totalInMillilitres,
+            self::getContainer()->get(GetHydrationDayUseCase::class)->execute($this->currentUser($alice->id ?? 0))->totalInMillilitres,
         );
     }
 
@@ -125,6 +129,6 @@ final class HydrationPresetBackOfficeTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->delete->execute(123456789);
+        $this->delete->execute($this->currentAdmin(), 123456789);
     }
 }

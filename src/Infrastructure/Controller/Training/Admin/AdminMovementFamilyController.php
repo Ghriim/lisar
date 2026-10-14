@@ -7,6 +7,7 @@ namespace App\Infrastructure\Controller\Training\Admin;
 use App\Domain\DTO\Input\Training\CreateMovementFamilyDataInput;
 use App\Domain\DTO\Input\Training\UpdateMovementFamilyDataInput;
 use App\Domain\DTO\Output\Training\MovementFamilyDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Training\Admin\ActivateMovementFamilyUseCase;
 use App\UseCase\Training\Admin\CreateMovementFamilyUseCase;
@@ -16,7 +17,6 @@ use App\UseCase\Training\Admin\ListMovementFamiliesForAdminUseCase;
 use App\UseCase\Training\Admin\UpdateMovementFamilyUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +27,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * (^/api/admin → ROLE_ADMIN), so no check lives here.
  */
 #[OA\Tag(name: 'Admin — workout movements')]
-final class AdminMovementFamilyController extends AbstractController
+final class AdminMovementFamilyController extends AbstractBaseController
 {
     #[Route('/api/admin/workout/movement-families', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -37,7 +37,7 @@ final class AdminMovementFamilyController extends AbstractController
     )]
     public function listMovementFamilies(ListMovementFamiliesForAdminUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/admin/workout/movement-families', methods: Request::METHOD_POST)]
@@ -48,7 +48,7 @@ final class AdminMovementFamilyController extends AbstractController
         #[MapDataInput] CreateMovementFamilyDataInput $input,
         CreateMovementFamilyUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/workout/movement-families/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -62,7 +62,7 @@ final class AdminMovementFamilyController extends AbstractController
         #[MapDataInput] UpdateMovementFamilyDataInput $input,
         UpdateMovementFamilyUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/admin/workout/movement-families/{id}/deactivate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -71,7 +71,7 @@ final class AdminMovementFamilyController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such movement family.')]
     public function deactivateMovementFamily(int $id, DeactivateMovementFamilyUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/workout/movement-families/{id}/activate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -80,7 +80,7 @@ final class AdminMovementFamilyController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such movement family.')]
     public function activateMovementFamily(int $id, ActivateMovementFamilyUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/workout/movement-families/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -90,7 +90,7 @@ final class AdminMovementFamilyController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Movements still sit in it.')]
     public function deleteMovementFamily(int $id, DeleteMovementFamilyUseCase $useCase): JsonResponse
     {
-        $useCase->execute($id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

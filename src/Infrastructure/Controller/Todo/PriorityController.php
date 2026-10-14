@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Infrastructure\Controller\Todo;
 
 use App\Domain\DTO\Output\Todo\PriorityDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\UseCase\Todo\ListPrioritiesUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[OA\Tag(name: 'Priorities')]
-final class PriorityController extends AbstractController
+final class PriorityController extends AbstractBaseController
 {
     #[Route('/api/priorities', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -25,6 +25,6 @@ final class PriorityController extends AbstractController
     )]
     public function listPriorities(ListPrioritiesUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 }

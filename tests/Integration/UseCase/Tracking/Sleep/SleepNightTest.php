@@ -11,8 +11,8 @@ use App\Domain\Gateway\Provider\Tracking\Sleep\SleepNightProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Fixtures\Tracking\Sleep\SleepNightFixtures;
 use App\Fixtures\User\UserFixtures;
-use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Tracking\Sleep\GetSleepNightUseCase;
 use App\UseCase\Tracking\Sleep\SaveSleepNightUseCase;
 use LogicException;
@@ -25,6 +25,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class SleepNightTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private GetSleepNightUseCase $get;
     private SaveSleepNightUseCase $save;
@@ -50,7 +51,7 @@ final class SleepNightTest extends KernelTestCase
      */
     public function testItReportsAnEmptyNightWithoutWritingOne(): void
     {
-        $output = $this->get->execute($this->idOf($this->bob));
+        $output = $this->get->execute($this->currentUser($this->idOf($this->bob)));
 
         $clock = self::getContainer()->get(DayClock::class);
         self::assertSame($clock->today()->format('Y-m-d'), $output->day);
@@ -71,7 +72,7 @@ final class SleepNightTest extends KernelTestCase
      */
     public function testANightFromAnotherDayIsNotTodaysNight(): void
     {
-        $output = $this->get->execute($this->idOf($this->alice));
+        $output = $this->get->execute($this->currentUser($this->idOf($this->alice)));
 
         self::assertNull($output->wakeUpAt);
         self::assertNull($output->durationInMinutes);
@@ -79,7 +80,7 @@ final class SleepNightTest extends KernelTestCase
 
     public function testItNotesTheNightAcrossMidnight(): void
     {
-        $output = $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('23:30', '07:00', 4));
+        $output = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('23:30', '07:00', 4));
 
         $clock = self::getContainer()->get(DayClock::class);
         $today = $clock->today();
@@ -96,9 +97,9 @@ final class SleepNightTest extends KernelTestCase
     /** Read back through the gateway: the instants were really persisted as instants. */
     public function testTheNightIsReadBackAsItWasNoted(): void
     {
-        $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('23:30', '07:00', 4));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('23:30', '07:00', 4));
 
-        $output = $this->get->execute($this->idOf($this->alice));
+        $output = $this->get->execute($this->currentUser($this->idOf($this->alice)));
 
         self::assertSame(450, $output->durationInMinutes);
         self::assertSame('23:30', $this->timeOf($output->bedtimeAt));
@@ -108,8 +109,8 @@ final class SleepNightTest extends KernelTestCase
     /** One night per day: noting it again corrects it instead of adding a second one. */
     public function testNotingTwiceCorrectsInsteadOfAdding(): void
     {
-        $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('23:30', '07:00', 4));
-        $second = $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('00:30', '08:00', 2));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('23:30', '07:00', 4));
+        $second = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('00:30', '08:00', 2));
 
         self::assertSame(450, $second->durationInMinutes);
         self::assertSame(2, $second->moodRating);
@@ -121,7 +122,7 @@ final class SleepNightTest extends KernelTestCase
 
     public function testItAcceptsANightWithNoMood(): void
     {
-        $output = $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('23:30', '07:00'));
+        $output = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('23:30', '07:00'));
 
         self::assertNull($output->moodRating);
         self::assertSame(450, $output->durationInMinutes);
@@ -130,8 +131,8 @@ final class SleepNightTest extends KernelTestCase
     /** Correcting is also how one takes the face back off a night already noted. */
     public function testItClearsAMoodThatIsNotSentAgain(): void
     {
-        $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('23:30', '07:00', 4));
-        $second = $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('23:30', '07:00'));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('23:30', '07:00', 4));
+        $second = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('23:30', '07:00'));
 
         self::assertNull($second->moodRating);
     }
@@ -140,35 +141,28 @@ final class SleepNightTest extends KernelTestCase
     {
         $this->expectException(ValidationException::class);
 
-        $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('07:30', '07:00'));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('07:30', '07:00'));
     }
 
     /** Nothing is written when the night is refused. */
     public function testARefusedNightLeavesTheDayEmpty(): void
     {
         try {
-            $this->save->execute($this->idOf($this->alice), new SaveSleepNightDataInput('07:30', '07:00'));
+            $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveSleepNightDataInput('07:30', '07:00'));
         } catch (ValidationException) {
             // The point of the test is what follows.
         }
 
-        self::assertNull($this->get->execute($this->idOf($this->alice))->wakeUpAt);
-    }
-
-    public function testItRefusesAnUnknownAccount(): void
-    {
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->get->execute(0);
+        self::assertNull($this->get->execute($this->currentUser($this->idOf($this->alice)))->wakeUpAt);
     }
 
     /** One person's night is not another's. */
     public function testNightsAreOwnedByOneAccount(): void
     {
-        $this->save->execute($this->idOf($this->bob), new SaveSleepNightDataInput('01:00', '09:00', 5));
+        $this->save->execute($this->currentUser($this->idOf($this->bob)), new SaveSleepNightDataInput('01:00', '09:00', 5));
 
-        self::assertSame(480, $this->get->execute($this->idOf($this->bob))->durationInMinutes);
-        self::assertNull($this->get->execute($this->idOf($this->alice))->durationInMinutes);
+        self::assertSame(480, $this->get->execute($this->currentUser($this->idOf($this->bob)))->durationInMinutes);
+        self::assertNull($this->get->execute($this->currentUser($this->idOf($this->alice)))->durationInMinutes);
     }
 
     private function idOf(UserDataModel $user): int

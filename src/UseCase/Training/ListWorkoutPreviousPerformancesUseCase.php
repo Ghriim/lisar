@@ -7,9 +7,10 @@ namespace App\UseCase\Training;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Training\WorkoutPreviousPerformanceDataOutput;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutPreviousPerformanceOutputFactory;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Training\ListWorkoutPreviousPerformancesValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -21,7 +22,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListWorkoutPreviousPerformancesUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ListWorkoutPreviousPerformancesValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutPreviousPerformanceOutputFactory $outputFactory,
     ) {
@@ -31,18 +32,16 @@ final readonly class ListWorkoutPreviousPerformancesUseCase implements UseCaseIn
      * @return list<WorkoutPreviousPerformanceDataOutput>
      *
      * @throws DataModelNotFoundException
+     * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId): array
+    public function execute(UserDataModel $currentUser, int $workoutId): array
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
+
+        $this->validator->validate($currentUser, $workout);
 
         $previousByMovementId = [];
         foreach ($workout->orderedBlocks() as $block) {
@@ -52,7 +51,7 @@ final readonly class ListWorkoutPreviousPerformancesUseCase implements UseCaseIn
                     continue;
                 }
 
-                $previous = $this->workoutProviderGateway->findLastFinishedWithMovementBefore($owner, $movement, $workout->startedAt);
+                $previous = $this->workoutProviderGateway->findLastFinishedWithMovementBefore($currentUser, $movement, $workout->startedAt);
                 if (null !== $previous) {
                     $previousByMovementId[(int) $movement->id] = [$movement, $previous];
                 }

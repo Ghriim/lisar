@@ -21,7 +21,8 @@ final readonly class TaskClosableConstraint
      */
     public static function validate(TaskDataModel $task, array $violations = []): array
     {
-        if ([] !== $task->getOpenSubtasks()) {
+        // One already done is not closed again: there is nothing to refuse.
+        if (false === $task->isDone() && [] !== $task->getOpenSubtasks()) {
             $violations['id'][] = self::TASK_HAS_OPEN_SUBTASKS;
         }
 

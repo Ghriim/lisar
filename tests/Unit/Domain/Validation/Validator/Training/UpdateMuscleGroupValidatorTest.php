@@ -7,13 +7,17 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
 use App\Domain\DTO\Input\Training\UpdateMuscleGroupDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\MuscleGroupNameAvailableConstraint;
 use App\Domain\Validation\Validator\Training\UpdateMuscleGroupValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class UpdateMuscleGroupValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateMuscleGroupValidator $validator;
 
     protected function setUp(): void
@@ -25,15 +29,27 @@ final class UpdateMuscleGroupValidatorTest extends TestCase
 
     public function testItAcceptsAFreeName(): void
     {
-        $this->validator->validate(new UpdateMuscleGroupDataInput('Chest'), $this->current(), null);
+        $this->validator->validate($this->currentAdmin(), new UpdateMuscleGroupDataInput('Chest'), $this->current(), null);
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** A user's token on the back-office: refused on that alone. */
+    public function testItRefusesANonAdministrator(): void
+    {
+        try {
+            $this->validator->validate($this->anyCurrentUser(), new UpdateMuscleGroupDataInput('Chest'), $this->current(), null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateMuscleGroupValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItRejectsABlankName(): void
     {
         try {
-            $this->validator->validate(new UpdateMuscleGroupDataInput(''), $this->current(), null);
+            $this->validator->validate($this->currentAdmin(), new UpdateMuscleGroupDataInput(''), $this->current(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateMuscleGroupValidator::ERROR_CODE, $exception->errorCode);
@@ -44,7 +60,7 @@ final class UpdateMuscleGroupValidatorTest extends TestCase
     public function testItRejectsANameTooLong(): void
     {
         try {
-            $this->validator->validate(new UpdateMuscleGroupDataInput(str_repeat('a', 129)), $this->current(), null);
+            $this->validator->validate($this->currentAdmin(), new UpdateMuscleGroupDataInput(str_repeat('a', 129)), $this->current(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains('name_too_long', $exception->violations['name']);
@@ -57,7 +73,7 @@ final class UpdateMuscleGroupValidatorTest extends TestCase
         $other->id = 99;
 
         try {
-            $this->validator->validate(new UpdateMuscleGroupDataInput('Chest'), $this->current(), $other);
+            $this->validator->validate($this->currentAdmin(), new UpdateMuscleGroupDataInput('Chest'), $this->current(), $other);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(MuscleGroupNameAvailableConstraint::NAME_ALREADY_USED, $exception->violations['name']);
@@ -66,7 +82,7 @@ final class UpdateMuscleGroupValidatorTest extends TestCase
 
     public function testItLetsTheRowKeepItsOwnName(): void
     {
-        $this->validator->validate(new UpdateMuscleGroupDataInput('Chest'), $this->current(), $this->current());
+        $this->validator->validate($this->currentAdmin(), new UpdateMuscleGroupDataInput('Chest'), $this->current(), $this->current());
 
         $this->expectNotToPerformAssertions();
     }

@@ -369,6 +369,31 @@ event), `Fetch…` (call a third party and persist the result).
 
 ## 6. Building blocks
 
+### 6.0 A DTO carries data, nothing else
+
+Everything under `Domain/DTO/` — data models, DataInputs, DataOutputs, events, aggregates — is a
+**shape**. **The only function a DTO may declare is its constructor.** No getter, no setter, no
+query helper, no computed accessor, no static named constructor, public or private: a method on
+a DTO is a rule hidden in a bag of data, untested on its own and copied everywhere the bag goes.
+
+The constructor itself only initialises: it promotes properties (DataInput, events, aggregates)
+or sets the collections a data model starts with. It holds no rule — it does not derive a value
+from another, does not validate, does not build a child.
+
+What used to be a method goes to the class whose job it is:
+
+| Was | Goes to |
+| --- | --- |
+| a query over a data model's own tree — its sets, its blocks in order, a child by id | a **domain service** (§6.17) in the aggregate's perimeter, taking the data model as argument |
+| a figure worked out from a data model — a total, a count | the **domain service** or **factory** (§6.9) that needs it |
+| a value derived from a DataInput — an offset from a page, a trimmed or defaulted field | the **use case**, or a domain service shared by the use cases that need it |
+| a field an output does not get from the mapper | the **OutputFactory** (§6.9) |
+
+**Code that does not follow this yet.** The rule postdates the code: data models still carry
+query helpers (`WorkoutDataModel::orderedBlocks()`, `countSets()`…) and some DataInputs still
+expose accessors (`getOffset()`, `getName()`). They are moved as the refactoring goes; **none is
+added**, and no new code is written on top of one that a refactoring can avoid.
+
 ### 6.1 DataModel
 
 A **data model** is a persisted shape: a Doctrine-mapped class living in
@@ -378,8 +403,8 @@ direction: what comes in, what goes out, what is stored. Nothing else in the cod
 "entity".
 
 Data models are the only non-`final` classes (Doctrine needs to proxy them). Public properties,
-**no getters or setters**. They may carry small, pure query helpers over their own associations —
-never persistence logic.
+**no methods but the constructor** (§6.0) — no getter, no setter, no query helper over their own
+associations.
 
 ```php
 <?php
@@ -472,6 +497,13 @@ interface SubscriptionPersisterGateway
     public function delete(SubscriptionDataModel $subscription): void;
 }
 ```
+
+**A data model with an id is fetched by its id alone**: `findOneById(int $id)`, never
+`findOneByIdForOwner($id, $owner)`. Whether the caller may touch what came back is a rule, and
+rules live in the validator (§6.8): `IsOwnerConstraint` compares the data model's owner with
+`$currentUser`. The owner stays in a query only where it is part of what identifies the row —
+a day's entry (`findOneForOwnerAndDay`), a subscription (`findOneForOwnerAndHabit`) — or where
+it scopes a list (`findAllForOwner…`).
 
 The **one-to-one binding is auto-wired**: because exactly one class implements the interface,
 Symfony resolves it without a `services.yaml` alias. Two implementations of the same gateway is a
@@ -747,7 +779,8 @@ Rules:
 - `PaginatedListDataOutput<TItem>` is the generic envelope **every** paginated list answers with:
   `items`, `total` (matching rows, ignoring pagination), `page`, `perPage`. No endpoint invents
   its own pagination shape, so a table on either front end is written once. The list's DataInput
-  carries `page` and `perPage` with a hard cap, and exposes `getOffset()`.
+  carries `page` and `perPage` with a hard cap; the offset is worked out by the use case, not by
+  the DataInput (§6.0).
 
 ### 6.7 Registry
 
@@ -778,9 +811,16 @@ values we do own — one rule beats a per-case judgement about who owns the voca
 
 ### 6.8 Validators and Constraints
 
-A **Validator** is the validation entry point for exactly one use case. It is `final readonly`,
-has no shared interface (its `validate()` signature is typed to its DataInput), returns `void`,
-and throws a single `ValidationException` carrying **every** violation.
+A **Validator** is the validation entry point for exactly one use case, and **every use case has
+one** — named after it (`CompleteWorkoutSetUseCase` → `CompleteWorkoutSetValidator`), injected
+in its constructor, called in its *validate* step. A use case without a DataInput has one too:
+its rules are about the data models it loaded (a workout still in progress, a set that exists).
+A use case with nothing to check still gets its validator, empty but in place, so the next rule
+has a home and a reviewer never asks where validation went. The validator is `final readonly`,
+has no shared interface (its `validate()` signature is typed to what it checks), returns `void`,
+and throws a single `ValidationException` carrying **every** violation. **Its first parameter is
+the caller**, `UserDataModel $currentUser`, handed on by the use case (§6.10) — whether a
+rule reads it yet or not, so a rule about who is asking never needs a signature to change.
 
 ```php
 /**
@@ -795,7 +835,7 @@ final readonly class CreateSubscriptionValidator extends AbstractBaseValidator
      *
      * @throws ValidationException
      */
-    public function validate(CreateSubscriptionDataInput $input, array $existingSubscriptions): void
+    public function validate(UserDataModel $currentUser, CreateSubscriptionDataInput $input, array $existingSubscriptions): void
     {
         $violations = $this->getViolations($input);
         $violations = ReferenceAvailableConstraint::validate($input->reference, $existingSubscriptions, $violations);
@@ -875,6 +915,40 @@ Rules:
 - Constraints receive the data models they compare against; **they never query**. The use case loads
   what the constraint needs. That is what keeps constraints static and instantly unit-testable.
 - Validators throw; constraints return.
+- **Every rule is a Constraint class.** A validator's `validate()` starts from the DataInput's
+  shape violations (`getViolations()`, when there is a DataInput) or from `[]`, then **calls its
+  constraints one by one**, each with the context it needs, threading the `$violations` array
+  through, and throws if anything came back. It writes no rule inline — no `if` adding a code
+  itself: a rule written there cannot be reused nor unit-tested on its own.
+- **A use case never calls a Constraint itself.** It loads, hands the validator what the
+  constraints need, and the validator decides. A `XConstraint::validate()` followed by a
+  `throw new ValidationException` in a use case is a validator missing.
+- A data model that is absent is not a violation: the use case throws
+  `DataModelNotFoundException` (§6.10) before it validates anything.
+- **Access comes first, and alone.** Two shared constraints in `Domain/Validation/Constraint/Common/`
+  open a validator, before any other rule:
+  - `IsAdminConstraint::validate($currentUser)` — the caller has the administrator role. The
+    first rule of **every back-office validator**: the firewall already guards `/api/admin`, the
+    domain does not lean on it.
+  - `IsOwnerConstraint::validate($currentUser, $owner)` — the caller owns what they act on (the
+    data model, or the parent that carries its owner: a drink's day) **and** is an active
+    account. Every validator of a use case acting on a data model fetched by its id (§6.2).
+
+  Either one failing is thrown **by itself** — the one place a validator does not accumulate:
+  telling someone that a workout that is not theirs is also finished would be telling them about
+  it. Both report `['currentUser' => ['not_allowed']]`, and the exception listener answers that
+  code with a **401**, not the 422 of a mistake in the payload.
+- A data model named in the payload (a parent task, a category) that is someone else's is
+  answered like one that does not exist: its `…UsableConstraint` reports `…_not_found`.
+- **The validator runs before any early return.** A use case that answers « already done »
+  without acting (`CompleteTaskUseCase`, `FinishWorkoutUseCase`) validates first, or it hands
+  back someone else's data unchecked; the constraint that would refuse the action lets the
+  already-done case through.
+
+**Where validators live.** `Domain/Validation/Validator/<Perimeter>/`, mirroring the use case
+— except that Habits, Training and Tracking/Hydration keep their back-office validators flat in
+the perimeter folder, while Todo and User have an `Admin/` sub-folder. The layout is what the
+code has; aligning it is a refactoring of its own.
 
 ### 6.9 Factories
 
@@ -973,14 +1047,14 @@ final readonly class CreateSubscriptionUseCase implements UseCaseInterface
      * @throws ValidationException
      * @throws DataModelNotFoundException
      */
-    public function execute(CreateSubscriptionDataInput $input): SubscriptionDataOutput
+    public function execute(UserDataModel $currentUser, CreateSubscriptionDataInput $input): SubscriptionDataOutput
     {
         $account = $this->accountProviderGateway->findOneByReference($input->accountReference);
         if (null === $account) {
             throw new DataModelNotFoundException(AccountDataModel::class);
         }
 
-        $this->validator->validate($input, $account->subscriptions->toArray());
+        $this->validator->validate($currentUser, $input, $account->subscriptions->toArray());
 
         $subscription = new SubscriptionDataModel();
         $subscription->account = $account;
@@ -1000,18 +1074,29 @@ Rules:
 - `final readonly`, implements the empty marker `UseCaseInterface`, **exactly one public method
   named `execute`**. Private helpers are allowed; a second public method means you need a second
   use case.
-- Signature is **typed-direct**: `execute(XDataInput $input)`, or
-  `execute(int $id, XDataInput $input)` when the identity comes from the route, or
-  `execute(int $id)` / `execute(string $reference)` for lookups and state transitions that take no
-  body. No arrays, no `mixed`, no `Request`.
+- Signature is **typed-direct**, and **a use case a controller calls takes the caller first**:
+  `execute(UserDataModel $currentUser, XDataInput $input)`, or
+  `execute(UserDataModel $currentUser, int $id, XDataInput $input)` when the identity
+  comes from the route, or `execute(UserDataModel $currentUser, int $id)` for lookups and
+  state transitions that take no body. No arrays, no `mixed`, no `Request`.
+- **The caller is `UserDataModel $currentUser`, never an id of its own.** No `int $ownerId`,
+  `$actingUserId` or `$authorId` beside it, and no query to load it: it is the account the
+  firewall already loaded (§6.11), managed, so a use case makes it the owner of what it writes as
+  it stands. It is handed, untouched, to the validator.
+- The exceptions are the use cases no signed-in account calls: the public routes that open a
+  session (login, register, refresh, logout) and a console command (`CreateAdminUseCase`). They
+  take no current user.
 - Return type is whatever the use case naturally produces: a DataOutput, `DataOutput[]` (annotate
   with `@return XDataOutput[]`), a scalar, or `void`.
 - Canonical body order: **load → validate → mutate → persist → build the output**. Validate as
-  early as the data it needs allows.
-- **After persisting a child, add it to its parent's collection.** Doctrine writes the foreign
+  early as the data it needs allows. The *validate* step is always there: it is one call to the
+  use case's own validator (§6.8), injected in the constructor like its gateways.
+- **After persisting a child, its parent's collection holds it.** Doctrine writes the foreign
   key from the owning side, but the parent already in the identity map keeps the collection it
   was hydrated with — so anything reading the parent later in the same request sees stale
-  state, a derived status included.
+  state, a derived status included. The persister keeps both sides in step, before it
+  dispatches ([domain-events.md](domain-events.md)), so the use case does not add the child
+  again.
 - A use case **never injects `ObjectMapperInterface`**. Outputs come from an OutputFactory (§6.9).
 - Missing data model → `DataModelNotFoundException`, constructed with the **data model class name**
   (`new DataModelNotFoundException(AccountDataModel::class)`).
@@ -1026,7 +1111,7 @@ No business logic, no data model access, no try/catch — the exception listener
 
 ```php
 #[OA\Tag(name: 'Subscriptions')]
-final class SubscriptionController extends AbstractController
+final class SubscriptionController extends AbstractBaseController
 {
     #[Route('/subscriptions', methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'accountReference', in: 'query', required: true, schema: new OA\Schema(type: 'string'))]
@@ -1037,7 +1122,7 @@ final class SubscriptionController extends AbstractController
     )]
     public function listSubscriptions(#[MapDataInput] ListSubscriptionsDataInput $input, ListSubscriptionsUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input));
     }
 
     #[Route('/subscriptions/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -1048,14 +1133,14 @@ final class SubscriptionController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY)]
     public function updateSubscription(int $id, #[MapDataInput] UpdateSubscriptionDataInput $input, UpdateSubscriptionUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/subscriptions/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'Subscription deleted.')]
     public function deleteSubscription(int $id, DeleteSubscriptionUseCase $useCase): JsonResponse
     {
-        $useCase->execute($id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
@@ -1064,7 +1149,13 @@ final class SubscriptionController extends AbstractController
 
 Rules:
 
-- One controller per aggregate **per audience**, `final`, extends `AbstractController`. Controllers
+- **The caller comes from `getCurrentUser()`**, which every controller inherits from
+  `AbstractBaseController`: it returns the `UserDataModel` the user provider loaded to
+  authenticate the request — `SecurityUser` keeps it — so the caller costs no query. It is the
+  first argument of every use case the controller calls (§6.10). Never
+  `#[CurrentUser]`, never `$this->getUser()`, never `SecurityUser` in a route's signature: the
+  framework's user stops at the base controller.
+- One controller per aggregate **per audience**, `final`, extends `AbstractBaseController`. Controllers
   follow the perimeters (§4.1) and no controller sits loose at the root: what the website calls
   sits at the root of its perimeter (`Controller/Training/WorkoutController.php`), the
   back-office in its `Admin/` sub-folder (`Controller/Training/Admin/AdminSetTypeController.php`).
@@ -1950,12 +2041,15 @@ Adding a "create X" endpoint, end to end:
 6. **DataOutput** `Domain/DTO/Output/<Perimeter>/XDataOutput.php` — `#[Map]` attributes, dates through
    `Domain\DataTransformer\DateDataTransformer` — **plus its mandatory**
    `Domain/Factory/OutputFactory/<Perimeter>/XOutputFactory.php` (`buildOne` / `buildMany`).
-7. **Constraints** for each cross-model rule, static and pure.
-8. **Validator** `Domain/Validation/Validator/<Perimeter>/CreateXValidator.php` — accumulates, throws one
+7. **Constraints** for each rule beyond the DataInput's shape, static and pure.
+8. **Validator** `Domain/Validation/Validator/<Perimeter>/CreateXValidator.php` — one per use case,
+   always, input or not; calls its constraints one by one, accumulates, throws one
    `ValidationException` with an `ERROR_CODE`.
-9. **UseCase** `UseCase/<Perimeter>/CreateXUseCase.php` — `final readonly`, single `execute`,
-   load → validate → mutate → persist → `outputFactory->buildOne()`.
-10. **Controller route** in `Infrastructure/Controller/<Perimeter>/XController.php` — `#[MapDataInput]`, use
+9. **UseCase** `UseCase/<Perimeter>/CreateXUseCase.php` — `final readonly`, single `execute`
+   taking `UserDataModel $currentUser` first, its validator injected and handed the
+   caller, load → validate → mutate → persist → `outputFactory->buildOne()`.
+10. **Controller route** in `Infrastructure/Controller/<Perimeter>/XController.php` — extends
+    `AbstractBaseController`, passes `$this->getCurrentUser()` first, `#[MapDataInput]`, use
     case injected as a method argument, full OpenAPI attributes.
 11. **Unit test** for the validator (happy path + one per rule + accumulation) and for each
     constraint/factory.
@@ -2028,7 +2122,18 @@ Rejected in review, every time:
 - A validator that fails fast instead of accumulating.
 - A constraint that queries the database.
 - `new \DateTimeImmutable()` outside a persister's clock.
-- Getters/setters on an entity or a DTO.
+- Any method but the constructor on a DTO — data model, DataInput, DataOutput, event,
+  aggregate (§6.0); a constructor that does more than initialise.
+- A use case without its own validator, or a use case calling a Constraint itself.
+- A use case a controller calls without `UserDataModel $currentUser` first, or with an id
+  of the caller beside it (`$ownerId`, `$actingUserId`); a validator not taking it first.
+- `#[CurrentUser]`, `$this->getUser()` or `SecurityUser` in a controller route: the caller comes
+  from `getCurrentUser()`.
+- A data model with an id fetched by id **and** owner (`findOneByIdForOwner`): fetch it by id,
+  and let `IsOwnerConstraint` refuse it in the validator.
+- A back-office validator whose first rule is not `IsAdminConstraint`.
+- A use case returning early before its validator has run.
+- A rule written inline in a validator instead of a Constraint class.
 - Injecting `ObjectMapperInterface` anywhere but an OutputFactory.
 - Importing `Infrastructure\DataTransformer` from `Domain/`.
 - A second date format anywhere in the API.

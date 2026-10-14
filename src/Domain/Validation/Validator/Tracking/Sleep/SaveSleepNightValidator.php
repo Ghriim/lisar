@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Validation\Validator\Tracking\Sleep;
 
 use App\Domain\DataTransformer\TimeDataTransformer;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Tracking\Sleep\SaveSleepNightDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Tracking\Sleep\SleepWindow;
@@ -24,7 +25,7 @@ final readonly class SaveSleepNightValidator extends AbstractBaseValidator
      *
      * @throws ValidationException
      */
-    public function validate(SaveSleepNightDataInput $input, DateTimeImmutable $wakingDay): void
+    public function validate(UserDataModel $currentUser, SaveSleepNightDataInput $input, DateTimeImmutable $wakingDay): void
     {
         $violations = $this->getViolations($input);
 

@@ -10,9 +10,10 @@ use App\Domain\DTO\Input\Tracking\Hydration\UpdateHydrationEntryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationDayProviderGateway;
 use App\Domain\Tracking\DayClock;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Fixtures\User\UserFixtures;
-use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Tracking\Hydration\CreateHydrationEntryUseCase;
 use App\UseCase\Tracking\Hydration\DeleteHydrationEntryUseCase;
 use App\UseCase\Tracking\Hydration\GetHydrationDayUseCase;
@@ -27,6 +28,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class HydrationDayTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private GetHydrationDayUseCase $get;
     private CreateHydrationEntryUseCase $create;
@@ -54,7 +56,7 @@ final class HydrationDayTest extends KernelTestCase
      */
     public function testItReportsAnEmptyDayWithoutWritingOne(): void
     {
-        $output = $this->get->execute($this->aliceId());
+        $output = $this->get->execute($this->currentUser($this->aliceId()));
 
         self::assertSame(0, $output->totalInMillilitres);
         self::assertSame(1500, $output->goalInMillilitres);
@@ -67,8 +69,8 @@ final class HydrationDayTest extends KernelTestCase
 
     public function testItLogsAndTotals(): void
     {
-        $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(250));
-        $output = $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(500));
+        $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(250));
+        $output = $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(500));
 
         self::assertSame(750, $output->totalInMillilitres);
         self::assertCount(2, $output->entries);
@@ -87,7 +89,7 @@ final class HydrationDayTest extends KernelTestCase
      */
     public function testTheDayKeepsTheGoalThatAppliedToIt(): void
     {
-        $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(250));
+        $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(250));
 
         $clock = self::getContainer()->get(DayClock::class);
         $day = self::getContainer()->get(HydrationDayProviderGateway::class)
@@ -99,19 +101,19 @@ final class HydrationDayTest extends KernelTestCase
 
     public function testItCorrectsAnEntry(): void
     {
-        $created = $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(250));
+        $created = $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(250));
         $entryId = $created->entries[0]->id;
 
-        $output = $this->update->execute($this->aliceId(), $entryId, new UpdateHydrationEntryDataInput(300));
+        $output = $this->update->execute($this->currentUser($this->aliceId()), $entryId, new UpdateHydrationEntryDataInput(300));
 
         self::assertSame(300, $output->totalInMillilitres);
     }
 
     public function testItRemovesAnEntryAndKeepsTheDay(): void
     {
-        $created = $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(250));
+        $created = $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(250));
 
-        $output = $this->delete->execute($this->aliceId(), $created->entries[0]->id);
+        $output = $this->delete->execute($this->currentUser($this->aliceId()), $created->entries[0]->id);
 
         self::assertSame(0, $output->totalInMillilitres);
         self::assertSame([], $output->entries);
@@ -126,31 +128,34 @@ final class HydrationDayTest extends KernelTestCase
     public function testItRefusesAnImplausibleVolume(): void
     {
         try {
-            $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(9000));
+            $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(9000));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('volumeInMillilitres', $exception->violations);
         }
     }
 
-    public function testAnotherAccountsEntryIsSimplyNotFound(): void
+    public function testAnotherAccountsEntryIsRefused(): void
     {
-        $created = $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(250));
+        $created = $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(250));
         $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
 
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->delete->execute($admin->id ?? 0, $created->entries[0]->id);
+        try {
+            $this->delete->execute($this->currentUser($admin->id ?? 0), $created->entries[0]->id);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testTwoAccountsKeepTheirOwnDay(): void
     {
         $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
 
-        $this->create->execute($this->aliceId(), new CreateHydrationEntryDataInput(250));
+        $this->create->execute($this->currentUser($this->aliceId()), new CreateHydrationEntryDataInput(250));
 
-        self::assertSame(0, $this->get->execute($admin->id ?? 0)->totalInMillilitres);
-        self::assertSame(250, $this->get->execute($this->aliceId())->totalInMillilitres);
+        self::assertSame(0, $this->get->execute($this->currentUser($admin->id ?? 0))->totalInMillilitres);
+        self::assertSame(250, $this->get->execute($this->currentUser($this->aliceId()))->totalInMillilitres);
     }
 
     private function aliceId(): int

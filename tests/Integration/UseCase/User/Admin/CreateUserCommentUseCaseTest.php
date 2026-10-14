@@ -11,12 +11,14 @@ use App\Domain\Gateway\Provider\User\UserCommentProviderGateway;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\CreateUserCommentUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class CreateUserCommentUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private CreateUserCommentUseCase $useCase;
     private UserCommentProviderGateway $userCommentProviderGateway;
@@ -38,9 +40,7 @@ final class CreateUserCommentUseCaseTest extends KernelTestCase
         self::assertNotNull($bob->id);
         self::assertNotNull($admin->id);
 
-        $output = $this->useCase->execute(
-            $bob->id,
-            $admin->id,
+        $output = $this->useCase->execute($this->currentUser($admin->id), $bob->id,
             new CreateUserCommentDataInput('Called support back.'),
         );
 
@@ -64,7 +64,7 @@ final class CreateUserCommentUseCaseTest extends KernelTestCase
         self::assertNotNull($admin->id);
 
         try {
-            $this->useCase->execute($bob->id, $admin->id, new CreateUserCommentDataInput(''));
+            $this->useCase->execute($this->currentUser($admin->id), $bob->id, new CreateUserCommentDataInput(''));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('body', $exception->violations);
@@ -80,6 +80,6 @@ final class CreateUserCommentUseCaseTest extends KernelTestCase
 
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->useCase->execute(123456789, $admin->id, new CreateUserCommentDataInput('Called support back.'));
+        $this->useCase->execute($this->currentUser($admin->id), 123456789, new CreateUserCommentDataInput('Called support back.'));
     }
 }

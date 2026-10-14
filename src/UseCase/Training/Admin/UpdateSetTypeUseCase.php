@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\UpdateSetTypeDataInput;
 use App\Domain\DTO\Output\Training\SetTypeDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -35,14 +36,14 @@ final readonly class UpdateSetTypeUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, UpdateSetTypeDataInput $input): SetTypeDataOutput
+    public function execute(UserDataModel $currentUser, int $id, UpdateSetTypeDataInput $input): SetTypeDataOutput
     {
         $setType = $this->setTypeProviderGateway->findOneById($id);
         if (null === $setType) {
             throw new DataModelNotFoundException(SetTypeDataModel::class);
         }
 
-        $this->validator->validate($input, $setType, $this->setTypeProviderGateway->findOneByName($input->name));
+        $this->validator->validate($currentUser, $input, $setType, $this->setTypeProviderGateway->findOneByName($input->name));
         $setType->name = $input->name;
         $setType->colour = $input->colour;
         $setType->countsForPersonalBests = $input->countsForPersonalBests;

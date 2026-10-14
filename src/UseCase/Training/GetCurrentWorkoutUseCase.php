@@ -8,7 +8,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Training\WorkoutDataOutput;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Training\GetCurrentWorkoutValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -16,7 +16,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class GetCurrentWorkoutUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private GetCurrentWorkoutValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutOutputFactory $outputFactory,
     ) {
@@ -25,14 +25,11 @@ final readonly class GetCurrentWorkoutUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): ?WorkoutDataOutput
+    public function execute(UserDataModel $currentUser): ?WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
-        $workout = $this->workoutProviderGateway->findOneInProgressForOwner($owner);
+        $workout = $this->workoutProviderGateway->findOneInProgressForOwner($currentUser);
 
         return null === $workout ? null : $this->outputFactory->buildOne($workout);
     }

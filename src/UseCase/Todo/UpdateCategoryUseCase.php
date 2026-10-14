@@ -12,7 +12,6 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Todo\CategoryOutputFactory;
 use App\Domain\Gateway\Persister\Todo\CategoryPersisterGateway;
 use App\Domain\Gateway\Provider\Todo\CategoryProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Todo\UpdateCategoryValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -25,7 +24,6 @@ final readonly class UpdateCategoryUseCase implements UseCaseInterface
 {
     public function __construct(
         private UpdateCategoryValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private CategoryProviderGateway $categoryProviderGateway,
         private CategoryPersisterGateway $categoryPersisterGateway,
         private CategoryOutputFactory $outputFactory,
@@ -36,25 +34,21 @@ final readonly class UpdateCategoryUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $categoryId, UpdateCategoryDataInput $input): CategoryDataOutput
+    public function execute(UserDataModel $currentUser, int $categoryId, UpdateCategoryDataInput $input): CategoryDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
         $category = $this->categoryProviderGateway->findOneById($categoryId);
 
         // Someone else's personal category is not visible to this account at all.
-        if (null === $category || false === $category->isUsableBy($owner)) {
+        if (null === $category || false === $category->isUsableBy($currentUser)) {
             throw new DataModelNotFoundException(CategoryDataModel::class);
         }
 
         $this->validator->validate(
+            $currentUser,
             $input,
             $category,
             $this->categoryProviderGateway->findOneByLabelForOwner($input->label, null),
-            $this->categoryProviderGateway->findOneByLabelForOwner($input->label, $owner),
+            $this->categoryProviderGateway->findOneByLabelForOwner($input->label, $currentUser),
         );
 
         $category->label = $input->label;

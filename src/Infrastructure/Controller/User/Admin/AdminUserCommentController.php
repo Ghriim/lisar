@@ -6,24 +6,22 @@ namespace App\Infrastructure\Controller\User\Admin;
 
 use App\Domain\DTO\Input\User\Admin\CreateUserCommentDataInput;
 use App\Domain\DTO\Output\User\Admin\UserCommentDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\Infrastructure\Security\SecurityUser;
 use App\UseCase\User\Admin\CreateUserCommentUseCase;
 use App\UseCase\User\Admin\ListUserCommentsUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Internal notes on an account. Back-office only: they are never served to the account itself.
  */
 #[OA\Tag(name: 'Admin — user comments')]
-final class AdminUserCommentController extends AbstractController
+final class AdminUserCommentController extends AbstractBaseController
 {
     #[Route('/api/admin/users/{id}/comments', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
@@ -35,7 +33,7 @@ final class AdminUserCommentController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such account.')]
     public function listUserComments(int $id, ListUserCommentsUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/users/{id}/comments', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -50,10 +48,9 @@ final class AdminUserCommentController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Invalid payload.')]
     public function createUserComment(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] CreateUserCommentDataInput $input,
         CreateUserCommentUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $securityUser->id, $input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input), Response::HTTP_CREATED);
     }
 }

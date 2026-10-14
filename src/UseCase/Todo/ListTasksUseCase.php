@@ -7,9 +7,10 @@ namespace App\UseCase\Todo;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\ListTasksDataInput;
 use App\Domain\DTO\Output\Todo\TaskDataOutput;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Todo\ListTasksValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -21,7 +22,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListTasksUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ListTasksValidator $validator,
         private TaskProviderGateway $taskProviderGateway,
         private TaskOutputFactory $outputFactory,
     ) {
@@ -31,16 +32,14 @@ final readonly class ListTasksUseCase implements UseCaseInterface
      * @return list<TaskDataOutput>
      *
      * @throws DataModelNotFoundException
+     * @throws ValidationException
      */
-    public function execute(int $ownerId, ListTasksDataInput $input): array
+    public function execute(UserDataModel $currentUser, ListTasksDataInput $input): array
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser, $input);
 
         return $this->outputFactory->buildMany(
-            $this->taskProviderGateway->findAllForOwnerList($owner, $input->isDone),
+            $this->taskProviderGateway->findAllForOwnerList($currentUser, $input->isDone),
         );
     }
 }

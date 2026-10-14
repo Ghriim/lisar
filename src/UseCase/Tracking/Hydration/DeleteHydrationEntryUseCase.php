@@ -12,9 +12,8 @@ use App\Domain\Factory\OutputFactory\Tracking\Hydration\HydrationDayOutputFactor
 use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationEntryPersisterGateway;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationDayProviderGateway;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationEntryProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
-use App\Domain\Validation\Constraint\Tracking\Hydration\EntryFromTodayConstraint;
+use App\Domain\Validation\Validator\Tracking\Hydration\DeleteHydrationEntryValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -25,10 +24,8 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  */
 final readonly class DeleteHydrationEntryUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'delete_hydration_entry_invalid';
-
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private DeleteHydrationEntryValidator $validator,
         private HydrationEntryProviderGateway $hydrationEntryProviderGateway,
         private HydrationEntryPersisterGateway $hydrationEntryPersisterGateway,
         private HydrationDayProviderGateway $hydrationDayProviderGateway,
@@ -43,27 +40,19 @@ final readonly class DeleteHydrationEntryUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $entryId): HydrationDayDataOutput
+    public function execute(UserDataModel $currentUser, int $entryId): HydrationDayDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $entry = $this->hydrationEntryProviderGateway->findOneByIdForOwner($entryId, $owner);
+        $entry = $this->hydrationEntryProviderGateway->findOneById($entryId);
         if (null === $entry) {
             throw new DataModelNotFoundException(HydrationEntryDataModel::class);
         }
 
-        $violations = EntryFromTodayConstraint::validate($this->clock->isCurrentDay($entry->hydrationDay->day));
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $entry, $this->clock->isCurrentDay($entry->hydrationDay->day));
 
         $this->hydrationEntryPersisterGateway->delete($entry);
 
         $today = $this->clock->today();
-        $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($owner, $today);
+        $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($currentUser, $today);
 
         return null === $day
             ? $this->outputFactory->buildEmpty($today, $this->defaultGoalInMillilitres)

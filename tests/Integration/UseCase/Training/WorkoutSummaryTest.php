@@ -20,6 +20,7 @@ use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Training\AddWorkoutBlockUseCase;
 use App\UseCase\Training\AddWorkoutSetUseCase;
 use App\UseCase\Training\CompleteWorkoutSetUseCase;
@@ -43,6 +44,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class WorkoutSummaryTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private int $aliceId;
 
@@ -58,7 +60,7 @@ final class WorkoutSummaryTest extends KernelTestCase
     public function testTheSeededWorkoutIsSummedUp(): void
     {
         $workoutId = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0;
-        $stats = $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->aliceId, $workoutId);
+        $stats = $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->currentUser($this->aliceId), $workoutId);
 
         $summary = $this->summaryOf($workoutId);
 
@@ -72,7 +74,7 @@ final class WorkoutSummaryTest extends KernelTestCase
 
     public function testStartingAWorkoutCreatesItsSummary(): void
     {
-        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->aliceId, new StartWorkoutDataInput());
+        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), new StartWorkoutDataInput());
 
         $summary = $this->summaryOf($workout->id);
 
@@ -86,7 +88,7 @@ final class WorkoutSummaryTest extends KernelTestCase
     {
         $source = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
 
-        $copy = $this->useCase(CopyWorkoutUseCase::class)->execute($this->aliceId, $source->id ?? 0);
+        $copy = $this->useCase(CopyWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $source->id ?? 0);
 
         self::assertSame(0, $this->summaryOf($copy->workout->id)->setCount);
     }
@@ -101,7 +103,7 @@ final class WorkoutSummaryTest extends KernelTestCase
         self::assertSame(1, $summary->setCount);
         self::assertSame(400.0, (float) $summary->volumeInKilograms);
 
-        $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $this->lastSet($workout)->id);
+        $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
         $summary = $this->summaryOf($workout->id);
         self::assertSame(0, $summary->setCount);
         self::assertNull($summary->volumeInKilograms);
@@ -113,7 +115,7 @@ final class WorkoutSummaryTest extends KernelTestCase
         $workout = $this->complete($workout, $this->lastSet($workout));
 
         $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->aliceId, $workout->id, $this->lastSet($workout)->id, new UpdateWorkoutSetDataInput(reps: 10, weightInKilograms: 50.0),
+            $this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id, new UpdateWorkoutSetDataInput(reps: 10, weightInKilograms: 50.0),
         );
 
         self::assertSame(500.0, (float) $this->summaryOf($workout->id)->volumeInKilograms);
@@ -126,7 +128,7 @@ final class WorkoutSummaryTest extends KernelTestCase
         $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 6, weightInKilograms: 50.0));
         $workout = $this->complete($workout, $this->lastSet($workout));
 
-        $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $this->lastSet($workout)->id);
+        $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
 
         $summary = $this->summaryOf($workout->id);
         self::assertSame(1, $summary->setCount);
@@ -136,26 +138,26 @@ final class WorkoutSummaryTest extends KernelTestCase
     /** A movement removed from a superset takes its sets with it; a block removed, all of its own. */
     public function testRemovingAMovementOrABlockTakesTheirSetsOut(): void
     {
-        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->aliceId, new StartWorkoutDataInput());
-        $workout = $this->useCase(AddWorkoutBlockUseCase::class)->execute($this->aliceId, $workout->id, new AddWorkoutBlockDataInput([
+        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), new StartWorkoutDataInput());
+        $workout = $this->useCase(AddWorkoutBlockUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, new AddWorkoutBlockDataInput([
             new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL)),
             new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::PUSH_UP)),
         ]));
         $bench = $workout->blocks[0]->exercises[0];
         $pushUp = $workout->blocks[0]->exercises[1];
-        $workout = $this->useCase(AddWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $bench->id, new AddWorkoutSetDataInput(reps: 10, weightInKilograms: 40.0));
-        $workout = $this->useCase(AddWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $pushUp->id, new AddWorkoutSetDataInput(reps: 15));
+        $workout = $this->useCase(AddWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $bench->id, new AddWorkoutSetDataInput(reps: 10, weightInKilograms: 40.0));
+        $workout = $this->useCase(AddWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $pushUp->id, new AddWorkoutSetDataInput(reps: 15));
         foreach ($workout->blocks[0]->exercises as $exercise) {
-            $workout = $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $exercise->sets[0]->id);
+            $workout = $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $exercise->sets[0]->id);
         }
         self::assertSame(2, $this->summaryOf($workout->id)->setCount);
 
-        $workout = $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->aliceId, $workout->id, $pushUp->id);
+        $workout = $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $pushUp->id);
         $summary = $this->summaryOf($workout->id);
         self::assertSame(1, $summary->setCount);
         self::assertSame(400.0, (float) $summary->volumeInKilograms);
 
-        $this->useCase(DeleteWorkoutBlockUseCase::class)->execute($this->aliceId, $workout->id, $workout->blocks[0]->id);
+        $this->useCase(DeleteWorkoutBlockUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $workout->blocks[0]->id);
         $summary = $this->summaryOf($workout->id);
         self::assertSame(0, $summary->setCount);
         self::assertNull($summary->volumeInKilograms);
@@ -169,7 +171,7 @@ final class WorkoutSummaryTest extends KernelTestCase
         self::assertGreaterThan(0, $beaten);
         self::assertSame($beaten, $this->summaryOf($workout->id)->personalBestCount);
 
-        $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $this->lastSet($workout)->id);
+        $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
 
         self::assertSame(0, $this->summaryOf($workout->id)->personalBestCount);
     }
@@ -187,9 +189,9 @@ final class WorkoutSummaryTest extends KernelTestCase
 
         // The seeded workout's heaviest bench set, corrected up past the new one.
         $seededId = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0;
-        $seeded = $this->useCase(GetWorkoutUseCase::class)->execute($this->aliceId, $seededId);
+        $seeded = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $seededId);
         $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->aliceId, $seededId, $seeded->blocks[0]->exercises[0]->sets[1]->id, new UpdateWorkoutSetDataInput(reps: 8, weightInKilograms: 90.0),
+            $this->currentUser($this->aliceId), $seededId, $seeded->blocks[0]->exercises[0]->sets[1]->id, new UpdateWorkoutSetDataInput(reps: 8, weightInKilograms: 90.0),
         );
 
         self::assertLessThan($before, $this->summaryOf($workout->id)->personalBestCount);
@@ -213,21 +215,21 @@ final class WorkoutSummaryTest extends KernelTestCase
 
     private function benchWorkout(): WorkoutDataOutput
     {
-        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->aliceId, new StartWorkoutDataInput());
+        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), new StartWorkoutDataInput());
 
         return $this->useCase(AddWorkoutBlockUseCase::class)->execute(
-            $this->aliceId, $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL))]),
+            $this->currentUser($this->aliceId), $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL))]),
         );
     }
 
     private function addSet(WorkoutDataOutput $workout, AddWorkoutSetDataInput $input): WorkoutDataOutput
     {
-        return $this->useCase(AddWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $workout->blocks[0]->exercises[0]->id, $input);
+        return $this->useCase(AddWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $workout->blocks[0]->exercises[0]->id, $input);
     }
 
     private function complete(WorkoutDataOutput $workout, WorkoutSetDataOutput $set): WorkoutDataOutput
     {
-        return $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->aliceId, $workout->id, $set->id);
+        return $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $set->id);
     }
 
     private function lastSet(WorkoutDataOutput $workout): WorkoutSetDataOutput

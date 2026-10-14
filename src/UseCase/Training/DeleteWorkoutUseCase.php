@@ -6,9 +6,10 @@ namespace App\UseCase\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Persister\Training\WorkoutPersisterGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Training\DeleteWorkoutValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -19,7 +20,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class DeleteWorkoutUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private DeleteWorkoutValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutPersisterGateway $workoutPersisterGateway,
     ) {
@@ -27,18 +28,16 @@ final readonly class DeleteWorkoutUseCase implements UseCaseInterface
 
     /**
      * @throws DataModelNotFoundException
+     * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId): void
+    public function execute(UserDataModel $currentUser, int $workoutId): void
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
+
+        $this->validator->validate($currentUser, $workout);
 
         // The habits watching workouts, and the records, follow on the persister's event.
         $this->workoutPersisterGateway->delete($workout);

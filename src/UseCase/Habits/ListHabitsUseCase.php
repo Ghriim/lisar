@@ -9,8 +9,8 @@ use App\Domain\DTO\Output\Habits\HabitDataOutput;
 use App\Domain\Factory\OutputFactory\Habits\HabitOutputFactory;
 use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
+use App\Domain\Validation\Validator\Habits\ListHabitsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -20,7 +20,7 @@ use function sprintf;
 final readonly class ListHabitsUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ListHabitsValidator $validator,
         private HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
         private HabitEntryProviderGateway $habitEntryProviderGateway,
         private HabitOutputFactory $outputFactory,
@@ -33,18 +33,15 @@ final readonly class ListHabitsUseCase implements UseCaseInterface
      *
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): array
+    public function execute(UserDataModel $currentUser): array
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
         $today = $this->clock->today();
         $since = $today->modify(sprintf('-%d days', HabitOutputFactory::WINDOW_IN_DAYS - 1));
 
-        $subscriptions = $this->habitSubscriptionProviderGateway->findActiveForOwner($owner);
-        $entries = $this->habitEntryProviderGateway->findForOwnerSince($owner, $since);
+        $subscriptions = $this->habitSubscriptionProviderGateway->findActiveForOwner($currentUser);
+        $entries = $this->habitEntryProviderGateway->findForOwnerSince($currentUser, $since);
 
         return $this->outputFactory->buildMany($subscriptions, $entries, $today);
     }

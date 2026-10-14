@@ -6,6 +6,7 @@ namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\UpdateMuscleDataInput;
 use App\Domain\DTO\Output\Training\MuscleDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -33,7 +34,7 @@ final readonly class UpdateMuscleUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, UpdateMuscleDataInput $input): MuscleDataOutput
+    public function execute(UserDataModel $currentUser, int $id, UpdateMuscleDataInput $input): MuscleDataOutput
     {
         $muscle = $this->muscleProviderGateway->findOneById($id);
         if (null === $muscle) {
@@ -43,6 +44,7 @@ final readonly class UpdateMuscleUseCase implements UseCaseInterface
         $muscleGroup = $this->muscleGroupProviderGateway->findOneById($input->muscleGroupId);
 
         $this->validator->validate(
+            $currentUser,
             $input,
             $muscle,
             $this->muscleProviderGateway->findOneByName($input->name),

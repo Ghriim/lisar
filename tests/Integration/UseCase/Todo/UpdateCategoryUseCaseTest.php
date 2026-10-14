@@ -15,6 +15,7 @@ use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\UpdateCategoryUseCase;
 use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -22,6 +23,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class UpdateCategoryUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private UpdateCategoryUseCase $useCase;
     private CategoryProviderGateway $categoryProviderGateway;
@@ -44,7 +46,7 @@ final class UpdateCategoryUseCaseTest extends KernelTestCase
         $category = $this->getReference(CategoryFixtures::ALICE_SIDE_PROJECT, CategoryDataModel::class);
 
         $output = $this->useCase->execute(
-            $this->aliceId(),
+            $this->currentUser($this->aliceId()),
             $category->id ?? 0,
             new UpdateCategoryDataInput('Projet perso'),
         );
@@ -62,7 +64,7 @@ final class UpdateCategoryUseCaseTest extends KernelTestCase
         $category = $this->getReference(CategoryFixtures::ALICE_SIDE_PROJECT, CategoryDataModel::class);
 
         $output = $this->useCase->execute(
-            $this->aliceId(),
+            $this->currentUser($this->aliceId()),
             $category->id ?? 0,
             new UpdateCategoryDataInput('Side project'),
         );
@@ -75,7 +77,7 @@ final class UpdateCategoryUseCaseTest extends KernelTestCase
         $home = $this->getReference(CategoryFixtures::HOME, CategoryDataModel::class);
 
         try {
-            $this->useCase->execute($this->aliceId(), $home->id ?? 0, new UpdateCategoryDataInput('Maison'));
+            $this->useCase->execute($this->currentUser($this->aliceId()), $home->id ?? 0, new UpdateCategoryDataInput('Maison'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(CategoryEditableConstraint::CATEGORY_NOT_EDITABLE, $exception->violations['id']);
@@ -87,7 +89,7 @@ final class UpdateCategoryUseCaseTest extends KernelTestCase
         $category = $this->getReference(CategoryFixtures::ALICE_SIDE_PROJECT, CategoryDataModel::class);
 
         try {
-            $this->useCase->execute($this->aliceId(), $category->id ?? 0, new UpdateCategoryDataInput('Home'));
+            $this->useCase->execute($this->currentUser($this->aliceId()), $category->id ?? 0, new UpdateCategoryDataInput('Home'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(
@@ -104,7 +106,7 @@ final class UpdateCategoryUseCaseTest extends KernelTestCase
 
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->useCase->execute($admin->id ?? 0, $category->id ?? 0, new UpdateCategoryDataInput('À moi'));
+        $this->useCase->execute($this->currentUser($admin->id ?? 0), $category->id ?? 0, new UpdateCategoryDataInput('À moi'));
     }
 
     private function aliceId(): int

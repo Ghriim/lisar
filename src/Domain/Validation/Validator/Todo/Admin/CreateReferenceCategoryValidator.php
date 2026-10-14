@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\Validation\Validator\Todo\Admin;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\Admin\CreateReferenceCategoryDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Todo\CategoryLabelAvailableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 
@@ -26,8 +28,13 @@ final readonly class CreateReferenceCategoryValidator extends AbstractBaseValida
      *
      * @throws ValidationException
      */
-    public function validate(CreateReferenceCategoryDataInput $input, ?CategoryDataModel $withSameLabel): void
+    public function validate(UserDataModel $currentUser, CreateReferenceCategoryDataInput $input, ?CategoryDataModel $withSameLabel): void
     {
+        $access = IsAdminConstraint::validate($currentUser);
+        if ([] !== $access) {
+            throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
         $violations = $this->getViolations($input);
         $violations = CategoryLabelAvailableConstraint::validate($withSameLabel, null, null, $violations);
 

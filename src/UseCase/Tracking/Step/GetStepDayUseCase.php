@@ -8,8 +8,8 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Tracking\Step\StepDayDataOutput;
 use App\Domain\Factory\OutputFactory\Tracking\Step\StepDayOutputFactory;
 use App\Domain\Gateway\Provider\Tracking\Step\StepDayProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
+use App\Domain\Validation\Validator\Tracking\Step\GetStepDayValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -24,7 +24,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 final readonly class GetStepDayUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private GetStepDayValidator $validator,
         private StepDayProviderGateway $stepDayProviderGateway,
         private StepDayOutputFactory $outputFactory,
         private DayClock $clock,
@@ -36,15 +36,12 @@ final readonly class GetStepDayUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): StepDayDataOutput
+    public function execute(UserDataModel $currentUser): StepDayDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
         $today = $this->clock->today();
-        $stepDay = $this->stepDayProviderGateway->findOneForOwnerAndDay($owner, $today);
+        $stepDay = $this->stepDayProviderGateway->findOneForOwnerAndDay($currentUser, $today);
 
         if (null === $stepDay) {
             return $this->outputFactory->buildEmpty($today, $this->defaultGoalInSteps);

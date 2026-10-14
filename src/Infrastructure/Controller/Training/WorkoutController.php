@@ -21,8 +21,8 @@ use App\Domain\DTO\Output\Training\WorkoutDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutPreviousPerformanceDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutStatsDataOutput;
 use App\Domain\DTO\Output\Training\WorkoutSummaryDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\Infrastructure\Security\SecurityUser;
 use App\UseCase\Training\AddWorkoutBlockUseCase;
 use App\UseCase\Training\AddWorkoutExerciseUseCase;
 use App\UseCase\Training\AddWorkoutSetUseCase;
@@ -49,12 +49,10 @@ use App\UseCase\Training\UpdateWorkoutSetUseCase;
 use App\UseCase\Training\UpdateWorkoutUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Workouts, logged live. Every route works on the workouts of the account the access token
@@ -62,7 +60,7 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  * block, a movement, a set — answers the whole workout, so a screen redraws from one response.
  */
 #[OA\Tag(name: 'Workouts')]
-final class WorkoutController extends AbstractController
+final class WorkoutController extends AbstractBaseController
 {
     #[Route('/api/workouts', methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer'))]
@@ -81,11 +79,10 @@ final class WorkoutController extends AbstractController
     )]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Invalid page or perPage.')]
     public function listWorkouts(
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] ListWorkoutsDataInput $input,
         ListWorkoutsUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input));
     }
 
     #[Route('/api/workouts', methods: Request::METHOD_POST)]
@@ -93,11 +90,10 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_CREATED, description: 'Started now, empty.', content: new OA\JsonContent(ref: new Model(type: WorkoutDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Another workout is in progress, or the name is too long.')]
     public function startWorkout(
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] StartWorkoutDataInput $input,
         StartWorkoutUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/workouts/{id}/copy', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -107,20 +103,18 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A workout is in progress.')]
     public function copyWorkout(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         CopyWorkoutUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id), Response::HTTP_CREATED);
     }
 
     #[Route('/api/workouts/current', methods: Request::METHOD_GET)]
     #[OA\Response(response: Response::HTTP_OK, description: 'The workout in progress, whole.', content: new OA\JsonContent(ref: new Model(type: WorkoutDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'No workout in progress.')]
     public function getCurrentWorkout(
-        #[CurrentUser] SecurityUser $securityUser,
         GetCurrentWorkoutUseCase $useCase,
     ): JsonResponse {
-        $output = $useCase->execute($securityUser->id);
+        $output = $useCase->execute($this->getCurrentUser());
 
         return null === $output ? new JsonResponse(null, Response::HTTP_NO_CONTENT) : new JsonResponse($output);
     }
@@ -134,7 +128,7 @@ final class WorkoutController extends AbstractController
     public function listWorkoutMovements(
         ListWorkoutMovementsUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/workouts/set-types', methods: Request::METHOD_GET)]
@@ -146,7 +140,7 @@ final class WorkoutController extends AbstractController
     public function listWorkoutSetTypes(
         ListWorkoutSetTypesUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/workouts/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
@@ -155,10 +149,9 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such workout on this account, or nothing with that id in it.')]
     public function getWorkout(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         GetWorkoutUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/workouts/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -169,11 +162,10 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Name or note too long, or feeling out of 1–5.')]
     public function updateWorkout(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] UpdateWorkoutDataInput $input,
         UpdateWorkoutUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/workouts/{id}/finish', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -183,10 +175,9 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'The workout has no set, or a set not ticked as done.')]
     public function finishWorkout(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         FinishWorkoutUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/workouts/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -195,10 +186,9 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such workout on this account, or nothing with that id in it.')]
     public function deleteWorkout(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         DeleteWorkoutUseCase $useCase,
     ): JsonResponse {
-        $useCase->execute($securityUser->id, $id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
@@ -206,10 +196,9 @@ final class WorkoutController extends AbstractController
     #[Route('/api/workouts/personal-bests', methods: Request::METHOD_GET)]
     #[OA\Response(response: Response::HTTP_OK, description: 'The account\'s records: those of whole workouts, then movement by movement, each with its progression.', content: new OA\JsonContent(ref: new Model(type: PersonalBestBoardDataOutput::class)))]
     public function listPersonalBests(
-        #[CurrentUser] SecurityUser $securityUser,
         ListPersonalBestsUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/workouts/{id}/stats', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
@@ -218,10 +207,9 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such workout on this account.')]
     public function getWorkoutStats(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         GetWorkoutStatsUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/workouts/{id}/previous-performances', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
@@ -234,10 +222,9 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such workout on this account, or nothing with that id in it.')]
     public function listWorkoutPreviousPerformances(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         ListWorkoutPreviousPerformancesUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/workouts/{id}/blocks', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -248,11 +235,10 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'No movement, too many, duplicated, or one not offered.')]
     public function addWorkoutBlock(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] AddWorkoutBlockDataInput $input,
         AddWorkoutBlockUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/workouts/{id}/blocks/order', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -263,11 +249,10 @@ final class WorkoutController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'The list is not exactly the workout\'s blocks.')]
     public function reorderWorkoutBlocks(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] ReorderWorkoutBlocksDataInput $input,
         ReorderWorkoutBlocksUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/workouts/{id}/blocks/{blockId}', requirements: ['id' => '\d+', 'blockId' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -278,10 +263,9 @@ final class WorkoutController extends AbstractController
     public function deleteWorkoutBlock(
         int $id,
         int $blockId,
-        #[CurrentUser] SecurityUser $securityUser,
         DeleteWorkoutBlockUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $blockId));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $blockId));
     }
 
     #[Route('/api/workouts/{id}/blocks/{blockId}/exercises', requirements: ['id' => '\d+', 'blockId' => '\d+'], methods: Request::METHOD_POST)]
@@ -294,11 +278,10 @@ final class WorkoutController extends AbstractController
     public function addWorkoutExercise(
         int $id,
         int $blockId,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] AddWorkoutExerciseDataInput $input,
         AddWorkoutExerciseUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $blockId, $input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $blockId, $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/workouts/{id}/exercises/{exerciseId}', requirements: ['id' => '\d+', 'exerciseId' => '\d+'], methods: Request::METHOD_PUT)]
@@ -311,11 +294,10 @@ final class WorkoutController extends AbstractController
     public function updateWorkoutExercise(
         int $id,
         int $exerciseId,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] UpdateWorkoutExerciseDataInput $input,
         UpdateWorkoutExerciseUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $exerciseId, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $exerciseId, $input));
     }
 
     #[Route('/api/workouts/{id}/exercises/{exerciseId}', requirements: ['id' => '\d+', 'exerciseId' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -326,10 +308,9 @@ final class WorkoutController extends AbstractController
     public function deleteWorkoutExercise(
         int $id,
         int $exerciseId,
-        #[CurrentUser] SecurityUser $securityUser,
         DeleteWorkoutExerciseUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $exerciseId));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $exerciseId));
     }
 
     #[Route('/api/workouts/{id}/exercises/{exerciseId}/sets', requirements: ['id' => '\d+', 'exerciseId' => '\d+'], methods: Request::METHOD_POST)]
@@ -342,11 +323,10 @@ final class WorkoutController extends AbstractController
     public function addWorkoutSet(
         int $id,
         int $exerciseId,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] AddWorkoutSetDataInput $input,
         AddWorkoutSetUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $exerciseId, $input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $exerciseId, $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/workouts/{id}/sets/{setId}', requirements: ['id' => '\d+', 'setId' => '\d+'], methods: Request::METHOD_PUT)]
@@ -359,11 +339,10 @@ final class WorkoutController extends AbstractController
     public function updateWorkoutSet(
         int $id,
         int $setId,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] UpdateWorkoutSetDataInput $input,
         UpdateWorkoutSetUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $setId, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $setId, $input));
     }
 
     #[Route('/api/workouts/{id}/sets/{setId}', requirements: ['id' => '\d+', 'setId' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -374,10 +353,9 @@ final class WorkoutController extends AbstractController
     public function deleteWorkoutSet(
         int $id,
         int $setId,
-        #[CurrentUser] SecurityUser $securityUser,
         DeleteWorkoutSetUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $setId));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $setId));
     }
 
     #[Route('/api/workouts/{id}/sets/{setId}/complete', requirements: ['id' => '\d+', 'setId' => '\d+'], methods: Request::METHOD_POST)]
@@ -389,10 +367,9 @@ final class WorkoutController extends AbstractController
     public function completeWorkoutSet(
         int $id,
         int $setId,
-        #[CurrentUser] SecurityUser $securityUser,
         CompleteWorkoutSetUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $setId));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $setId));
     }
 
     #[Route('/api/workouts/{id}/sets/{setId}/complete', requirements: ['id' => '\d+', 'setId' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -404,9 +381,8 @@ final class WorkoutController extends AbstractController
     public function uncompleteWorkoutSet(
         int $id,
         int $setId,
-        #[CurrentUser] SecurityUser $securityUser,
         UncompleteWorkoutSetUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $setId));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $setId));
     }
 }

@@ -8,8 +8,8 @@ use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\DTO\Input\Todo\ListTasksDataInput;
 use App\Domain\DTO\Input\Todo\UpdateTaskDataInput;
 use App\Domain\DTO\Output\Todo\TaskDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\Infrastructure\Security\SecurityUser;
 use App\UseCase\Todo\CompleteTaskUseCase;
 use App\UseCase\Todo\CreateTaskUseCase;
 use App\UseCase\Todo\DeleteTaskUseCase;
@@ -19,19 +19,17 @@ use App\UseCase\Todo\ReopenTaskUseCase;
 use App\UseCase\Todo\UpdateTaskUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * The todo list. Every route works on the tasks of the account the access token belongs to:
  * someone else's task is answered as not found.
  */
 #[OA\Tag(name: 'Tasks')]
-final class TaskController extends AbstractController
+final class TaskController extends AbstractBaseController
 {
     #[Route('/api/tasks', methods: Request::METHOD_GET)]
     #[OA\Parameter(
@@ -46,11 +44,10 @@ final class TaskController extends AbstractController
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: TaskDataOutput::class))),
     )]
     public function listTasks(
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] ListTasksDataInput $input,
         ListTasksUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input));
     }
 
     #[Route('/api/tasks', methods: Request::METHOD_POST)]
@@ -62,20 +59,19 @@ final class TaskController extends AbstractController
     )]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Invalid payload.')]
     public function createTask(
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] CreateTaskDataInput $input,
         CreateTaskUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/tasks/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_OK, description: 'The task, with its subtasks.', content: new OA\JsonContent(ref: new Model(type: TaskDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such task on this account.')]
-    public function getTask(int $id, #[CurrentUser] SecurityUser $securityUser, GetTaskUseCase $useCase): JsonResponse
+    public function getTask(int $id, GetTaskUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/tasks/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -86,20 +82,19 @@ final class TaskController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Invalid payload.')]
     public function updateTask(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] UpdateTaskDataInput $input,
         UpdateTaskUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/tasks/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_NO_CONTENT, description: 'Deleted, with its subtasks.')]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such task on this account.')]
-    public function deleteTask(int $id, #[CurrentUser] SecurityUser $securityUser, DeleteTaskUseCase $useCase): JsonResponse
+    public function deleteTask(int $id, DeleteTaskUseCase $useCase): JsonResponse
     {
-        $useCase->execute($securityUser->id, $id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
@@ -109,17 +104,17 @@ final class TaskController extends AbstractController
     #[OA\Response(response: Response::HTTP_OK, description: 'The task, ticked off.', content: new OA\JsonContent(ref: new Model(type: TaskDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such task on this account.')]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A subtask is still open.')]
-    public function completeTask(int $id, #[CurrentUser] SecurityUser $securityUser, CompleteTaskUseCase $useCase): JsonResponse
+    public function completeTask(int $id, CompleteTaskUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/tasks/{id}/reopen', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
     #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
     #[OA\Response(response: Response::HTTP_OK, description: 'The task, back on the list.', content: new OA\JsonContent(ref: new Model(type: TaskDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such task on this account.')]
-    public function reopenTask(int $id, #[CurrentUser] SecurityUser $securityUser, ReopenTaskUseCase $useCase): JsonResponse
+    public function reopenTask(int $id, ReopenTaskUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 }

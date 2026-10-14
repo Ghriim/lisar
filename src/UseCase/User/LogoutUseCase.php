@@ -7,6 +7,7 @@ namespace App\UseCase\User;
 use App\Domain\Gateway\Persister\User\SessionPersisterGateway;
 use App\Domain\Gateway\Provider\User\SessionProviderGateway;
 use App\Domain\User\RefreshTokenGenerator;
+use App\Domain\Validation\Validator\User\LogoutValidator;
 use App\UseCase\UseCaseInterface;
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
@@ -22,6 +23,7 @@ use Psr\Clock\ClockInterface;
 final readonly class LogoutUseCase implements UseCaseInterface
 {
     public function __construct(
+        private LogoutValidator $validator,
         private SessionProviderGateway $sessionProviderGateway,
         private SessionPersisterGateway $sessionPersisterGateway,
         private RefreshTokenGenerator $refreshTokenGenerator,
@@ -31,6 +33,8 @@ final readonly class LogoutUseCase implements UseCaseInterface
 
     public function execute(string $refreshToken): void
     {
+        $this->validator->validate();
+
         // A token that was already spent still identifies whose sessions to drop: after a
         // rotation raced with a sign-out, the caller holds the previous one and still means it.
         $session = $this->sessionProviderGateway->findOneByRefreshTokenHash(

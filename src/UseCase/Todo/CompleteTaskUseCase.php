@@ -11,8 +11,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
-use App\Domain\Validation\Constraint\Todo\TaskClosableConstraint;
+use App\Domain\Validation\Validator\Todo\CompleteTaskValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 use DateTimeImmutable;
@@ -24,10 +23,8 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class CompleteTaskUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'complete_task_invalid';
-
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private CompleteTaskValidator $validator,
         private TaskProviderGateway $taskProviderGateway,
         private TaskPersisterGateway $taskPersisterGateway,
         private TaskOutputFactory $outputFactory,
@@ -39,26 +36,19 @@ final readonly class CompleteTaskUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $taskId): TaskDataOutput
+    public function execute(UserDataModel $currentUser, int $taskId): TaskDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $task = $this->taskProviderGateway->findOneByIdForOwner($taskId, $owner);
+        $task = $this->taskProviderGateway->findOneById($taskId);
         if (null === $task) {
             throw new DataModelNotFoundException(TaskDataModel::class);
         }
 
+        // Validated first, done or not: a task that is someone else's is not handed back either.
+        $this->validator->validate($currentUser, $task);
+
         if (true === $task->isDone()) {
             // Already ticked off: the caller wanted it done and it is.
             return $this->outputFactory->buildOne($task);
-        }
-
-        $violations = TaskClosableConstraint::validate($task);
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
         }
 
         $task->completedAt = DateTimeImmutable::createFromInterface($this->clock->now());

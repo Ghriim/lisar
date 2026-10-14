@@ -12,7 +12,6 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutSummaryOutputFactory;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutSummaryProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Training\ListWorkoutsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -25,7 +24,6 @@ final readonly class ListWorkoutsUseCase implements UseCaseInterface
 {
     public function __construct(
         private ListWorkoutsValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutSummaryProviderGateway $workoutSummaryProviderGateway,
         private WorkoutSummaryOutputFactory $outputFactory,
@@ -38,21 +36,16 @@ final readonly class ListWorkoutsUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, ListWorkoutsDataInput $input = new ListWorkoutsDataInput()): PaginatedListDataOutput
+    public function execute(UserDataModel $currentUser, ListWorkoutsDataInput $input = new ListWorkoutsDataInput()): PaginatedListDataOutput
     {
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workouts = $this->workoutProviderGateway->findFinishedPageForOwner($owner, $input->getOffset(), $input->perPage);
+        $workouts = $this->workoutProviderGateway->findFinishedPageForOwner($currentUser, $input->getOffset(), $input->perPage);
 
         return $this->outputFactory->buildPaginated(
             $workouts,
             $this->workoutSummaryProviderGateway->findAllForWorkouts($workouts),
-            $this->workoutProviderGateway->countFinishedForOwner($owner),
+            $this->workoutProviderGateway->countFinishedForOwner($currentUser),
             $input->page,
             $input->perPage,
         );

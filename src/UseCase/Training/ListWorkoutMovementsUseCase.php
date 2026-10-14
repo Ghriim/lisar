@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\UseCase\Training;
 
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Training\MovementDataOutput;
 use App\Domain\Factory\OutputFactory\Training\MovementOutputFactory;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
+use App\Domain\Validation\Validator\Training\ListWorkoutMovementsValidator;
 use App\UseCase\UseCaseInterface;
 
 /**
@@ -16,6 +18,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListWorkoutMovementsUseCase implements UseCaseInterface
 {
     public function __construct(
+        private ListWorkoutMovementsValidator $validator,
         private MovementProviderGateway $movementProviderGateway,
         private MovementOutputFactory $outputFactory,
     ) {
@@ -24,8 +27,10 @@ final readonly class ListWorkoutMovementsUseCase implements UseCaseInterface
     /**
      * @return list<MovementDataOutput>
      */
-    public function execute(): array
+    public function execute(UserDataModel $currentUser): array
     {
+        $this->validator->validate($currentUser);
+
         return $this->outputFactory->buildMany($this->movementProviderGateway->findAllOffered());
     }
 }

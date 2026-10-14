@@ -3,6 +3,7 @@
  * the back-office's way — terser than the website's, because whoever reads it works here.
  */
 const MESSAGES: Record<string, string> = {
+    not_allowed: 'Accès refusé : réservé aux administrateurs.',
     label_required: 'Un libellé est requis.',
     label_too_long: '32 caractères maximum.',
     colour_required: 'Une couleur est requise.',

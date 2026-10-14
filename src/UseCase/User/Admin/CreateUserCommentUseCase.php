@@ -27,26 +27,25 @@ final readonly class CreateUserCommentUseCase implements UseCaseInterface
     }
 
     /**
-     * @param int $authorId the administrator writing the note, taken from their access token
-     *                      and never from the payload
+     * @param UserDataModel $currentUser the administrator writing the note, taken from their
+     *                                   access token and never from the payload
      *
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $userId, int $authorId, CreateUserCommentDataInput $input): UserCommentDataOutput
+    public function execute(UserDataModel $currentUser, int $userId, CreateUserCommentDataInput $input): UserCommentDataOutput
     {
         $user = $this->userProviderGateway->findOneById($userId);
-        $author = $this->userProviderGateway->findOneById($authorId);
 
-        if (null === $user || null === $author) {
+        if (null === $user) {
             throw new DataModelNotFoundException(UserDataModel::class);
         }
 
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $comment = new UserCommentDataModel();
         $comment->user = $user;
-        $comment->author = $author;
+        $comment->author = $currentUser;
         $comment->body = $input->body;
 
         $this->userCommentPersisterGateway->create($comment);

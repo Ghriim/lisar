@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Validation\Validator\Tracking\Weight;
 
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Tracking\Weight\SaveWeightDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
@@ -18,7 +19,7 @@ final readonly class SaveWeightValidator extends AbstractBaseValidator
     /**
      * @throws ValidationException
      */
-    public function validate(SaveWeightDataInput $input): void
+    public function validate(UserDataModel $currentUser, SaveWeightDataInput $input): void
     {
         $violations = $this->getViolations($input);
 

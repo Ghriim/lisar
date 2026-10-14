@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\CreateSetTypeDataInput;
 use App\Domain\DTO\Output\Training\SetTypeDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -31,9 +32,9 @@ final readonly class CreateSetTypeUseCase implements UseCaseInterface
     /**
      * @throws ValidationException
      */
-    public function execute(CreateSetTypeDataInput $input): SetTypeDataOutput
+    public function execute(UserDataModel $currentUser, CreateSetTypeDataInput $input): SetTypeDataOutput
     {
-        $this->validator->validate($input, $this->setTypeProviderGateway->findOneByName($input->name));
+        $this->validator->validate($currentUser, $input, $this->setTypeProviderGateway->findOneByName($input->name));
 
         $setType = new SetTypeDataModel();
         $setType->name = $input->name;

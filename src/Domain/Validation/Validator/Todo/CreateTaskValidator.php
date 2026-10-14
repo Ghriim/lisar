@@ -30,6 +30,7 @@ final readonly class CreateTaskValidator extends AbstractBaseValidator
      * @throws ValidationException
      */
     public function validate(
+        UserDataModel $currentUser,
         CreateTaskDataInput $input,
         ?PriorityDataModel $priority,
         ?CategoryDataModel $category,
@@ -39,7 +40,7 @@ final readonly class CreateTaskValidator extends AbstractBaseValidator
         $violations = $this->getViolations($input);
         $violations = PriorityExistsConstraint::validate($input->priorityId, $priority, $violations);
         $violations = CategoryUsableConstraint::validate($input->categoryId, $category, $owner, $violations);
-        $violations = ParentTaskUsableConstraint::validate($input->parentId, $parent, $violations);
+        $violations = ParentTaskUsableConstraint::validate($input->parentId, $parent, $currentUser, $violations);
 
         if (false === empty($violations)) {
             throw new ValidationException(self::ERROR_CODE, $violations);

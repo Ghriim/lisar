@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Validation\Validator\Tracking\Step;
 
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Tracking\Step\SaveStepDayDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
@@ -18,7 +19,7 @@ final readonly class SaveStepDayValidator extends AbstractBaseValidator
     /**
      * @throws ValidationException
      */
-    public function validate(SaveStepDayDataInput $input): void
+    public function validate(UserDataModel $currentUser, SaveStepDayDataInput $input): void
     {
         $violations = $this->getViolations($input);
 

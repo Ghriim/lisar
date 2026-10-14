@@ -7,6 +7,7 @@ namespace App\Infrastructure\Controller\Tracking\Hydration\Admin;
 use App\Domain\DTO\Input\Tracking\Hydration\CreateHydrationPresetDataInput;
 use App\Domain\DTO\Input\Tracking\Hydration\UpdateHydrationPresetDataInput;
 use App\Domain\DTO\Output\Tracking\Hydration\HydrationPresetDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Tracking\Hydration\Admin\CreateHydrationPresetUseCase;
 use App\UseCase\Tracking\Hydration\Admin\DeleteHydrationPresetUseCase;
@@ -14,7 +15,6 @@ use App\UseCase\Tracking\Hydration\Admin\UpdateHydrationPresetUseCase;
 use App\UseCase\Tracking\Hydration\ListHydrationPresetsUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,7 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * say it, and a word would have to be translated by each front end anyway.
  */
 #[OA\Tag(name: 'Admin — hydration')]
-final class AdminHydrationPresetController extends AbstractController
+final class AdminHydrationPresetController extends AbstractBaseController
 {
     #[Route('/api/admin/hydration/presets', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -35,7 +35,7 @@ final class AdminHydrationPresetController extends AbstractController
     )]
     public function listPresets(ListHydrationPresetsUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/admin/hydration/presets', methods: Request::METHOD_POST)]
@@ -50,7 +50,7 @@ final class AdminHydrationPresetController extends AbstractController
         #[MapDataInput] CreateHydrationPresetDataInput $input,
         CreateHydrationPresetUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/hydration/presets/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -68,7 +68,7 @@ final class AdminHydrationPresetController extends AbstractController
         #[MapDataInput] UpdateHydrationPresetDataInput $input,
         UpdateHydrationPresetUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/admin/hydration/presets/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -77,7 +77,7 @@ final class AdminHydrationPresetController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such shortcut.')]
     public function deletePreset(int $id, DeleteHydrationPresetUseCase $useCase): JsonResponse
     {
-        $useCase->execute($id);
+        $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

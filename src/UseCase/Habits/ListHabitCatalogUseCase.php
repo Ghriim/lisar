@@ -9,7 +9,7 @@ use App\Domain\DTO\Output\Habits\HabitCatalogItemDataOutput;
 use App\Domain\Factory\OutputFactory\Habits\HabitCatalogItemOutputFactory;
 use App\Domain\Gateway\Provider\Habits\HabitProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Habits\ListHabitCatalogValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -17,7 +17,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListHabitCatalogUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ListHabitCatalogValidator $validator,
         private HabitProviderGateway $habitProviderGateway,
         private HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
         private HabitCatalogItemOutputFactory $outputFactory,
@@ -29,15 +29,12 @@ final readonly class ListHabitCatalogUseCase implements UseCaseInterface
      *
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): array
+    public function execute(UserDataModel $currentUser): array
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
         $subscribedHabitIds = [];
-        foreach ($this->habitSubscriptionProviderGateway->findActiveForOwner($owner) as $subscription) {
+        foreach ($this->habitSubscriptionProviderGateway->findActiveForOwner($currentUser) as $subscription) {
             $subscribedHabitIds[] = $subscription->habit->id ?? 0;
         }
 

@@ -8,7 +8,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Tracking\Weight\WeightDataOutput;
 use App\Domain\Factory\OutputFactory\Tracking\Weight\WeightOutputFactory;
 use App\Domain\Gateway\Provider\Tracking\Weight\WeightEntryProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Tracking\Weight\GetLatestWeightValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -20,7 +20,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class GetLatestWeightUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private GetLatestWeightValidator $validator,
         private WeightEntryProviderGateway $weightEntryProviderGateway,
         private WeightOutputFactory $outputFactory,
     ) {
@@ -29,14 +29,11 @@ final readonly class GetLatestWeightUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): WeightDataOutput
+    public function execute(UserDataModel $currentUser): WeightDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
-        $entry = $this->weightEntryProviderGateway->findLatestForOwner($owner);
+        $entry = $this->weightEntryProviderGateway->findLatestForOwner($currentUser);
 
         if (null === $entry) {
             return $this->outputFactory->buildEmpty();

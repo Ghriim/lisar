@@ -10,17 +10,22 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\User\SessionProviderGateway;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Registry\User\SessionAudienceRegistry;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\User\SelfDeactivationConstraint;
+use App\Domain\Validation\Validator\User\Admin\DeactivateUserValidator;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\DeactivateUserUseCase;
 use App\UseCase\User\LoginUseCase;
+use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class DeactivateUserUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private DeactivateUserUseCase $useCase;
     private LoginUseCase $createSessionUseCase;
@@ -46,7 +51,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         self::assertNotNull($alice->id);
         self::assertNotNull($admin->id);
 
-        $output = $this->useCase->execute($alice->id, $admin->id);
+        $output = $this->useCase->execute($this->currentUser($admin->id), $alice->id);
 
         self::assertFalse($output->isActive);
 
@@ -69,7 +74,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         self::assertNotNull($admin->id);
         self::assertCount(1, $this->sessionProviderGateway->findAllLiveForUser($alice));
 
-        $this->useCase->execute($alice->id, $admin->id);
+        $this->useCase->execute($this->currentUser($admin->id), $alice->id);
 
         self::assertSame([], $this->sessionProviderGateway->findAllLiveForUser($alice));
     }
@@ -80,16 +85,30 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         self::assertNotNull($admin->id);
 
         try {
-            $this->useCase->execute($admin->id, $admin->id);
+            $this->useCase->execute($this->currentUser($admin->id), $admin->id);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeactivateUserUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeactivateUserValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([SelfDeactivationConstraint::CANNOT_DEACTIVATE_YOURSELF], $exception->violations['id']);
         }
 
         $reread = $this->userProviderGateway->findOneById($admin->id);
         self::assertNotNull($reread);
         self::assertTrue($reread->isActive);
+    }
+
+    /** The back-office checks the role itself, not only the firewall: a user is not allowed. */
+    public function testAUserIsNotAllowed(): void
+    {
+        $alice = $this->userProviderGateway->findOneByEmail('alice@lisar.test') ?? throw new LogicException('Alice was not seeded.');
+        $bob = $this->userProviderGateway->findOneByEmail('bob@lisar.test') ?? throw new LogicException('Bob was not seeded.');
+
+        try {
+            $this->useCase->execute($alice, $bob->id ?? 0);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItIsIdempotentOnAnAlreadyDeactivatedAccount(): void
@@ -99,7 +118,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         self::assertNotNull($bob->id);
         self::assertNotNull($admin->id);
 
-        self::assertFalse($this->useCase->execute($bob->id, $admin->id)->isActive);
+        self::assertFalse($this->useCase->execute($this->currentUser($admin->id), $bob->id)->isActive);
     }
 
     public function testItFailsOnAnUnknownAccount(): void
@@ -108,7 +127,7 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         self::assertNotNull($admin->id);
 
         try {
-            $this->useCase->execute(123456789, $admin->id);
+            $this->useCase->execute($this->currentUser($admin->id), 123456789);
             self::fail('Expected DataModelNotFoundException');
         } catch (DataModelNotFoundException $exception) {
             self::assertSame(UserDataModel::class, $exception->dataModelClass);

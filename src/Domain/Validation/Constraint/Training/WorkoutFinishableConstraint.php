@@ -23,6 +23,11 @@ final readonly class WorkoutFinishableConstraint
      */
     public static function validate(WorkoutDataModel $workout, array $violations = []): array
     {
+        // One already finished is not finished again: there is nothing to refuse.
+        if (false === $workout->isInProgress()) {
+            return $violations;
+        }
+
         if (0 === $workout->countSets()) {
             $violations['workout'][] = self::EMPTY;
         }

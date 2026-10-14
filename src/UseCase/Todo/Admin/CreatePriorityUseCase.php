@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Todo\Admin;
 
 use App\Domain\DTO\DataModel\Todo\PriorityDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\Admin\CreatePriorityDataInput;
 use App\Domain\DTO\Output\Todo\PriorityDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -27,11 +28,11 @@ final readonly class CreatePriorityUseCase implements UseCaseInterface
     /**
      * @throws ValidationException
      */
-    public function execute(CreatePriorityDataInput $input): PriorityDataOutput
+    public function execute(UserDataModel $currentUser, CreatePriorityDataInput $input): PriorityDataOutput
     {
         $existing = $this->priorityProviderGateway->findAllOrderedByWeight();
 
-        $this->validator->validate($input, $this->findByLabel($existing, $input->label));
+        $this->validator->validate($currentUser, $input, $this->findByLabel($existing, $input->label));
 
         $priority = new PriorityDataModel();
         $priority->label = $input->label;

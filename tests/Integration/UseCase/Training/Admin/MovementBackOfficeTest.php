@@ -30,6 +30,10 @@ use App\Domain\Validation\Constraint\Training\MovementNameAvailableConstraint;
 use App\Domain\Validation\Constraint\Training\MovementUnusedConstraint;
 use App\Domain\Validation\Constraint\Training\MuscleUnusedConstraint;
 use App\Domain\Validation\Validator\Training\CreateMovementValidator;
+use App\Domain\Validation\Validator\Training\DeleteEquipmentValidator;
+use App\Domain\Validation\Validator\Training\DeleteMovementFamilyValidator;
+use App\Domain\Validation\Validator\Training\DeleteMovementValidator;
+use App\Domain\Validation\Validator\Training\DeleteMuscleValidator;
 use App\Domain\Validation\Validator\Training\UpdateMovementValidator;
 use App\Fixtures\Training\EquipmentFixtures;
 use App\Fixtures\Training\MovementFamilyFixtures;
@@ -38,6 +42,7 @@ use App\Fixtures\Training\MuscleGroupFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Training\AddWorkoutBlockUseCase;
 use App\UseCase\Training\Admin\CreateMovementFamilyUseCase;
 use App\UseCase\Training\Admin\CreateMovementUseCase;
@@ -59,6 +64,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class MovementBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     /** How many movements and families the fixtures seed. */
     private const int SEEDED_MOVEMENTS = 68;
@@ -79,13 +85,13 @@ final class MovementBackOfficeTest extends KernelTestCase
 
     public function testItListsEveryFamily(): void
     {
-        self::assertCount(self::SEEDED_FAMILIES, self::getContainer()->get(ListMovementFamiliesForAdminUseCase::class)->execute());
+        self::assertCount(self::SEEDED_FAMILIES, self::getContainer()->get(ListMovementFamiliesForAdminUseCase::class)->execute($this->currentAdmin()));
     }
 
     public function testItRefusesAFamilyNameAlreadyTakenIgnoringCase(): void
     {
         try {
-            self::getContainer()->get(CreateMovementFamilyUseCase::class)->execute(new CreateMovementFamilyDataInput('bench press'));
+            self::getContainer()->get(CreateMovementFamilyUseCase::class)->execute($this->currentAdmin(), new CreateMovementFamilyDataInput('bench press'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(MovementFamilyNameAvailableConstraint::NAME_ALREADY_USED, $exception->violations['name']);
@@ -94,23 +100,23 @@ final class MovementBackOfficeTest extends KernelTestCase
 
     public function testItDeletesAnEmptyFamily(): void
     {
-        $family = self::getContainer()->get(CreateMovementFamilyUseCase::class)->execute(new CreateMovementFamilyDataInput('Clean'));
+        $family = self::getContainer()->get(CreateMovementFamilyUseCase::class)->execute($this->currentAdmin(), new CreateMovementFamilyDataInput('Clean'));
 
-        self::getContainer()->get(DeleteMovementFamilyUseCase::class)->execute($family->id);
+        self::getContainer()->get(DeleteMovementFamilyUseCase::class)->execute($this->currentAdmin(), $family->id);
 
         self::assertNotContains('Clean', array_map(
             static fn ($output) => $output->name,
-            self::getContainer()->get(ListMovementFamiliesForAdminUseCase::class)->execute(),
+            self::getContainer()->get(ListMovementFamiliesForAdminUseCase::class)->execute($this->currentAdmin()),
         ));
     }
 
     public function testItRefusesToDeleteAFamilyHoldingMovements(): void
     {
         try {
-            self::getContainer()->get(DeleteMovementFamilyUseCase::class)->execute($this->family(MovementFamilyFixtures::PLANK)->id ?? 0);
+            self::getContainer()->get(DeleteMovementFamilyUseCase::class)->execute($this->currentAdmin(), $this->family(MovementFamilyFixtures::PLANK)->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteMovementFamilyUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteMovementFamilyValidator::ERROR_CODE, $exception->errorCode);
             self::assertContains(MovementFamilyUnusedConstraint::IN_USE, $exception->violations['id']);
         }
     }
@@ -185,7 +191,7 @@ final class MovementBackOfficeTest extends KernelTestCase
 
     public function testTheFiltersCombine(): void
     {
-        self::getContainer()->get(DeactivateMovementUseCase::class)->execute($this->movement(MovementFixtures::BENCH_PRESS_BARBELL)->id ?? 0);
+        self::getContainer()->get(DeactivateMovementUseCase::class)->execute($this->currentAdmin(), $this->movement(MovementFixtures::BENCH_PRESS_BARBELL)->id ?? 0);
 
         self::assertSame(['Bench press (dumbbell)'], $this->names(new ListMovementsForAdminDataInput(
             isActive: true,
@@ -197,7 +203,7 @@ final class MovementBackOfficeTest extends KernelTestCase
 
     public function testItCreatesAMovement(): void
     {
-        $output = self::getContainer()->get(CreateMovementUseCase::class)->execute($this->create('Floor press (dumbbell)'));
+        $output = self::getContainer()->get(CreateMovementUseCase::class)->execute($this->currentAdmin(), $this->create('Floor press (dumbbell)'));
 
         self::assertSame('Floor press (dumbbell)', $output->name);
         self::assertSame('Bench press', $output->movementFamilyName);
@@ -216,7 +222,7 @@ final class MovementBackOfficeTest extends KernelTestCase
     /** No equipment at all is a bodyweight movement, and it is allowed. */
     public function testABodyweightMovementHasNoEquipment(): void
     {
-        $output = self::getContainer()->get(CreateMovementUseCase::class)->execute($this->create('Diamond push-up', equipmentIds: []));
+        $output = self::getContainer()->get(CreateMovementUseCase::class)->execute($this->currentAdmin(), $this->create('Diamond push-up', equipmentIds: []));
 
         self::assertSame([], $output->equipments);
     }
@@ -229,7 +235,7 @@ final class MovementBackOfficeTest extends KernelTestCase
     public function testItRefusesAnInactiveFamily(): void
     {
         $family = $this->family(MovementFamilyFixtures::BENCH_PRESS);
-        self::getContainer()->get(DeactivateMovementFamilyUseCase::class)->execute($family->id ?? 0);
+        self::getContainer()->get(DeactivateMovementFamilyUseCase::class)->execute($this->currentAdmin(), $family->id ?? 0);
 
         $this->assertCreateRefused($this->create('Floor press (dumbbell)'), 'movementFamilyId', MovementFamilyUsableConstraint::MOVEMENT_FAMILY_INACTIVE);
     }
@@ -237,7 +243,7 @@ final class MovementBackOfficeTest extends KernelTestCase
     public function testItRefusesAPrimaryMuscleInAnInactiveGroup(): void
     {
         self::getContainer()->get(DeactivateMuscleGroupUseCase::class)
-            ->execute($this->getReference(MuscleGroupFixtures::CHEST, MuscleGroupDataModel::class)->id ?? 0);
+            ->execute($this->currentAdmin(), $this->getReference(MuscleGroupFixtures::CHEST, MuscleGroupDataModel::class)->id ?? 0);
 
         $this->assertCreateRefused($this->create('Floor press (dumbbell)'), 'primaryMuscleId', MovementMusclesConstraint::PRIMARY_MUSCLE_UNAVAILABLE);
     }
@@ -265,7 +271,7 @@ final class MovementBackOfficeTest extends KernelTestCase
     public function testItRefusesAnInactiveEquipment(): void
     {
         $dumbbell = $this->getReference(EquipmentFixtures::DUMBBELL, EquipmentDataModel::class);
-        self::getContainer()->get(DeactivateEquipmentUseCase::class)->execute($dumbbell->id ?? 0);
+        self::getContainer()->get(DeactivateEquipmentUseCase::class)->execute($this->currentAdmin(), $dumbbell->id ?? 0);
 
         $this->assertCreateRefused($this->create('Floor press (dumbbell)'), 'equipmentIds', MovementEquipmentsConstraint::EQUIPMENT_INACTIVE);
     }
@@ -287,7 +293,7 @@ final class MovementBackOfficeTest extends KernelTestCase
         $pushUp = $this->movement(MovementFixtures::PUSH_UP);
         $vest = $this->equipmentNamed('Weighted vest');
 
-        $output = self::getContainer()->get(UpdateMovementUseCase::class)->execute($pushUp->id ?? 0, new UpdateMovementDataInput(
+        $output = self::getContainer()->get(UpdateMovementUseCase::class)->execute($this->currentAdmin(), $pushUp->id ?? 0, new UpdateMovementDataInput(
             name: 'Push-up (weighted vest)',
             movementFamilyId: $pushUp->movementFamily->id ?? 0,
             primaryMuscleId: $pushUp->primaryMuscle->id ?? 0,
@@ -312,11 +318,11 @@ final class MovementBackOfficeTest extends KernelTestCase
     {
         $bench = $this->movement(MovementFixtures::BENCH_PRESS_BARBELL);
         $barbell = $this->getReference(EquipmentFixtures::BARBELL, EquipmentDataModel::class);
-        self::getContainer()->get(DeactivateEquipmentUseCase::class)->execute($barbell->id ?? 0);
+        self::getContainer()->get(DeactivateEquipmentUseCase::class)->execute($this->currentAdmin(), $barbell->id ?? 0);
         self::getContainer()->get(DeactivateMuscleGroupUseCase::class)
-            ->execute($this->getReference(MuscleGroupFixtures::CHEST, MuscleGroupDataModel::class)->id ?? 0);
+            ->execute($this->currentAdmin(), $this->getReference(MuscleGroupFixtures::CHEST, MuscleGroupDataModel::class)->id ?? 0);
 
-        $output = self::getContainer()->get(UpdateMovementUseCase::class)->execute($bench->id ?? 0, $this->updateFrom($bench, 'Bench press (Olympic barbell)'));
+        $output = self::getContainer()->get(UpdateMovementUseCase::class)->execute($this->currentAdmin(), $bench->id ?? 0, $this->updateFrom($bench, 'Bench press (Olympic barbell)'));
 
         self::assertSame('Bench press (Olympic barbell)', $output->name);
         self::assertFalse($output->primaryMuscle->muscleGroupIsActive);
@@ -326,10 +332,10 @@ final class MovementBackOfficeTest extends KernelTestCase
     {
         $pushUp = $this->movement(MovementFixtures::PUSH_UP);
         $vest = $this->equipmentNamed('Weighted vest');
-        self::getContainer()->get(DeactivateEquipmentUseCase::class)->execute($vest->id ?? 0);
+        self::getContainer()->get(DeactivateEquipmentUseCase::class)->execute($this->currentAdmin(), $vest->id ?? 0);
 
         try {
-            self::getContainer()->get(UpdateMovementUseCase::class)->execute($pushUp->id ?? 0, new UpdateMovementDataInput(
+            self::getContainer()->get(UpdateMovementUseCase::class)->execute($this->currentAdmin(), $pushUp->id ?? 0, new UpdateMovementDataInput(
                 name: 'Push-up',
                 movementFamilyId: $pushUp->movementFamily->id ?? 0,
                 primaryMuscleId: $pushUp->primaryMuscle->id ?? 0,
@@ -347,14 +353,14 @@ final class MovementBackOfficeTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        self::getContainer()->get(DeleteMovementUseCase::class)->execute(123456789);
+        self::getContainer()->get(DeleteMovementUseCase::class)->execute($this->currentAdmin(), 123456789);
     }
 
     public function testItDeletesAMovement(): void
     {
         $id = $this->movement(MovementFixtures::FARMER_WALK_DUMBBELL)->id ?? 0;
 
-        self::getContainer()->get(DeleteMovementUseCase::class)->execute($id);
+        self::getContainer()->get(DeleteMovementUseCase::class)->execute($this->currentAdmin(), $id);
 
         self::assertNull($this->movementProviderGateway->findOneCommonById($id));
     }
@@ -366,14 +372,14 @@ final class MovementBackOfficeTest extends KernelTestCase
         $id = $this->movement(MovementFixtures::PUSH_UP)->id ?? 0;
         $aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
 
-        $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($aliceId, new StartWorkoutDataInput());
-        self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($aliceId, $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($id)]));
+        $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($this->currentUser($aliceId), new StartWorkoutDataInput());
+        self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($this->currentUser($aliceId), $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($id)]));
 
         try {
-            self::getContainer()->get(DeleteMovementUseCase::class)->execute($id);
+            self::getContainer()->get(DeleteMovementUseCase::class)->execute($this->currentAdmin(), $id);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteMovementUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteMovementValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([MovementUnusedConstraint::IN_USE], $exception->violations['id']);
         }
     }
@@ -384,10 +390,10 @@ final class MovementBackOfficeTest extends KernelTestCase
     {
         try {
             self::getContainer()->get(DeleteEquipmentUseCase::class)
-                ->execute($this->getReference(EquipmentFixtures::BENCH, EquipmentDataModel::class)->id ?? 0);
+                ->execute($this->currentAdmin(), $this->getReference(EquipmentFixtures::BENCH, EquipmentDataModel::class)->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteEquipmentUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteEquipmentValidator::ERROR_CODE, $exception->errorCode);
             self::assertContains(EquipmentUnusedConstraint::IN_USE, $exception->violations['id']);
         }
     }
@@ -396,7 +402,7 @@ final class MovementBackOfficeTest extends KernelTestCase
     {
         $foamRoller = $this->equipmentNamed('Foam roller');
 
-        self::getContainer()->get(DeleteEquipmentUseCase::class)->execute($foamRoller->id ?? 0);
+        self::getContainer()->get(DeleteEquipmentUseCase::class)->execute($this->currentAdmin(), $foamRoller->id ?? 0);
 
         self::assertNull(self::getContainer()->get(\App\Domain\Gateway\Provider\Training\EquipmentProviderGateway::class)->findOneByName('Foam roller'));
     }
@@ -405,10 +411,10 @@ final class MovementBackOfficeTest extends KernelTestCase
     public function testAMuscleAMovementTargetsCannotBeDeleted(): void
     {
         try {
-            self::getContainer()->get(DeleteMuscleUseCase::class)->execute($this->muscleNamed('Front delts')->id ?? 0);
+            self::getContainer()->get(DeleteMuscleUseCase::class)->execute($this->currentAdmin(), $this->muscleNamed('Front delts')->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteMuscleUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteMuscleValidator::ERROR_CODE, $exception->errorCode);
             self::assertContains(MuscleUnusedConstraint::IN_USE, $exception->violations['id']);
         }
     }
@@ -460,7 +466,7 @@ final class MovementBackOfficeTest extends KernelTestCase
     private function assertCreateRefused(CreateMovementDataInput $input, string $field, string $code): void
     {
         try {
-            self::getContainer()->get(CreateMovementUseCase::class)->execute($input);
+            self::getContainer()->get(CreateMovementUseCase::class)->execute($this->currentAdmin(), $input);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateMovementValidator::ERROR_CODE, $exception->errorCode);
@@ -472,7 +478,7 @@ final class MovementBackOfficeTest extends KernelTestCase
     /** @return list<\App\Domain\DTO\Output\Training\MovementDataOutput> */
     private function list(ListMovementsForAdminDataInput $input): array
     {
-        return self::getContainer()->get(ListMovementsForAdminUseCase::class)->execute($input);
+        return self::getContainer()->get(ListMovementsForAdminUseCase::class)->execute($this->currentAdmin(), $input);
     }
 
     /** @return list<string> */

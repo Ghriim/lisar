@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Tracking\Step;
 use App\Domain\DTO\Input\Tracking\Step\SaveStepDayDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Validator\Tracking\Step\SaveStepDayValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -14,6 +15,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 /** The one shape the step domain accepts, and the counts it refuses. */
 final class SaveStepDayValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private ValidatorInterface $validator;
 
     protected function setUp(): void
@@ -25,7 +28,7 @@ final class SaveStepDayValidatorTest extends TestCase
 
     public function testItAcceptsAPlausibleCount(): void
     {
-        (new SaveStepDayValidator($this->validator))->validate(new SaveStepDayDataInput(8432));
+        (new SaveStepDayValidator($this->validator))->validate($this->anyCurrentUser(), new SaveStepDayDataInput(8432));
 
         $this->expectNotToPerformAssertions();
     }
@@ -36,8 +39,8 @@ final class SaveStepDayValidatorTest extends TestCase
         $validator = new SaveStepDayValidator($this->validator);
 
         // Zero is a real answer: a day one did not walk.
-        $validator->validate(new SaveStepDayDataInput(0));
-        $validator->validate(new SaveStepDayDataInput(200000));
+        $validator->validate($this->anyCurrentUser(), new SaveStepDayDataInput(0));
+        $validator->validate($this->anyCurrentUser(), new SaveStepDayDataInput(200000));
 
         $this->expectNotToPerformAssertions();
     }
@@ -56,7 +59,7 @@ final class SaveStepDayValidatorTest extends TestCase
     private function assertRefusesCount(int $countInSteps): void
     {
         try {
-            (new SaveStepDayValidator($this->validator))->validate(new SaveStepDayDataInput($countInSteps));
+            (new SaveStepDayValidator($this->validator))->validate($this->anyCurrentUser(), new SaveStepDayDataInput($countInSteps));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(SaveStepDayValidator::ERROR_CODE, $exception->errorCode);

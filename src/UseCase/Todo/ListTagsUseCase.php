@@ -6,7 +6,7 @@ namespace App\UseCase\Todo;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Todo\ListTagsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -20,7 +20,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListTagsUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ListTagsValidator $validator,
         private TagProviderGateway $tagProviderGateway,
     ) {
     }
@@ -30,15 +30,12 @@ final readonly class ListTagsUseCase implements UseCaseInterface
      *
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): array
+    public function execute(UserDataModel $currentUser): array
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
         $labels = [];
-        foreach ($this->tagProviderGateway->findAllForOwner($owner) as $tag) {
+        foreach ($this->tagProviderGateway->findAllForOwner($currentUser) as $tag) {
             $labels[] = $tag->label;
         }
 

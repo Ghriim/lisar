@@ -7,14 +7,15 @@ namespace App\Tests\Integration\UseCase\Todo;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\User\UserFixtures;
-use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\ListCategoriesUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ListCategoriesUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListCategoriesUseCase $useCase;
 
@@ -31,7 +32,7 @@ final class ListCategoriesUseCaseTest extends KernelTestCase
     {
         $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
 
-        $categories = $this->useCase->execute($alice->id ?? 0);
+        $categories = $this->useCase->execute($this->currentUser($alice->id ?? 0));
 
         self::assertSame(['Home', 'Side project', 'Work'], array_map(
             static fn ($category) => $category->label,
@@ -49,14 +50,7 @@ final class ListCategoriesUseCaseTest extends KernelTestCase
 
         self::assertSame(['Home', 'Work'], array_map(
             static fn ($category) => $category->label,
-            $this->useCase->execute($admin->id ?? 0),
+            $this->useCase->execute($this->currentUser($admin->id ?? 0)),
         ));
-    }
-
-    public function testItFailsOnAnUnknownAccount(): void
-    {
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->useCase->execute(123456789);
     }
 }

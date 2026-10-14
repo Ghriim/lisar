@@ -8,12 +8,14 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\GetUserUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class GetUserUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private GetUserUseCase $useCase;
 
@@ -31,7 +33,7 @@ final class GetUserUseCaseTest extends KernelTestCase
         $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
         self::assertNotNull($alice->id);
 
-        $output = $this->useCase->execute($alice->id);
+        $output = $this->useCase->execute($this->anyCurrentUser(), $alice->id);
 
         self::assertSame($alice->id, $output->id);
         self::assertSame('alice', $output->username);
@@ -43,7 +45,7 @@ final class GetUserUseCaseTest extends KernelTestCase
     public function testItFailsOnAnUnknownAccount(): void
     {
         try {
-            $this->useCase->execute(123456789);
+            $this->useCase->execute($this->anyCurrentUser(), 123456789);
             self::fail('Expected DataModelNotFoundException');
         } catch (DataModelNotFoundException $exception) {
             self::assertSame(UserDataModel::class, $exception->dataModelClass);

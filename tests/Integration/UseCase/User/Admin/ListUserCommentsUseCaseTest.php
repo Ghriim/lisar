@@ -10,6 +10,7 @@ use App\Fixtures\User\UserCommentFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\CreateUserCommentUseCase;
 use App\UseCase\User\Admin\ListUserCommentsUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -17,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ListUserCommentsUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListUserCommentsUseCase $useCase;
 
@@ -35,7 +37,7 @@ final class ListUserCommentsUseCaseTest extends KernelTestCase
         $bob = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class);
         self::assertNotNull($bob->id);
 
-        $comments = $this->useCase->execute($bob->id);
+        $comments = $this->useCase->execute($this->currentAdmin(), $bob->id);
 
         self::assertCount(1, $comments);
         self::assertSame('admin', $comments[0]->authorUsername);
@@ -46,7 +48,7 @@ final class ListUserCommentsUseCaseTest extends KernelTestCase
         $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
         self::assertNotNull($alice->id);
 
-        self::assertSame([], $this->useCase->execute($alice->id));
+        self::assertSame([], $this->useCase->execute($this->currentAdmin(), $alice->id));
     }
 
     public function testItReturnsTheNewestNoteFirst(): void
@@ -56,13 +58,11 @@ final class ListUserCommentsUseCaseTest extends KernelTestCase
         self::assertNotNull($bob->id);
         self::assertNotNull($admin->id);
 
-        self::getContainer()->get(CreateUserCommentUseCase::class)->execute(
-            $bob->id,
-            $admin->id,
+        self::getContainer()->get(CreateUserCommentUseCase::class)->execute($this->currentUser($admin->id), $bob->id,
             new CreateUserCommentDataInput('The latest word on this account.'),
         );
 
-        $comments = $this->useCase->execute($bob->id);
+        $comments = $this->useCase->execute($this->currentAdmin(), $bob->id);
 
         self::assertCount(2, $comments);
         self::assertSame('The latest word on this account.', $comments[0]->body);
@@ -72,6 +72,6 @@ final class ListUserCommentsUseCaseTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->useCase->execute(123456789);
+        $this->useCase->execute($this->currentAdmin(), 123456789);
     }
 }

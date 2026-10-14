@@ -12,10 +12,12 @@ use App\Domain\Gateway\Provider\Todo\PriorityProviderGateway;
 use App\Domain\Validation\Constraint\Todo\DefaultPriorityKeptConstraint;
 use App\Domain\Validation\Constraint\Todo\PriorityDeletableConstraint;
 use App\Domain\Validation\Constraint\Todo\PriorityLabelAvailableConstraint;
+use App\Domain\Validation\Validator\Todo\Admin\DeletePriorityValidator;
 use App\Fixtures\Todo\PriorityFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\Admin\CreatePriorityUseCase;
 use App\UseCase\Todo\Admin\DeletePriorityUseCase;
 use App\UseCase\Todo\Admin\UpdatePriorityUseCase;
@@ -28,6 +30,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class PriorityBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private CreatePriorityUseCase $create;
     private UpdatePriorityUseCase $update;
@@ -48,7 +51,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
     {
         $this->loadFixtures(PriorityFixtures::class);
 
-        $output = $this->create->execute(new CreatePriorityDataInput('Critique', 5, '#ff00aa'));
+        $output = $this->create->execute($this->currentAdmin(), new CreatePriorityDataInput('Critique', 5, '#ff00aa'));
 
         self::assertSame('Critique', $output->label);
         self::assertSame(5, $output->weight);
@@ -65,7 +68,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
      */
     public function testTheVeryFirstPriorityIsTheDefaultWhetherAskedOrNot(): void
     {
-        $output = $this->create->execute(new CreatePriorityDataInput('Seule', 10, '#ffffff'));
+        $output = $this->create->execute($this->currentAdmin(), new CreatePriorityDataInput('Seule', 10, '#ffffff'));
 
         self::assertTrue($output->isDefault);
     }
@@ -74,7 +77,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
     {
         $this->loadFixtures(PriorityFixtures::class);
 
-        $this->create->execute(new CreatePriorityDataInput('Critique', 5, '#ff00aa', isDefault: true));
+        $this->create->execute($this->currentAdmin(), new CreatePriorityDataInput('Critique', 5, '#ff00aa', isDefault: true));
 
         self::assertSame(['Critique'], $this->defaults());
     }
@@ -85,6 +88,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
 
         $high = $this->getReference(PriorityFixtures::HIGH, PriorityDataModel::class);
         $this->update->execute(
+            $this->currentAdmin(),
             $high->id ?? 0,
             new UpdatePriorityDataInput('High', 10, '#e5484d', isDefault: true),
         );
@@ -100,6 +104,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
 
         try {
             $this->update->execute(
+                $this->currentAdmin(),
                 $normal->id ?? 0,
                 new UpdatePriorityDataInput('Normal', 20, '#3e63dd', isDefault: false),
             );
@@ -119,7 +124,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
         $this->loadFixtures(PriorityFixtures::class);
 
         try {
-            $this->create->execute(new CreatePriorityDataInput('High'));
+            $this->create->execute($this->currentAdmin(), new CreatePriorityDataInput('High'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(
@@ -134,7 +139,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
         $this->loadFixtures(PriorityFixtures::class);
 
         $low = $this->getReference(PriorityFixtures::LOW, PriorityDataModel::class);
-        $this->delete->execute($low->id ?? 0);
+        $this->delete->execute($this->currentAdmin(), $low->id ?? 0);
 
         self::assertSame(['High', 'Normal'], $this->labels());
     }
@@ -146,10 +151,10 @@ final class PriorityBackOfficeTest extends KernelTestCase
         $high = $this->getReference(PriorityFixtures::HIGH, PriorityDataModel::class);
 
         try {
-            $this->delete->execute($high->id ?? 0);
+            $this->delete->execute($this->currentAdmin(), $high->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeletePriorityUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeletePriorityValidator::ERROR_CODE, $exception->errorCode);
             self::assertContains(PriorityDeletableConstraint::PRIORITY_IN_USE, $exception->violations['id']);
         }
     }
@@ -161,7 +166,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
         $normal = $this->getReference(PriorityFixtures::NORMAL, PriorityDataModel::class);
 
         try {
-            $this->delete->execute($normal->id ?? 0);
+            $this->delete->execute($this->currentAdmin(), $normal->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(
@@ -177,7 +182,7 @@ final class PriorityBackOfficeTest extends KernelTestCase
 
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->delete->execute(123456789);
+        $this->delete->execute($this->currentAdmin(), 123456789);
     }
 
     /** @return list<string> */

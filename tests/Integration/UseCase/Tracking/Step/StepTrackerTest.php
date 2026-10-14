@@ -12,8 +12,8 @@ use App\Domain\Registry\Tracking\Step\StepSourceRegistry;
 use App\Domain\Tracking\DayClock;
 use App\Fixtures\Tracking\Step\StepDayFixtures;
 use App\Fixtures\User\UserFixtures;
-use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Tracking\Step\GetStepDayUseCase;
 use App\UseCase\Tracking\Step\SaveStepDayUseCase;
 use LogicException;
@@ -26,6 +26,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class StepTrackerTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
     private const int DEFAULT_GOAL_IN_STEPS = 5000;
 
     private GetStepDayUseCase $getToday;
@@ -53,7 +54,7 @@ final class StepTrackerTest extends KernelTestCase
      */
     public function testItReportsAnEmptyDayWithoutWritingAnything(): void
     {
-        $output = $this->getToday->execute($this->idOf($this->bob));
+        $output = $this->getToday->execute($this->currentUser($this->idOf($this->bob)));
 
         self::assertNull($output->countInSteps);
         self::assertNull($output->source);
@@ -73,14 +74,14 @@ final class StepTrackerTest extends KernelTestCase
      */
     public function testAPastDayIsNotTodaysCount(): void
     {
-        $output = $this->getToday->execute($this->idOf($this->alice));
+        $output = $this->getToday->execute($this->currentUser($this->idOf($this->alice)));
 
         self::assertNull($output->countInSteps);
     }
 
     public function testItRecordsTodaysCount(): void
     {
-        $output = $this->save->execute($this->idOf($this->alice), new SaveStepDayDataInput(8432));
+        $output = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(8432));
 
         self::assertSame(8432, $output->countInSteps);
         self::assertSame(StepSourceRegistry::MANUAL, $output->source);
@@ -101,8 +102,8 @@ final class StepTrackerTest extends KernelTestCase
      */
     public function testRecordingTwiceCorrectsInsteadOfAdding(): void
     {
-        $first = $this->save->execute($this->idOf($this->alice), new SaveStepDayDataInput(8432));
-        $second = $this->save->execute($this->idOf($this->alice), new SaveStepDayDataInput(9000));
+        $first = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(8432));
+        $second = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(9000));
 
         self::assertSame(9000, $second->countInSteps);
         self::assertSame($first->day, $second->day);
@@ -114,7 +115,7 @@ final class StepTrackerTest extends KernelTestCase
     /** The goal is frozen onto the day the moment it is first written. */
     public function testItFreezesTheGoalIntoTheDay(): void
     {
-        $this->save->execute($this->idOf($this->alice), new SaveStepDayDataInput(8432));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(8432));
 
         $clock = self::getContainer()->get(DayClock::class);
         $stepDay = self::getContainer()->get(StepDayProviderGateway::class)
@@ -127,14 +128,14 @@ final class StepTrackerTest extends KernelTestCase
     {
         $this->expectException(ValidationException::class);
 
-        $this->save->execute($this->idOf($this->alice), new SaveStepDayDataInput(200001));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(200001));
     }
 
     /** Nothing is written when the count is refused. */
     public function testARefusedCountLeavesTheDayEmpty(): void
     {
         try {
-            $this->save->execute($this->idOf($this->alice), new SaveStepDayDataInput(200001));
+            $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(200001));
         } catch (ValidationException) {
             // The point of the test is what follows.
         }
@@ -146,21 +147,14 @@ final class StepTrackerTest extends KernelTestCase
         );
     }
 
-    public function testItRefusesAnUnknownAccount(): void
-    {
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->getToday->execute(0);
-    }
-
     /** One person's steps are not another's: the count is read and written per owner. */
     public function testCountsAreOwnedByOneAccount(): void
     {
-        $this->save->execute($this->idOf($this->bob), new SaveStepDayDataInput(5000));
-        $this->save->execute($this->idOf($this->alice), new SaveStepDayDataInput(8432));
+        $this->save->execute($this->currentUser($this->idOf($this->bob)), new SaveStepDayDataInput(5000));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(8432));
 
-        self::assertSame(5000, $this->getToday->execute($this->idOf($this->bob))->countInSteps);
-        self::assertSame(8432, $this->getToday->execute($this->idOf($this->alice))->countInSteps);
+        self::assertSame(5000, $this->getToday->execute($this->currentUser($this->idOf($this->bob)))->countInSteps);
+        self::assertSame(8432, $this->getToday->execute($this->currentUser($this->idOf($this->alice)))->countInSteps);
     }
 
     private function idOf(UserDataModel $user): int

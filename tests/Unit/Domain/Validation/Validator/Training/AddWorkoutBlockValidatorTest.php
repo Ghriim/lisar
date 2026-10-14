@@ -8,13 +8,17 @@ use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockDataInput;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockExerciseDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutMovementsOfferedConstraint;
 use App\Domain\Validation\Validator\Training\AddWorkoutBlockValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class AddWorkoutBlockValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private AddWorkoutBlockValidator $validator;
 
     protected function setUp(): void
@@ -26,9 +30,21 @@ final class AddWorkoutBlockValidatorTest extends TestCase
 
     public function testItAcceptsASupersetOfOfferedMovements(): void
     {
-        $this->validator->validate($this->block(1, 2), [$this->movement(1), $this->movement(2)]);
+        $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $this->block(1, 2), [$this->movement(1), $this->movement(2)]);
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** Someone else's workout: refused on that alone, whatever else the call carries. */
+    public function testItRefusesSomeoneElsesWorkout(): void
+    {
+        try {
+            $this->validator->validate($this->currentUser(99), $this->workoutOf($this->anyCurrentUser()), $this->block(1, 2), [$this->movement(1), $this->movement(2)]);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(AddWorkoutBlockValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItAcceptsARestOnEachMovement(): void
@@ -38,7 +54,7 @@ final class AddWorkoutBlockValidatorTest extends TestCase
             new AddWorkoutBlockExerciseDataInput(2, 3600),
         ]);
 
-        $this->validator->validate($input, [$this->movement(1), $this->movement(2)]);
+        $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $input, [$this->movement(1), $this->movement(2)]);
 
         $this->expectNotToPerformAssertions();
     }
@@ -73,7 +89,7 @@ final class AddWorkoutBlockValidatorTest extends TestCase
         ]);
 
         try {
-            $this->validator->validate($input, [$this->movement(1), $this->movement(2)]);
+            $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $input, [$this->movement(1), $this->movement(2)]);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(['rest_invalid'], $exception->violations['exercises[0].restInSeconds']);
@@ -84,7 +100,7 @@ final class AddWorkoutBlockValidatorTest extends TestCase
     public function testItAccumulatesEveryViolation(): void
     {
         try {
-            $this->validator->validate($this->block(1, 1), []);
+            $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $this->block(1, 1), []);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(['movement_ids_duplicated', WorkoutMovementsOfferedConstraint::UNAVAILABLE], $exception->violations['exercises']);
@@ -95,7 +111,7 @@ final class AddWorkoutBlockValidatorTest extends TestCase
     private function assertRefused(AddWorkoutBlockDataInput $input, array $offered, string $field, string $code): void
     {
         try {
-            $this->validator->validate($input, $offered);
+            $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), $input, $offered);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(AddWorkoutBlockValidator::ERROR_CODE, $exception->errorCode);

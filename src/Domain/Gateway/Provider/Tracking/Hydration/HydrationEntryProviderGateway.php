@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Gateway\Provider\Tracking\Hydration;
 
 use App\Domain\DTO\DataModel\Tracking\HydrationEntryDataModel;
-use App\Domain\DTO\DataModel\User\UserDataModel;
 
 interface HydrationEntryProviderGateway
 {
-    /** Scoped to the owner: someone else's entry is simply not found. */
-    public function findOneByIdForOwner(int $id, UserDataModel $owner): ?HydrationEntryDataModel;
+    /** Whoever it belongs to: whether the caller may touch it is the validator's to say. */
+    public function findOneById(int $id): ?HydrationEntryDataModel;
 }

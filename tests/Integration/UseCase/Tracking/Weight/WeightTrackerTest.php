@@ -11,8 +11,8 @@ use App\Domain\Gateway\Provider\Tracking\Weight\WeightEntryProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Fixtures\Tracking\Weight\WeightEntryFixtures;
 use App\Fixtures\User\UserFixtures;
-use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Tracking\Weight\GetLatestWeightUseCase;
 use App\UseCase\Tracking\Weight\SaveWeightUseCase;
 use LogicException;
@@ -25,6 +25,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class WeightTrackerTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private GetLatestWeightUseCase $getLatest;
     private SaveWeightUseCase $save;
@@ -50,7 +51,7 @@ final class WeightTrackerTest extends KernelTestCase
      */
     public function testItReportsNothingWithoutWritingAnything(): void
     {
-        $output = $this->getLatest->execute($this->idOf($this->bob));
+        $output = $this->getLatest->execute($this->currentUser($this->idOf($this->bob)));
 
         self::assertNull($output->weightInKilograms);
         self::assertNull($output->day);
@@ -68,7 +69,7 @@ final class WeightTrackerTest extends KernelTestCase
      */
     public function testItReportsTheLastKnownWeightFromAPastDay(): void
     {
-        $output = $this->getLatest->execute($this->idOf($this->alice));
+        $output = $this->getLatest->execute($this->currentUser($this->idOf($this->alice)));
 
         self::assertSame(WeightEntryFixtures::ALICE_WEIGHT_IN_KILOGRAMS, $output->weightInKilograms);
         self::assertFalse($output->isFromToday);
@@ -80,7 +81,7 @@ final class WeightTrackerTest extends KernelTestCase
 
     public function testItRecordsTodaysWeight(): void
     {
-        $output = $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(71.85));
+        $output = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(71.85));
 
         self::assertSame(71.85, $output->weightInKilograms);
         self::assertTrue($output->isFromToday);
@@ -99,9 +100,9 @@ final class WeightTrackerTest extends KernelTestCase
     /** Today's weight is the latest, even though a past day's row exists too. */
     public function testTodaysWeightBecomesTheLastKnownOne(): void
     {
-        $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(71.85));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(71.85));
 
-        $output = $this->getLatest->execute($this->idOf($this->alice));
+        $output = $this->getLatest->execute($this->currentUser($this->idOf($this->alice)));
 
         self::assertSame(71.85, $output->weightInKilograms);
         self::assertTrue($output->isFromToday);
@@ -113,8 +114,8 @@ final class WeightTrackerTest extends KernelTestCase
      */
     public function testRecordingTwiceCorrectsInsteadOfAdding(): void
     {
-        $first = $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(71.85));
-        $second = $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(72.1));
+        $first = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(71.85));
+        $second = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(72.1));
 
         self::assertSame(72.1, $second->weightInKilograms);
         self::assertSame($first->day, $second->day);
@@ -129,8 +130,8 @@ final class WeightTrackerTest extends KernelTestCase
      */
     public function testCorrectingDoesNotMoveTheMomentItWasRecorded(): void
     {
-        $first = $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(71.85));
-        $second = $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(72.1));
+        $first = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(71.85));
+        $second = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(72.1));
 
         self::assertSame($first->recordedAt, $second->recordedAt);
     }
@@ -138,7 +139,7 @@ final class WeightTrackerTest extends KernelTestCase
     /** The column keeps two decimals, so that is what is stored — not whatever was typed. */
     public function testItKeepsTwoDecimals(): void
     {
-        $output = $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(71.8549));
+        $output = $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(71.8549));
 
         self::assertSame(71.85, $output->weightInKilograms);
     }
@@ -147,14 +148,14 @@ final class WeightTrackerTest extends KernelTestCase
     {
         $this->expectException(ValidationException::class);
 
-        $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(724.0));
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(724.0));
     }
 
     /** Nothing is written when the weight is refused. */
     public function testARefusedWeightLeavesTheDayEmpty(): void
     {
         try {
-            $this->save->execute($this->idOf($this->alice), new SaveWeightDataInput(724.0));
+            $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveWeightDataInput(724.0));
         } catch (ValidationException) {
             // The point of the test is what follows.
         }
@@ -166,22 +167,15 @@ final class WeightTrackerTest extends KernelTestCase
         );
     }
 
-    public function testItRefusesAnUnknownAccount(): void
-    {
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->getLatest->execute(0);
-    }
-
     /** One person's scale is not another's: the latest weight is read per owner. */
     public function testWeightsAreOwnedByOneAccount(): void
     {
-        $this->save->execute($this->idOf($this->bob), new SaveWeightDataInput(80.0));
+        $this->save->execute($this->currentUser($this->idOf($this->bob)), new SaveWeightDataInput(80.0));
 
-        self::assertSame(80.0, $this->getLatest->execute($this->idOf($this->bob))->weightInKilograms);
+        self::assertSame(80.0, $this->getLatest->execute($this->currentUser($this->idOf($this->bob)))->weightInKilograms);
         self::assertSame(
             WeightEntryFixtures::ALICE_WEIGHT_IN_KILOGRAMS,
-            $this->getLatest->execute($this->idOf($this->alice))->weightInKilograms,
+            $this->getLatest->execute($this->currentUser($this->idOf($this->alice)))->weightInKilograms,
         );
     }
 

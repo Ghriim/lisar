@@ -11,11 +11,13 @@ use App\Domain\DTO\Input\Todo\Admin\UpdateReferenceCategoryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Todo\CategoryLabelAvailableConstraint;
 use App\Domain\Validation\Constraint\Todo\CategoryUnusedConstraint;
+use App\Domain\Validation\Validator\Todo\Admin\DeleteReferenceCategoryValidator;
 use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\Admin\CreateReferenceCategoryUseCase;
 use App\UseCase\Todo\Admin\DeleteReferenceCategoryUseCase;
 use App\UseCase\Todo\Admin\ListReferenceCategoriesUseCase;
@@ -26,6 +28,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ReferenceCategoryBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private ListReferenceCategoriesUseCase $list;
     private CreateReferenceCategoryUseCase $create;
@@ -56,7 +59,7 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
     {
         $this->loadFixtures(CategoryFixtures::class);
 
-        $output = $this->create->execute(new CreateReferenceCategoryDataInput('Santé'));
+        $output = $this->create->execute($this->currentAdmin(), new CreateReferenceCategoryDataInput('Santé'));
 
         self::assertSame('Santé', $output->label);
         self::assertFalse($output->isPersonal);
@@ -65,7 +68,7 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
         $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
         self::assertContains('Santé', array_map(
             static fn ($category) => $category->label,
-            self::getContainer()->get(ListCategoriesUseCase::class)->execute($alice->id ?? 0),
+            self::getContainer()->get(ListCategoriesUseCase::class)->execute($this->currentUser($alice->id ?? 0)),
         ));
     }
 
@@ -74,7 +77,7 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
         $this->loadFixtures(CategoryFixtures::class);
 
         try {
-            $this->create->execute(new CreateReferenceCategoryDataInput('Home'));
+            $this->create->execute($this->currentAdmin(), new CreateReferenceCategoryDataInput('Home'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(
@@ -93,6 +96,7 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
         $this->loadFixtures(CategoryFixtures::class);
 
         self::assertSame('Side project', $this->create->execute(
+            $this->currentAdmin(),
             new CreateReferenceCategoryDataInput('Side project'),
         )->label);
     }
@@ -104,6 +108,7 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
         $home = $this->getReference(CategoryFixtures::HOME, CategoryDataModel::class);
 
         self::assertSame('Maison', $this->update->execute(
+            $this->currentAdmin(),
             $home->id ?? 0,
             new UpdateReferenceCategoryDataInput('Maison'),
         )->label);
@@ -118,7 +123,7 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
 
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->update->execute($personal->id ?? 0, new UpdateReferenceCategoryDataInput('Volée'));
+        $this->update->execute($this->currentAdmin(), $personal->id ?? 0, new UpdateReferenceCategoryDataInput('Volée'));
     }
 
     public function testItDeletesAnEmptyCommonCategory(): void
@@ -126,7 +131,7 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
         $this->loadFixtures(CategoryFixtures::class);
 
         $work = $this->getReference(CategoryFixtures::WORK, CategoryDataModel::class);
-        $this->delete->execute($work->id ?? 0);
+        $this->delete->execute($this->currentAdmin(), $work->id ?? 0);
 
         self::assertSame(['Home'], $this->labels());
     }
@@ -142,10 +147,10 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
         $home = $this->getReference(CategoryFixtures::HOME, CategoryDataModel::class);
 
         try {
-            $this->delete->execute($home->id ?? 0);
+            $this->delete->execute($this->currentAdmin(), $home->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(DeleteReferenceCategoryUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(DeleteReferenceCategoryValidator::ERROR_CODE, $exception->errorCode);
             self::assertContains(CategoryUnusedConstraint::CATEGORY_IN_USE, $exception->violations['id']);
         }
     }
@@ -156,12 +161,12 @@ final class ReferenceCategoryBackOfficeTest extends KernelTestCase
 
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->delete->execute(123456789);
+        $this->delete->execute($this->currentAdmin(), 123456789);
     }
 
     /** @return list<string> */
     private function labels(): array
     {
-        return array_map(static fn ($category) => $category->label, $this->list->execute());
+        return array_map(static fn ($category) => $category->label, $this->list->execute($this->currentAdmin()));
     }
 }

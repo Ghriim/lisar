@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCase\User\Admin;
 
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\User\Admin\ListUsersDataInput;
 use App\Domain\DTO\Output\PaginatedListDataOutput;
 use App\Domain\DTO\Output\User\UserDataOutput;
@@ -27,9 +28,9 @@ final readonly class ListUsersUseCase implements UseCaseInterface
      *
      * @throws ValidationException
      */
-    public function execute(ListUsersDataInput $input): PaginatedListDataOutput
+    public function execute(UserDataModel $currentUser, ListUsersDataInput $input): PaginatedListDataOutput
     {
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $users = $this->userProviderGateway->findAllForAdminList(
             $input->search,

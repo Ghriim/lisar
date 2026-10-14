@@ -15,7 +15,6 @@ use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutSetPersisterGateway;
 use App\Domain\Gateway\Provider\Training\SetTypeProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Training\UpdateWorkoutSetValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -27,7 +26,6 @@ final readonly class UpdateWorkoutSetUseCase implements UseCaseInterface
 {
     public function __construct(
         private UpdateWorkoutSetValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private SetTypeProviderGateway $setTypeProviderGateway,
         private WorkoutSetPersisterGateway $workoutSetPersisterGateway,
@@ -39,14 +37,9 @@ final readonly class UpdateWorkoutSetUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId, int $setId, UpdateWorkoutSetDataInput $input): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId, int $setId, UpdateWorkoutSetDataInput $input): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
@@ -57,7 +50,7 @@ final readonly class UpdateWorkoutSetUseCase implements UseCaseInterface
         }
 
         $setType = null === $input->setTypeId ? null : $this->setTypeProviderGateway->findOneById($input->setTypeId);
-        $this->validator->validate($input, $set, $setType);
+        $this->validator->validate($currentUser, $workout, $input, $set, $setType);
 
         // No type named: the default one, an ordinary working set.
         $set->setType = $setType ?? $this->findDefaultSetType();

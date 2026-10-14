@@ -8,8 +8,8 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Tracking\Sleep\SleepNightDataOutput;
 use App\Domain\Factory\OutputFactory\Tracking\Sleep\SleepNightOutputFactory;
 use App\Domain\Gateway\Provider\Tracking\Sleep\SleepNightProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
+use App\Domain\Validation\Validator\Tracking\Sleep\GetSleepNightValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -26,7 +26,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class GetSleepNightUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private GetSleepNightValidator $validator,
         private SleepNightProviderGateway $sleepNightProviderGateway,
         private SleepNightOutputFactory $outputFactory,
         private DayClock $clock,
@@ -36,15 +36,12 @@ final readonly class GetSleepNightUseCase implements UseCaseInterface
     /**
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): SleepNightDataOutput
+    public function execute(UserDataModel $currentUser): SleepNightDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
         $today = $this->clock->today();
-        $night = $this->sleepNightProviderGateway->findOneForOwnerAndDay($owner, $today);
+        $night = $this->sleepNightProviderGateway->findOneForOwnerAndDay($currentUser, $today);
 
         if (null === $night) {
             return $this->outputFactory->buildEmpty($today);

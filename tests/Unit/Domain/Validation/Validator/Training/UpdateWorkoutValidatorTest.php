@@ -6,12 +6,16 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 
 use App\Domain\DTO\Input\Training\UpdateWorkoutDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Validator\Training\UpdateWorkoutValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class UpdateWorkoutValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateWorkoutValidator $validator;
 
     protected function setUp(): void
@@ -23,14 +27,26 @@ final class UpdateWorkoutValidatorTest extends TestCase
 
     public function testItAcceptsAFullUpdate(): void
     {
-        $this->validator->validate(new UpdateWorkoutDataInput('Push', 'Bonne séance', 4));
+        $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), new UpdateWorkoutDataInput('Push', 'Bonne séance', 4));
 
         $this->expectNotToPerformAssertions();
     }
 
+    /** Someone else's workout: refused on that alone, whatever else the call carries. */
+    public function testItRefusesSomeoneElsesWorkout(): void
+    {
+        try {
+            $this->validator->validate($this->currentUser(99), $this->workoutOf($this->anyCurrentUser()), new UpdateWorkoutDataInput('Push', 'Bonne séance', 4));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateWorkoutValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
+    }
+
     public function testItAcceptsAnEmptyUpdate(): void
     {
-        $this->validator->validate(new UpdateWorkoutDataInput());
+        $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), new UpdateWorkoutDataInput());
 
         $this->expectNotToPerformAssertions();
     }
@@ -39,7 +55,7 @@ final class UpdateWorkoutValidatorTest extends TestCase
     {
         foreach ([0, 6] as $feeling) {
             try {
-                $this->validator->validate(new UpdateWorkoutDataInput(feeling: $feeling));
+                $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), new UpdateWorkoutDataInput(feeling: $feeling));
                 self::fail('Expected ValidationException');
             } catch (ValidationException $exception) {
                 self::assertSame(UpdateWorkoutValidator::ERROR_CODE, $exception->errorCode);
@@ -51,7 +67,7 @@ final class UpdateWorkoutValidatorTest extends TestCase
     public function testItAccumulatesEveryViolation(): void
     {
         try {
-            $this->validator->validate(new UpdateWorkoutDataInput(str_repeat('a', 129), str_repeat('a', 5001), 9));
+            $this->validator->validate($this->anyCurrentUser(), $this->workoutOf($this->anyCurrentUser()), new UpdateWorkoutDataInput(str_repeat('a', 129), str_repeat('a', 5001), 9));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(['name_too_long'], $exception->violations['name']);

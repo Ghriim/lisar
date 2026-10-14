@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Todo\Admin;
 
 use App\Domain\DTO\DataModel\Todo\PriorityDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\Admin\UpdatePriorityDataInput;
 use App\Domain\DTO\Output\Todo\PriorityDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -29,7 +30,7 @@ final readonly class UpdatePriorityUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, UpdatePriorityDataInput $input): PriorityDataOutput
+    public function execute(UserDataModel $currentUser, int $id, UpdatePriorityDataInput $input): PriorityDataOutput
     {
         $priority = $this->priorityProviderGateway->findOneById($id);
         if (null === $priority) {
@@ -47,7 +48,7 @@ final readonly class UpdatePriorityUseCase implements UseCaseInterface
             }
         }
 
-        $this->validator->validate($input, $priority, $withSameLabel);
+        $this->validator->validate($currentUser, $input, $priority, $withSameLabel);
 
         $priority->label = $input->label;
         $priority->weight = $input->weight;

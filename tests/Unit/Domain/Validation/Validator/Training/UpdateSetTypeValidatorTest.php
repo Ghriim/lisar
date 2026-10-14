@@ -7,14 +7,18 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\Input\Training\UpdateSetTypeDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\DefaultSetTypeKeptConstraint;
 use App\Domain\Validation\Constraint\Training\SetTypeNameAvailableConstraint;
 use App\Domain\Validation\Validator\Training\UpdateSetTypeValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class UpdateSetTypeValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private UpdateSetTypeValidator $validator;
 
     protected function setUp(): void
@@ -26,15 +30,27 @@ final class UpdateSetTypeValidatorTest extends TestCase
 
     public function testItAcceptsAFreeName(): void
     {
-        $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'purple'), $this->current(), null);
+        $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput('Dropset', 'purple'), $this->current(), null);
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** A user's token on the back-office: refused on that alone. */
+    public function testItRefusesANonAdministrator(): void
+    {
+        try {
+            $this->validator->validate($this->anyCurrentUser(), new UpdateSetTypeDataInput('Dropset', 'purple'), $this->current(), null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateSetTypeValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItRejectsABlankName(): void
     {
         try {
-            $this->validator->validate(new UpdateSetTypeDataInput('', 'purple'), $this->current(), null);
+            $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput('', 'purple'), $this->current(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateSetTypeValidator::ERROR_CODE, $exception->errorCode);
@@ -45,7 +61,7 @@ final class UpdateSetTypeValidatorTest extends TestCase
     public function testItRejectsANameTooLong(): void
     {
         try {
-            $this->validator->validate(new UpdateSetTypeDataInput(str_repeat('a', 129), 'purple'), $this->current(), null);
+            $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput(str_repeat('a', 129), 'purple'), $this->current(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains('name_too_long', $exception->violations['name']);
@@ -58,7 +74,7 @@ final class UpdateSetTypeValidatorTest extends TestCase
         $other->id = 99;
 
         try {
-            $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'purple'), $this->current(), $other);
+            $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput('Dropset', 'purple'), $this->current(), $other);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(SetTypeNameAvailableConstraint::NAME_ALREADY_USED, $exception->violations['name']);
@@ -67,7 +83,7 @@ final class UpdateSetTypeValidatorTest extends TestCase
 
     public function testItLetsTheRowKeepItsOwnName(): void
     {
-        $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'purple'), $this->current(), $this->current());
+        $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput('Dropset', 'purple'), $this->current(), $this->current());
 
         $this->expectNotToPerformAssertions();
     }
@@ -75,7 +91,7 @@ final class UpdateSetTypeValidatorTest extends TestCase
     public function testItRejectsAColourOutsideThePalette(): void
     {
         try {
-            $this->validator->validate(new UpdateSetTypeDataInput('Dropset', '#ff0000'), $this->current(), null);
+            $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput('Dropset', '#ff0000'), $this->current(), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains('colour_unknown', $exception->violations['colour']);
@@ -88,7 +104,7 @@ final class UpdateSetTypeValidatorTest extends TestCase
         $current->isDefaultType = true;
 
         try {
-            $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'purple'), $current, null);
+            $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput('Dropset', 'purple'), $current, null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame([DefaultSetTypeKeptConstraint::DEFAULT_REQUIRED], $exception->violations['isDefaultType']);
@@ -103,7 +119,7 @@ final class UpdateSetTypeValidatorTest extends TestCase
         try {
             $current = $this->current();
             $current->isActive = false;
-            $this->validator->validate(new UpdateSetTypeDataInput('Dropset', 'beige', isDefaultType: true), $current, $other);
+            $this->validator->validate($this->currentAdmin(), new UpdateSetTypeDataInput('Dropset', 'beige', isDefaultType: true), $current, $other);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(['colour_unknown'], $exception->violations['colour']);

@@ -8,6 +8,7 @@ use App\Domain\Exception\AccountDeactivatedException;
 use App\Domain\Exception\InvalidCredentialsException;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Exception\WrongAudienceException;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Infrastructure\Exception\DataInputMappingException;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
@@ -27,6 +28,12 @@ final readonly class ExceptionListener
         $exception = $event->getThrowable();
 
         $response = match (true) {
+            // The caller may not act on this at all — not theirs, not an administrator, switched
+            // off: not a mistake in the payload, so not a 422.
+            $exception instanceof ValidationException && true === $this->isNotAllowed($exception) => new JsonResponse(
+                ['violations' => $exception->violations],
+                Response::HTTP_UNAUTHORIZED,
+            ),
             $exception instanceof ValidationException => new JsonResponse(
                 ['violations' => $exception->violations],
                 Response::HTTP_UNPROCESSABLE_ENTITY,
@@ -59,5 +66,16 @@ final readonly class ExceptionListener
         }
 
         $event->setResponse($response);
+    }
+
+    private function isNotAllowed(ValidationException $exception): bool
+    {
+        foreach ($exception->violations as $codes) {
+            if (true === in_array(IsOwnerConstraint::NOT_ALLOWED, $codes, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

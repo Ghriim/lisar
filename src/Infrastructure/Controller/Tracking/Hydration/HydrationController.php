@@ -7,27 +7,25 @@ namespace App\Infrastructure\Controller\Tracking\Hydration;
 use App\Domain\DTO\Input\Tracking\Hydration\CreateHydrationEntryDataInput;
 use App\Domain\DTO\Input\Tracking\Hydration\UpdateHydrationEntryDataInput;
 use App\Domain\DTO\Output\Tracking\Hydration\HydrationDayDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
-use App\Infrastructure\Security\SecurityUser;
 use App\UseCase\Tracking\Hydration\CreateHydrationEntryUseCase;
 use App\UseCase\Tracking\Hydration\DeleteHydrationEntryUseCase;
 use App\UseCase\Tracking\Hydration\GetHydrationDayUseCase;
 use App\UseCase\Tracking\Hydration\UpdateHydrationEntryUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * The day in progress, and what is logged on it. Every route answers with the whole day: the
  * widget shows a total against a goal, and one round trip refreshes both.
  */
 #[OA\Tag(name: 'Hydration')]
-final class HydrationController extends AbstractController
+final class HydrationController extends AbstractBaseController
 {
     #[Route('/api/hydration/today', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -35,9 +33,9 @@ final class HydrationController extends AbstractController
         description: 'The day in progress, its goal, and everything logged on it.',
         content: new OA\JsonContent(ref: new Model(type: HydrationDayDataOutput::class)),
     )]
-    public function getToday(#[CurrentUser] SecurityUser $securityUser, GetHydrationDayUseCase $useCase): JsonResponse
+    public function getToday(GetHydrationDayUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($securityUser->id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/hydration/entries', methods: Request::METHOD_POST)]
@@ -49,11 +47,10 @@ final class HydrationController extends AbstractController
     )]
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Volume out of range.')]
     public function createEntry(
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] CreateHydrationEntryDataInput $input,
         CreateHydrationEntryUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/hydration/entries/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -68,11 +65,10 @@ final class HydrationController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'Volume out of range, or an entry from a past day.')]
     public function updateEntry(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         #[MapDataInput] UpdateHydrationEntryDataInput $input,
         UpdateHydrationEntryUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/hydration/entries/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_DELETE)]
@@ -86,9 +82,8 @@ final class HydrationController extends AbstractController
     #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'An entry from a past day.')]
     public function deleteEntry(
         int $id,
-        #[CurrentUser] SecurityUser $securityUser,
         DeleteHydrationEntryUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($securityUser->id, $id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 }

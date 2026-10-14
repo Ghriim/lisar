@@ -9,11 +9,13 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
 use App\Domain\Registry\Todo\TaskStateRegistry;
+use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Todo\TaskClosableConstraint;
+use App\Domain\Validation\Validator\Todo\CompleteTaskValidator;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
-use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\CompleteTaskUseCase;
 use App\UseCase\Todo\GetTaskUseCase;
 use DateTimeImmutable;
@@ -25,6 +27,7 @@ use const DATE_ATOM;
 final class CompleteTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private CompleteTaskUseCase $useCase;
     private TaskProviderGateway $taskProviderGateway;
@@ -46,13 +49,13 @@ final class CompleteTaskUseCaseTest extends KernelTestCase
     {
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
 
-        $output = $this->useCase->execute($this->aliceId(), $task->id ?? 0);
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0);
 
         self::assertSame(TaskStateRegistry::DONE, $output->state);
         self::assertNotNull($output->completedAt);
 
         // Re-read through the gateway: assert it was really persisted.
-        $reread = $this->taskProviderGateway->findOneByIdForOwner($task->id ?? 0, $this->alice);
+        $reread = $this->taskProviderGateway->findOneById($task->id ?? 0);
         self::assertNotNull($reread);
         self::assertTrue($reread->isDone());
     }
@@ -62,14 +65,14 @@ final class CompleteTaskUseCaseTest extends KernelTestCase
         $task = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class);
 
         try {
-            $this->useCase->execute($this->aliceId(), $task->id ?? 0);
+            $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame(CompleteTaskUseCase::ERROR_CODE, $exception->errorCode);
+            self::assertSame(CompleteTaskValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame([TaskClosableConstraint::TASK_HAS_OPEN_SUBTASKS], $exception->violations['id']);
         }
 
-        $reread = $this->taskProviderGateway->findOneByIdForOwner($task->id ?? 0, $this->alice);
+        $reread = $this->taskProviderGateway->findOneById($task->id ?? 0);
         self::assertNotNull($reread);
         self::assertFalse($reread->isDone());
     }
@@ -79,15 +82,15 @@ final class CompleteTaskUseCaseTest extends KernelTestCase
         $parent = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class);
         $openSubtask = $this->getReference(TaskFixtures::ALICE_SUBTASK_OPEN, TaskDataModel::class);
 
-        $this->useCase->execute($this->aliceId(), $openSubtask->id ?? 0);
+        $this->useCase->execute($this->currentUser($this->aliceId()), $openSubtask->id ?? 0);
 
         $readyToClose = self::getContainer()->get(GetTaskUseCase::class)
-            ->execute($this->aliceId(), $parent->id ?? 0);
+            ->execute($this->currentUser($this->aliceId()), $parent->id ?? 0);
         self::assertSame(TaskStateRegistry::READY_TO_CLOSE, $readyToClose->state);
 
         self::assertSame(
             TaskStateRegistry::DONE,
-            $this->useCase->execute($this->aliceId(), $parent->id ?? 0)->state,
+            $this->useCase->execute($this->currentUser($this->aliceId()), $parent->id ?? 0)->state,
         );
     }
 
@@ -103,10 +106,10 @@ final class CompleteTaskUseCaseTest extends KernelTestCase
 
         $completedAtBefore = $doneSubtask->completedAt;
 
-        $this->useCase->execute($this->aliceId(), $openSubtask->id ?? 0);
-        $this->useCase->execute($this->aliceId(), $parent->id ?? 0);
+        $this->useCase->execute($this->currentUser($this->aliceId()), $openSubtask->id ?? 0);
+        $this->useCase->execute($this->currentUser($this->aliceId()), $parent->id ?? 0);
 
-        $reread = $this->taskProviderGateway->findOneByIdForOwner($doneSubtask->id ?? 0, $this->alice);
+        $reread = $this->taskProviderGateway->findOneById($doneSubtask->id ?? 0);
         self::assertNotNull($reread);
         self::assertSame(
             $completedAtBefore?->format(DATE_ATOM),
@@ -119,7 +122,7 @@ final class CompleteTaskUseCaseTest extends KernelTestCase
         $task = $this->getReference(TaskFixtures::ALICE_DONE, TaskDataModel::class);
         $completedAtBefore = $task->completedAt;
 
-        $output = $this->useCase->execute($this->aliceId(), $task->id ?? 0);
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0);
 
         self::assertSame(TaskStateRegistry::DONE, $output->state);
         self::assertSame($completedAtBefore?->format(DATE_ATOM), $output->completedAt ? (new DateTimeImmutable($output->completedAt))->format(DATE_ATOM) : null);
@@ -130,9 +133,12 @@ final class CompleteTaskUseCaseTest extends KernelTestCase
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
         $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
 
-        $this->expectException(DataModelNotFoundException::class);
-
-        $this->useCase->execute($admin->id ?? 0, $task->id ?? 0);
+        try {
+            $this->useCase->execute($this->currentUser($admin->id ?? 0), $task->id ?? 0);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     private function aliceId(): int

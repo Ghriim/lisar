@@ -14,9 +14,8 @@ use App\Domain\Factory\OutputFactory\Training\WorkoutCopyOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutPersisterGateway;
 use App\Domain\Gateway\Provider\Training\SetTypeProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
-use App\Domain\Validation\Constraint\Training\WorkoutNotInProgressConstraint;
+use App\Domain\Validation\Validator\Training\CopyWorkoutValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -27,10 +26,8 @@ use App\UseCase\UseCaseInterface;
  */
 final readonly class CopyWorkoutUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'copy_workout_invalid';
-
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private CopyWorkoutValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private SetTypeProviderGateway $setTypeProviderGateway,
         private WorkoutPersisterGateway $workoutPersisterGateway,
@@ -44,22 +41,14 @@ final readonly class CopyWorkoutUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId): WorkoutCopyDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId): WorkoutCopyDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $source = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $source = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $source) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $violations = WorkoutNotInProgressConstraint::validate($this->workoutProviderGateway->findOneInProgressForOwner($owner));
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $source, $this->workoutProviderGateway->findOneInProgressForOwner($currentUser));
 
         // A set type retired since gives way to the default one.
         $defaultSetType = $this->setTypeProviderGateway->findOneDefault();

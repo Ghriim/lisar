@@ -8,7 +8,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Todo\CategoryDataOutput;
 use App\Domain\Factory\OutputFactory\Todo\CategoryOutputFactory;
 use App\Domain\Gateway\Provider\Todo\CategoryProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
+use App\Domain\Validation\Validator\Todo\ListCategoriesValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -19,7 +19,7 @@ use App\UseCase\UseCaseInterface;
 final readonly class ListCategoriesUseCase implements UseCaseInterface
 {
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private ListCategoriesValidator $validator,
         private CategoryProviderGateway $categoryProviderGateway,
         private CategoryOutputFactory $outputFactory,
     ) {
@@ -30,13 +30,10 @@ final readonly class ListCategoriesUseCase implements UseCaseInterface
      *
      * @throws DataModelNotFoundException
      */
-    public function execute(int $ownerId): array
+    public function execute(UserDataModel $currentUser): array
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
+        $this->validator->validate($currentUser);
 
-        return $this->outputFactory->buildMany($this->categoryProviderGateway->findAllUsableBy($owner));
+        return $this->outputFactory->buildMany($this->categoryProviderGateway->findAllUsableBy($currentUser));
     }
 }

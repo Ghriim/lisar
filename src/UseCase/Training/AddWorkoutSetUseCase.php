@@ -16,7 +16,6 @@ use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutSetPersisterGateway;
 use App\Domain\Gateway\Provider\Training\SetTypeProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Training\AddWorkoutSetValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -32,7 +31,6 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
 {
     public function __construct(
         private AddWorkoutSetValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private SetTypeProviderGateway $setTypeProviderGateway,
         private WorkoutSetPersisterGateway $workoutSetPersisterGateway,
@@ -44,14 +42,9 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId, int $exerciseId, AddWorkoutSetDataInput $input): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId, int $exerciseId, AddWorkoutSetDataInput $input): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
@@ -62,7 +55,7 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
         }
 
         $setType = null === $input->setTypeId ? null : $this->setTypeProviderGateway->findOneById($input->setTypeId);
-        $this->validator->validate($input, $exercise->movement, $setType);
+        $this->validator->validate($currentUser, $workout, $input, $exercise->movement, $setType);
 
         $set = new WorkoutSetDataModel();
         $set->exercise = $exercise;

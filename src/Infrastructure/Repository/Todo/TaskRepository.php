@@ -23,13 +23,11 @@ final class TaskRepository extends ServiceEntityRepository implements TaskProvid
         parent::__construct($registry, TaskDataModel::class);
     }
 
-    public function findOneByIdForOwner(int $id, UserDataModel $owner): ?TaskDataModel
+    public function findOneById(int $id): ?TaskDataModel
     {
         return $this->buildTaskQuery()
             ->andWhere('task.id = :id')
-            ->andWhere('task.owner = :owner')
             ->setParameter('id', $id)
-            ->setParameter('owner', $owner)
             ->getQuery()
             ->getOneOrNullResult();
     }

@@ -6,12 +6,16 @@ namespace App\Tests\Unit\Domain\Validation\Validator\User\Admin;
 
 use App\Domain\DTO\Input\User\Admin\ListUsersDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Validator\User\Admin\ListUsersValidator;
+use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Validation;
 
 final class ListUsersValidatorTest extends TestCase
 {
+    use CurrentUserTrait;
+
     private ListUsersValidator $validator;
 
     protected function setUp(): void
@@ -25,9 +29,21 @@ final class ListUsersValidatorTest extends TestCase
 
     public function testItAcceptsAnEmptyFilter(): void
     {
-        $this->validator->validate(new ListUsersDataInput());
+        $this->validator->validate($this->currentAdmin(), new ListUsersDataInput());
 
         $this->expectNotToPerformAssertions();
+    }
+
+    /** A user's token on the back-office: refused on that alone. */
+    public function testItRefusesANonAdministrator(): void
+    {
+        try {
+            $this->validator->validate($this->anyCurrentUser(), new ListUsersDataInput());
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(ListUsersValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], $exception->violations);
+        }
     }
 
     public function testItRejectsANonPositivePage(): void
@@ -50,7 +66,7 @@ final class ListUsersValidatorTest extends TestCase
     public function testItAccumulatesEveryViolation(): void
     {
         try {
-            $this->validator->validate(new ListUsersDataInput(search: str_repeat('a', 181), page: -1, perPage: 0));
+            $this->validator->validate($this->currentAdmin(), new ListUsersDataInput(search: str_repeat('a', 181), page: -1, perPage: 0));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(ListUsersValidator::ERROR_CODE, $exception->errorCode);
@@ -70,7 +86,7 @@ final class ListUsersValidatorTest extends TestCase
     private function assertViolatesOn(ListUsersDataInput $input, string $propertyPath, string $errorCode): void
     {
         try {
-            $this->validator->validate($input);
+            $this->validator->validate($this->currentAdmin(), $input);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains($errorCode, $exception->violations[$propertyPath]);

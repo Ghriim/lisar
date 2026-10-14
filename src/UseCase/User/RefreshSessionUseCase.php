@@ -15,6 +15,7 @@ use App\Domain\Gateway\Provider\User\SessionProviderGateway;
 use App\Domain\Registry\User\SessionAudienceRegistry;
 use App\Domain\User\AccessTokenIssuerInterface;
 use App\Domain\User\RefreshTokenGenerator;
+use App\Domain\Validation\Validator\User\RefreshSessionValidator;
 use App\UseCase\UseCaseInterface;
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
@@ -25,6 +26,7 @@ use Psr\Clock\ClockInterface;
 final readonly class RefreshSessionUseCase implements UseCaseInterface
 {
     public function __construct(
+        private RefreshSessionValidator $validator,
         private SessionProviderGateway $sessionProviderGateway,
         private SessionPersisterGateway $sessionPersisterGateway,
         private AccessTokenIssuerInterface $accessTokenIssuer,
@@ -42,6 +44,8 @@ final readonly class RefreshSessionUseCase implements UseCaseInterface
      */
     public function execute(string $refreshToken, string $audience): SessionDataOutput
     {
+        $this->validator->validate();
+
         $session = $this->sessionProviderGateway->findOneByRefreshTokenHash(
             $this->refreshTokenGenerator->hash($refreshToken),
         );

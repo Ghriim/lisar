@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Persister\Training\MuscleGroupPersisterGateway;
 use App\Domain\Gateway\Provider\Training\MuscleGroupProviderGateway;
 use App\Domain\Gateway\Provider\Training\MuscleProviderGateway;
-use App\Domain\Validation\Constraint\Training\MuscleGroupUnusedConstraint;
+use App\Domain\Validation\Validator\Training\DeleteMuscleGroupValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -19,9 +20,8 @@ use App\UseCase\UseCaseInterface;
  */
 final readonly class DeleteMuscleGroupUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'delete_muscle_group_invalid';
-
     public function __construct(
+        private DeleteMuscleGroupValidator $validator,
         private MuscleGroupProviderGateway $muscleGroupProviderGateway,
         private MuscleGroupPersisterGateway $muscleGroupPersisterGateway,
         private MuscleProviderGateway $muscleProviderGateway,
@@ -32,20 +32,14 @@ final readonly class DeleteMuscleGroupUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id): void
+    public function execute(UserDataModel $currentUser, int $id): void
     {
         $muscleGroup = $this->muscleGroupProviderGateway->findOneById($id);
         if (null === $muscleGroup) {
             throw new DataModelNotFoundException(MuscleGroupDataModel::class);
         }
 
-        $violations = MuscleGroupUnusedConstraint::validate(
-            $this->muscleProviderGateway->countForMuscleGroup($muscleGroup),
-        );
-
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $this->muscleProviderGateway->countForMuscleGroup($muscleGroup));
 
         $this->muscleGroupPersisterGateway->delete($muscleGroup);
     }

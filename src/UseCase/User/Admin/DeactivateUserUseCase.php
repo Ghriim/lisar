@@ -12,7 +12,7 @@ use App\Domain\Gateway\Persister\User\SessionPersisterGateway;
 use App\Domain\Gateway\Persister\User\UserPersisterGateway;
 use App\Domain\Gateway\Provider\User\SessionProviderGateway;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
-use App\Domain\Validation\Constraint\User\SelfDeactivationConstraint;
+use App\Domain\Validation\Validator\User\Admin\DeactivateUserValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 use DateTimeImmutable;
@@ -27,9 +27,8 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class DeactivateUserUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'deactivate_user_invalid';
-
     public function __construct(
+        private DeactivateUserValidator $validator,
         private UserProviderGateway $userProviderGateway,
         private UserPersisterGateway $userPersisterGateway,
         private SessionProviderGateway $sessionProviderGateway,
@@ -43,7 +42,7 @@ final readonly class DeactivateUserUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, int $actingUserId): UserDataOutput
+    public function execute(UserDataModel $currentUser, int $id): UserDataOutput
     {
         $user = $this->userProviderGateway->findOneById($id);
 
@@ -51,10 +50,7 @@ final readonly class DeactivateUserUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(UserDataModel::class);
         }
 
-        $violations = SelfDeactivationConstraint::validate($id, $actingUserId);
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $id);
 
         $user->isActive = false;
         $this->userPersisterGateway->update($user);

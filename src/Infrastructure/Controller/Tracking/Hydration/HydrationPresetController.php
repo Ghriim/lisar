@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Infrastructure\Controller\Tracking\Hydration;
 
 use App\Domain\DTO\Output\Tracking\Hydration\HydrationPresetDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\UseCase\Tracking\Hydration\ListHydrationPresetsUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[OA\Tag(name: 'Hydration')]
-final class HydrationPresetController extends AbstractController
+final class HydrationPresetController extends AbstractBaseController
 {
     #[Route('/api/hydration/presets', methods: Request::METHOD_GET)]
     #[OA\Response(
@@ -25,6 +25,6 @@ final class HydrationPresetController extends AbstractController
     )]
     public function listPresets(ListHydrationPresetsUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute());
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 }

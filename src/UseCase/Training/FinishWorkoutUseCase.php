@@ -11,9 +11,8 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutPersisterGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
-use App\Domain\Validation\Constraint\Training\WorkoutFinishableConstraint;
+use App\Domain\Validation\Validator\Training\FinishWorkoutValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -24,10 +23,8 @@ use App\UseCase\UseCaseInterface;
  */
 final readonly class FinishWorkoutUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'finish_workout_invalid';
-
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private FinishWorkoutValidator $validator,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutPersisterGateway $workoutPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
@@ -39,26 +36,19 @@ final readonly class FinishWorkoutUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
+        // Validated first, finished or not: a workout that is someone else's is not handed back either.
+        $this->validator->validate($currentUser, $workout);
+
         if (false === $workout->isInProgress()) {
             // Already finished: the caller wanted it done and it is. Its moment is not rewritten.
             return $this->outputFactory->buildOne($workout);
-        }
-
-        $violations = WorkoutFinishableConstraint::validate($workout);
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
         }
 
         $finishedAt = $this->clock->now();

@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\Training\EquipmentDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Persister\Training\EquipmentPersisterGateway;
 use App\Domain\Gateway\Provider\Training\EquipmentProviderGateway;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
-use App\Domain\Validation\Constraint\Training\EquipmentUnusedConstraint;
+use App\Domain\Validation\Validator\Training\DeleteEquipmentValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -19,9 +20,8 @@ use App\UseCase\UseCaseInterface;
  */
 final readonly class DeleteEquipmentUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'delete_equipment_invalid';
-
     public function __construct(
+        private DeleteEquipmentValidator $validator,
         private EquipmentProviderGateway $equipmentProviderGateway,
         private EquipmentPersisterGateway $equipmentPersisterGateway,
         private MovementProviderGateway $movementProviderGateway,
@@ -32,18 +32,14 @@ final readonly class DeleteEquipmentUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id): void
+    public function execute(UserDataModel $currentUser, int $id): void
     {
         $equipment = $this->equipmentProviderGateway->findOneById($id);
         if (null === $equipment) {
             throw new DataModelNotFoundException(EquipmentDataModel::class);
         }
 
-        $violations = EquipmentUnusedConstraint::validate($this->movementProviderGateway->countForEquipment($equipment));
-
-        if (false === empty($violations)) {
-            throw new ValidationException(self::ERROR_CODE, $violations);
-        }
+        $this->validator->validate($currentUser, $this->movementProviderGateway->countForEquipment($equipment));
 
         $this->equipmentPersisterGateway->delete($equipment);
     }

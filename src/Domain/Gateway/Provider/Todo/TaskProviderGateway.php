@@ -11,8 +11,8 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 
 interface TaskProviderGateway
 {
-    /** Scoped to the owner: a task belonging to someone else is simply not found. */
-    public function findOneByIdForOwner(int $id, UserDataModel $owner): ?TaskDataModel;
+    /** Whoever it belongs to: whether the caller may touch it is the validator's to say. */
+    public function findOneById(int $id): ?TaskDataModel;
 
     /**
      * The account's own list: root tasks only, subtasks nested underneath, sorted by category

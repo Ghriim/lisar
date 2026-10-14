@@ -8,6 +8,7 @@ use App\Domain\DTO\Input\Habits\Admin\ListHabitsForAdminDataInput;
 use App\Domain\DTO\Input\Habits\CreateHabitDataInput;
 use App\Domain\DTO\Input\Habits\UpdateHabitDataInput;
 use App\Domain\DTO\Output\Habits\HabitAdminDataOutput;
+use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Habits\Admin\ActivateHabitUseCase;
 use App\UseCase\Habits\Admin\CreateHabitUseCase;
@@ -16,7 +17,6 @@ use App\UseCase\Habits\Admin\ListHabitsForAdminUseCase;
 use App\UseCase\Habits\Admin\UpdateHabitUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,7 +30,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * there is no DELETE: an activate and a deactivate route stand in for it.
  */
 #[OA\Tag(name: 'Admin — habits')]
-final class AdminHabitController extends AbstractController
+final class AdminHabitController extends AbstractBaseController
 {
     #[Route('/api/admin/habits', methods: Request::METHOD_GET)]
     #[OA\Parameter(name: 'isActive', in: 'query', required: false, schema: new OA\Schema(type: 'boolean'))]
@@ -43,7 +43,7 @@ final class AdminHabitController extends AbstractController
         #[MapDataInput] ListHabitsForAdminDataInput $input,
         ListHabitsForAdminUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input->isActive));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input->isActive));
     }
 
     #[Route('/api/admin/habits', methods: Request::METHOD_POST)]
@@ -58,7 +58,7 @@ final class AdminHabitController extends AbstractController
         #[MapDataInput] CreateHabitDataInput $input,
         CreateHabitUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($input), Response::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $input), Response::HTTP_CREATED);
     }
 
     #[Route('/api/admin/habits/{id}', requirements: ['id' => '\d+'], methods: Request::METHOD_PUT)]
@@ -76,7 +76,7 @@ final class AdminHabitController extends AbstractController
         #[MapDataInput] UpdateHabitDataInput $input,
         UpdateHabitUseCase $useCase,
     ): JsonResponse {
-        return new JsonResponse($useCase->execute($id, $input));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id, $input));
     }
 
     #[Route('/api/admin/habits/{id}/deactivate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -89,7 +89,7 @@ final class AdminHabitController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such habit.')]
     public function deactivateHabit(int $id, DeactivateHabitUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 
     #[Route('/api/admin/habits/{id}/activate', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
@@ -102,6 +102,6 @@ final class AdminHabitController extends AbstractController
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such habit.')]
     public function activateHabit(int $id, ActivateHabitUseCase $useCase): JsonResponse
     {
-        return new JsonResponse($useCase->execute($id));
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }
 }

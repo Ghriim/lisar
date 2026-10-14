@@ -12,7 +12,6 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutBlockPersisterGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Validation\Validator\Training\ReorderWorkoutBlocksValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -24,7 +23,6 @@ final readonly class ReorderWorkoutBlocksUseCase implements UseCaseInterface
 {
     public function __construct(
         private ReorderWorkoutBlocksValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutBlockPersisterGateway $workoutBlockPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
@@ -35,19 +33,14 @@ final readonly class ReorderWorkoutBlocksUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $workoutId, ReorderWorkoutBlocksDataInput $input): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, int $workoutId, ReorderWorkoutBlocksDataInput $input): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $workout = $this->workoutProviderGateway->findOneByIdForOwner($workoutId, $owner);
+        $workout = $this->workoutProviderGateway->findOneById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }
 
-        $this->validator->validate($input, $workout);
+        $this->validator->validate($currentUser, $input, $workout);
 
         foreach ($input->blockIds as $position => $blockId) {
             $block = $workout->findBlock($blockId);

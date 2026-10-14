@@ -36,6 +36,16 @@ final class TaskClosableConstraintTest extends TestCase
         );
     }
 
+    /** Completing one already done changes nothing: there is nothing to refuse. */
+    public function testATaskAlreadyDoneIsNotRefusedAgain(): void
+    {
+        $task = new TaskDataModel();
+        $task->completedAt = new DateTimeImmutable('2026-10-01T09:00:00+00:00');
+        $task->subtasks->add($this->buildSubtask($task, isDone: false));
+
+        self::assertSame([], TaskClosableConstraint::validate($task));
+    }
+
     private function buildSubtask(TaskDataModel $parent, bool $isDone): TaskDataModel
     {
         $subtask = new TaskDataModel();

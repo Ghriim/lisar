@@ -16,6 +16,7 @@ use App\Domain\Validation\Validator\Training\UpdateEquipmentValidator;
 use App\Fixtures\Training\EquipmentFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Training\Admin\ActivateEquipmentUseCase;
 use App\UseCase\Training\Admin\CreateEquipmentUseCase;
 use App\UseCase\Training\Admin\DeactivateEquipmentUseCase;
@@ -28,6 +29,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class EquipmentBackOfficeTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     /** How many equipments EquipmentFixtures seeds, and how many of them carry a load. */
     private const int SEEDED = 43;
@@ -58,7 +60,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
 
     public function testItListsEveryEquipmentByName(): void
     {
-        $names = array_map(static fn ($equipment) => $equipment->name, $this->list->execute());
+        $names = array_map(static fn ($equipment) => $equipment->name, $this->list->execute($this->currentAdmin()));
 
         self::assertCount(self::SEEDED, $names);
         self::assertSame('Ab crunch machine', $names[0]);
@@ -66,19 +68,19 @@ final class EquipmentBackOfficeTest extends KernelTestCase
 
     public function testTheListFiltersByStatus(): void
     {
-        $this->deactivate->execute($this->barbell()->id ?? 0);
+        $this->deactivate->execute($this->currentAdmin(), $this->barbell()->id ?? 0);
 
-        self::assertCount(self::SEEDED, $this->list->execute(new ListEquipmentsForAdminDataInput()));
-        self::assertCount(self::SEEDED - 1, $this->list->execute(new ListEquipmentsForAdminDataInput(isActive: true)));
+        self::assertCount(self::SEEDED, $this->list->execute($this->currentAdmin(), new ListEquipmentsForAdminDataInput()));
+        self::assertCount(self::SEEDED - 1, $this->list->execute($this->currentAdmin(), new ListEquipmentsForAdminDataInput(isActive: true)));
         self::assertSame(['Barbell'], $this->names(new ListEquipmentsForAdminDataInput(isActive: false)));
     }
 
     public function testTheListFiltersByLoadAndByDistance(): void
     {
-        self::assertCount(self::SEEDED_WITH_WEIGHT, $this->list->execute(new ListEquipmentsForAdminDataInput(hasWeight: true)));
+        self::assertCount(self::SEEDED_WITH_WEIGHT, $this->list->execute($this->currentAdmin(), new ListEquipmentsForAdminDataInput(hasWeight: true)));
         self::assertCount(
             self::SEEDED - self::SEEDED_WITH_WEIGHT,
-            $this->list->execute(new ListEquipmentsForAdminDataInput(hasWeight: false)),
+            $this->list->execute($this->currentAdmin(), new ListEquipmentsForAdminDataInput(hasWeight: false)),
         );
         self::assertSame(
             ['Rowing machine', 'Stationary bike', 'Treadmill'],
@@ -89,7 +91,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     /** The filters combine: every one of them has to hold. */
     public function testTheFiltersCombine(): void
     {
-        $this->deactivate->execute($this->getReference(EquipmentFixtures::TREADMILL, EquipmentDataModel::class)->id ?? 0);
+        $this->deactivate->execute($this->currentAdmin(), $this->getReference(EquipmentFixtures::TREADMILL, EquipmentDataModel::class)->id ?? 0);
 
         self::assertSame(
             ['Rowing machine', 'Stationary bike'],
@@ -99,7 +101,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
 
     public function testItCreatesAnEquipment(): void
     {
-        $output = $this->create->execute(new CreateEquipmentDataInput('Climbing rope', false, false));
+        $output = $this->create->execute($this->currentAdmin(), new CreateEquipmentDataInput('Climbing rope', false, false));
 
         self::assertSame('Climbing rope', $output->name);
         self::assertFalse($output->hasWeight);
@@ -115,7 +117,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     public function testItRefusesANameAlreadyTakenIgnoringCase(): void
     {
         try {
-            $this->create->execute(new CreateEquipmentDataInput('barbell', true, false));
+            $this->create->execute($this->currentAdmin(), new CreateEquipmentDataInput('barbell', true, false));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateEquipmentValidator::ERROR_CODE, $exception->errorCode);
@@ -127,7 +129,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     {
         $treadmill = $this->getReference(EquipmentFixtures::TREADMILL, EquipmentDataModel::class);
 
-        $output = $this->update->execute($treadmill->id ?? 0, new UpdateEquipmentDataInput('Weighted treadmill', true, true));
+        $output = $this->update->execute($this->currentAdmin(), $treadmill->id ?? 0, new UpdateEquipmentDataInput('Weighted treadmill', true, true));
 
         self::assertSame('Weighted treadmill', $output->name);
         self::assertTrue($output->hasWeight);
@@ -141,7 +143,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     /** An equipment keeps its own name, and may change only its case. */
     public function testAnEquipmentMayKeepItsOwnName(): void
     {
-        $output = $this->update->execute($this->barbell()->id ?? 0, new UpdateEquipmentDataInput('BARBELL', true, false));
+        $output = $this->update->execute($this->currentAdmin(), $this->barbell()->id ?? 0, new UpdateEquipmentDataInput('BARBELL', true, false));
 
         self::assertSame('BARBELL', $output->name);
     }
@@ -149,7 +151,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     public function testItRefusesToRenameOntoAnotherEquipment(): void
     {
         try {
-            $this->update->execute($this->barbell()->id ?? 0, new UpdateEquipmentDataInput('Dumbbell', true, false));
+            $this->update->execute($this->currentAdmin(), $this->barbell()->id ?? 0, new UpdateEquipmentDataInput('Dumbbell', true, false));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateEquipmentValidator::ERROR_CODE, $exception->errorCode);
@@ -161,8 +163,8 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     {
         $id = $this->barbell()->id ?? 0;
 
-        self::assertFalse($this->deactivate->execute($id)->isActive);
-        self::assertTrue($this->activate->execute($id)->isActive);
+        self::assertFalse($this->deactivate->execute($this->currentAdmin(), $id)->isActive);
+        self::assertTrue($this->activate->execute($this->currentAdmin(), $id)->isActive);
         self::assertTrue($this->equipmentProviderGateway->findOneById($id)?->isActive);
     }
 
@@ -170,7 +172,7 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     {
         $id = $this->barbell()->id ?? 0;
 
-        $this->delete->execute($id);
+        $this->delete->execute($this->currentAdmin(), $id);
 
         self::assertNull($this->equipmentProviderGateway->findOneById($id));
     }
@@ -179,13 +181,13 @@ final class EquipmentBackOfficeTest extends KernelTestCase
     {
         $this->expectException(DataModelNotFoundException::class);
 
-        $this->update->execute(123456789, new UpdateEquipmentDataInput('Ghost', false, false));
+        $this->update->execute($this->currentAdmin(), 123456789, new UpdateEquipmentDataInput('Ghost', false, false));
     }
 
     /** @return list<string> */
     private function names(ListEquipmentsForAdminDataInput $input): array
     {
-        return array_map(static fn ($equipment) => $equipment->name, $this->list->execute($input));
+        return array_map(static fn ($equipment) => $equipment->name, $this->list->execute($this->currentAdmin(), $input));
     }
 
     private function barbell(): EquipmentDataModel

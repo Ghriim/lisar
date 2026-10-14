@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Tracking\Hydration\Admin;
 
 use App\Domain\DTO\DataModel\Tracking\HydrationPresetDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Tracking\Hydration\CreateHydrationPresetDataInput;
 use App\Domain\DTO\Output\Tracking\Hydration\HydrationPresetDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -25,9 +26,9 @@ final readonly class CreateHydrationPresetUseCase implements UseCaseInterface
     /**
      * @throws ValidationException
      */
-    public function execute(CreateHydrationPresetDataInput $input): HydrationPresetDataOutput
+    public function execute(UserDataModel $currentUser, CreateHydrationPresetDataInput $input): HydrationPresetDataOutput
     {
-        $this->validator->validate($input);
+        $this->validator->validate($currentUser, $input);
 
         $preset = new HydrationPresetDataModel();
         $preset->icon = $input->icon;

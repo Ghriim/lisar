@@ -14,7 +14,8 @@
 Lire `docs/dev/architecture/backend-architecture.md`. C'est la convention du projet :
 layering `Infrastructure → UseCase → Domain`, `<Noun>DataModel` sous `Domain/DTO/DataModel/`
 (le mot « entity » n'existe pas ici), accès données via Gateway, `OutputFactory` obligatoire,
-validators qui accumulent les violations, `final readonly` par défaut, comparaisons Yoda.
+un validator par use case, qui appelle ses contraintes une à une et accumule les violations,
+aucune fonction sur un DTO hormis son constructeur, `final readonly` par défaut, comparaisons Yoda.
 
 Sa §13 est la checklist pour ajouter une feature, sa §15 la liste des anti-patterns.
 

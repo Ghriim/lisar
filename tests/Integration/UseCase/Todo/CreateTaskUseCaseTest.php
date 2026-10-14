@@ -20,6 +20,7 @@ use App\Fixtures\Todo\PriorityFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\CreateTaskUseCase;
 use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -27,6 +28,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class CreateTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use SignedInUserTrait;
 
     private CreateTaskUseCase $useCase;
     private TaskProviderGateway $taskProviderGateway;
@@ -48,7 +50,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
 
     public function testItCreatesATask(): void
     {
-        $output = $this->useCase->execute($this->aliceId(), new CreateTaskDataInput(
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput(
             title: 'Call the dentist',
             description: 'Ask for an evening slot.',
             dueDate: '2026-10-02',
@@ -61,7 +63,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
         self::assertNull($output->parentId);
 
         // Re-read through the gateway: assert it was really persisted.
-        $task = $this->taskProviderGateway->findOneByIdForOwner($output->id, $this->alice);
+        $task = $this->taskProviderGateway->findOneById($output->id);
         self::assertNotNull($task);
         self::assertSame('Call the dentist', $task->title);
         self::assertSame('2026-10-02', $task->dueDate?->format('Y-m-d'));
@@ -73,7 +75,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
      */
     public function testItAppliesTheDefaultPriority(): void
     {
-        $output = $this->useCase->execute($this->aliceId(), new CreateTaskDataInput('Call the dentist'));
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput('Call the dentist'));
 
         self::assertNotNull($output->priority);
         self::assertSame('Normal', $output->priority->label);
@@ -85,7 +87,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
         $high = $this->getReference(PriorityFixtures::HIGH, PriorityDataModel::class);
 
         $output = $this->useCase->execute(
-            $this->aliceId(),
+            $this->currentUser($this->aliceId()),
             new CreateTaskDataInput('Call the dentist', priorityId: $high->id),
         );
 
@@ -99,14 +101,14 @@ final class CreateTaskUseCaseTest extends KernelTestCase
         $sideProject = $this->getReference(CategoryFixtures::ALICE_SIDE_PROJECT, CategoryDataModel::class);
 
         $onReference = $this->useCase->execute(
-            $this->aliceId(),
+            $this->currentUser($this->aliceId()),
             new CreateTaskDataInput('Call the dentist', categoryId: $home->id),
         );
         self::assertNotNull($onReference->category);
         self::assertFalse($onReference->category->isPersonal);
 
         $onPersonal = $this->useCase->execute(
-            $this->aliceId(),
+            $this->currentUser($this->aliceId()),
             new CreateTaskDataInput('Ship the landing page', categoryId: $sideProject->id),
         );
         self::assertNotNull($onPersonal->category);
@@ -120,7 +122,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
 
         try {
             $this->useCase->execute(
-                $admin->id ?? 0,
+                $this->currentUser($admin->id ?? 0),
                 new CreateTaskDataInput('Peek at a category', categoryId: $sideProject->id),
             );
             self::fail('Expected ValidationException');
@@ -134,7 +136,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
 
     public function testItReusesTheAccountsTagsAndCreatesTheNewOnes(): void
     {
-        $output = $this->useCase->execute($this->aliceId(), new CreateTaskDataInput(
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput(
             title: 'Call the dentist',
             // "urgent" already exists on the account, "health" does not.
             tags: ['urgent', 'health', '  urgent  '],
@@ -156,13 +158,13 @@ final class CreateTaskUseCaseTest extends KernelTestCase
         $parent = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class);
 
         $output = $this->useCase->execute(
-            $this->aliceId(),
+            $this->currentUser($this->aliceId()),
             new CreateTaskDataInput('Return the keys', parentId: $parent->id),
         );
 
         self::assertSame($parent->id, $output->parentId);
 
-        $reread = $this->taskProviderGateway->findOneByIdForOwner($parent->id ?? 0, $this->alice);
+        $reread = $this->taskProviderGateway->findOneById($parent->id ?? 0);
         self::assertNotNull($reread);
         self::assertCount(3, $reread->subtasks);
     }
@@ -173,7 +175,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
 
         try {
             $this->useCase->execute(
-                $this->aliceId(),
+                $this->currentUser($this->aliceId()),
                 new CreateTaskDataInput('Too deep', parentId: $subtask->id),
             );
             self::fail('Expected ValidationException');
@@ -191,7 +193,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
         $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
 
         try {
-            $this->useCase->execute($admin->id ?? 0, new CreateTaskDataInput('Sneak in', parentId: $parent->id));
+            $this->useCase->execute($this->currentUser($admin->id ?? 0), new CreateTaskDataInput('Sneak in', parentId: $parent->id));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertContains(
@@ -204,7 +206,7 @@ final class CreateTaskUseCaseTest extends KernelTestCase
     public function testItRejectsAnInvalidPayload(): void
     {
         try {
-            $this->useCase->execute($this->aliceId(), new CreateTaskDataInput('', dueDate: 'nope'));
+            $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput('', dueDate: 'nope'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('title', $exception->violations);

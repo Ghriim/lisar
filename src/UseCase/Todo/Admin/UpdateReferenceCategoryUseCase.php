@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Todo\Admin;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\Admin\UpdateReferenceCategoryDataInput;
 use App\Domain\DTO\Output\Todo\CategoryDataOutput;
 use App\Domain\Exception\ValidationException;
@@ -29,7 +30,7 @@ final readonly class UpdateReferenceCategoryUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $id, UpdateReferenceCategoryDataInput $input): CategoryDataOutput
+    public function execute(UserDataModel $currentUser, int $id, UpdateReferenceCategoryDataInput $input): CategoryDataOutput
     {
         $category = $this->categoryProviderGateway->findOneById($id);
 
@@ -40,6 +41,7 @@ final readonly class UpdateReferenceCategoryUseCase implements UseCaseInterface
         }
 
         $this->validator->validate(
+            $currentUser,
             $input,
             $category,
             $this->categoryProviderGateway->findOneByLabelForOwner($input->label, null),

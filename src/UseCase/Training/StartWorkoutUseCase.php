@@ -12,7 +12,6 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Training\WorkoutOutputFactory;
 use App\Domain\Gateway\Persister\Training\WorkoutPersisterGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Training\StartWorkoutValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -26,7 +25,6 @@ final readonly class StartWorkoutUseCase implements UseCaseInterface
 {
     public function __construct(
         private StartWorkoutValidator $validator,
-        private UserProviderGateway $userProviderGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
         private WorkoutPersisterGateway $workoutPersisterGateway,
         private WorkoutOutputFactory $outputFactory,
@@ -38,17 +36,12 @@ final readonly class StartWorkoutUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, StartWorkoutDataInput $input): WorkoutDataOutput
+    public function execute(UserDataModel $currentUser, StartWorkoutDataInput $input): WorkoutDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
-        $this->validator->validate($input, $this->workoutProviderGateway->findOneInProgressForOwner($owner));
+        $this->validator->validate($currentUser, $input, $this->workoutProviderGateway->findOneInProgressForOwner($currentUser));
 
         $workout = new WorkoutDataModel();
-        $workout->owner = $owner;
+        $workout->owner = $currentUser;
         $workout->name = $input->getName();
         $workout->startedAt = $this->clock->now();
 

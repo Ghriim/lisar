@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\Validation\Validator\Todo\Admin;
 
 use App\Domain\DTO\DataModel\Todo\PriorityDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\Admin\UpdatePriorityDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Todo\DefaultPriorityKeptConstraint;
 use App\Domain\Validation\Constraint\Todo\PriorityLabelAvailableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
@@ -22,10 +24,16 @@ final readonly class UpdatePriorityValidator extends AbstractBaseValidator
      * @throws ValidationException
      */
     public function validate(
+        UserDataModel $currentUser,
         UpdatePriorityDataInput $input,
         PriorityDataModel $priority,
         ?PriorityDataModel $withSameLabel,
     ): void {
+        $access = IsAdminConstraint::validate($currentUser);
+        if ([] !== $access) {
+            throw new ValidationException(self::ERROR_CODE, $access);
+        }
+
         $violations = $this->getViolations($input);
         $violations = PriorityLabelAvailableConstraint::validate($withSameLabel, $priority->id, $violations);
         $violations = DefaultPriorityKeptConstraint::validate($priority, $input->isDefault, $violations);

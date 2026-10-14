@@ -14,9 +14,8 @@ use App\Domain\Gateway\Persister\Habits\HabitEntryPersisterGateway;
 use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
-use App\Domain\Gateway\Provider\User\UserProviderGateway;
-use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Tracking\DayClock;
+use App\Domain\Validation\Validator\Habits\UncompleteHabitValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
@@ -31,11 +30,8 @@ use function sprintf;
  */
 final readonly class UncompleteHabitUseCase implements UseCaseInterface
 {
-    public const string ERROR_CODE = 'uncomplete_habit_invalid';
-    public const string NOT_MANUAL = 'habit_not_manual';
-
     public function __construct(
-        private UserProviderGateway $userProviderGateway,
+        private UncompleteHabitValidator $validator,
         private HabitProviderGateway $habitProviderGateway,
         private HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
         private HabitEntryProviderGateway $habitEntryProviderGateway,
@@ -49,26 +45,19 @@ final readonly class UncompleteHabitUseCase implements UseCaseInterface
      * @throws DataModelNotFoundException
      * @throws ValidationException
      */
-    public function execute(int $ownerId, int $habitId): HabitDataOutput
+    public function execute(UserDataModel $currentUser, int $habitId): HabitDataOutput
     {
-        $owner = $this->userProviderGateway->findOneById($ownerId);
-        if (null === $owner) {
-            throw new DataModelNotFoundException(UserDataModel::class);
-        }
-
         $habit = $this->habitProviderGateway->findOneById($habitId);
         if (null === $habit || false === $habit->isActive) {
             throw new DataModelNotFoundException(HabitDataModel::class);
         }
 
-        $subscription = $this->habitSubscriptionProviderGateway->findOneForOwnerAndHabit($owner, $habit);
+        $subscription = $this->habitSubscriptionProviderGateway->findOneForOwnerAndHabit($currentUser, $habit);
         if (null === $subscription || false === $subscription->isActive) {
             throw new DataModelNotFoundException(HabitSubscriptionDataModel::class);
         }
 
-        if (HabitSourceRegistry::MANUAL !== $habit->sourceKind) {
-            throw new ValidationException(self::ERROR_CODE, ['habit' => [self::NOT_MANUAL]]);
-        }
+        $this->validator->validate($currentUser, $habit);
 
         $today = $this->clock->today();
 
