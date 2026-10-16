@@ -6,23 +6,25 @@ namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutSetDeletedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
 use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\DeleteWorkoutSetUseCase;
 use App\UseCase\Training\GetWorkoutUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/** Removing a set from a workout, and whatever it counted for. */
+/** Removing a set from a workout. What it counted for is handed back by its handlers. */
 final class DeleteWorkoutSetUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -70,29 +72,17 @@ final class DeleteWorkoutSetUseCaseTest extends KernelTestCase
         $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, 999999);
     }
 
-    public function testRemovingASetHandsTheRecordBack(): void
+    /** A removed set no longer knows its workout nor its movement: the event says them, read before. */
+    public function testRemovingASetRaisesItsEvent(): void
     {
-        $workout = $this->benchWorkout();
-        $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
+        $workout = $this->addDoneSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
+        $this->forgetRaisedEvents();
 
         $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
 
-        self::assertSame(60.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
-    }
-
-    public function testRemovingASetTakesItOut(): void
-    {
-        $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 8, weightInKilograms: 50.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
-        $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 6, weightInKilograms: 50.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
-
-        $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
-
-        $summary = $this->summaryOf($workout->id);
-        self::assertSame(1, $summary->setCount);
-        self::assertSame(400.0, (float) $summary->volumeInKilograms);
+        $event = $this->assertEventRaised(WorkoutSetDeletedEvent::class);
+        self::assertSame($workout->id, $event->workout->id);
+        self::assertSame($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL), $event->movement->id);
     }
 
     public function testRemovingASetStaysWithinItsQueryBudget(): void

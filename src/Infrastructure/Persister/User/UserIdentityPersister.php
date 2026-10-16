@@ -15,12 +15,12 @@ final class UserIdentityPersister extends AbstractBaseMysqlPersister implements 
 {
     public function create(UserIdentityDataModel $identity): UserIdentityDataModel
     {
-        return $this->persistAndStampCreate($identity);
+        return $this->persistCreate($identity);
     }
 
     public function update(UserIdentityDataModel $identity): UserIdentityDataModel
     {
-        return $this->persistAndStampUpdate($identity);
+        return $this->persistUpdate($identity);
     }
 
     public function delete(UserIdentityDataModel $identity): void

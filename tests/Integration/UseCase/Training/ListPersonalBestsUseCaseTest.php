@@ -10,6 +10,7 @@ use App\Domain\DTO\Output\Training\PersonalBestBoardDataOutput;
 use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
 use App\Fixtures\Training\MovementFixtures;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\FinishWorkoutUseCase;
 use App\UseCase\Training\ListPersonalBestsUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -23,6 +24,7 @@ final class ListPersonalBestsUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -72,13 +74,14 @@ final class ListPersonalBestsUseCaseTest extends KernelTestCase
         [$fewer, $more] = $this->assertQueryCountDoesNotGrow(
             fn () => $this->currentUser($this->aliceId),
             fn (UserDataModel $currentUser) => $this->useCase(ListPersonalBestsUseCase::class)->execute($currentUser),
-            function (): void {
+            // The handlers on: they are what writes the records the board grows by.
+            fn () => $this->withHandlers(function (): void {
                 foreach ([70.0, 75.0] as $load) {
                     $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: $load));
                     $workout = $this->complete($workout, $this->lastSet($workout));
                     $this->useCase(FinishWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id);
                 }
-            },
+            }),
         );
 
         self::assertGreaterThan($this->rowCount($fewer), $this->rowCount($more));

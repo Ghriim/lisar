@@ -5,32 +5,25 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
-use App\Domain\DTO\Input\Habits\CreateHabitDataInput;
+use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Registry\Habits\HabitIconRegistry;
-use App\Domain\Registry\Habits\HabitSourceRegistry;
-use App\Domain\Registry\Habits\HabitTrackerRegistry;
-use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
 use App\Domain\Validation\Constraint\Training\WorkoutFinishableConstraint;
 use App\Domain\Validation\Validator\Training\FinishWorkoutValidator;
 use App\Fixtures\Training\MovementFixtures;
 use App\Tests\Integration\QueryCountTrait;
-use App\UseCase\Habits\Admin\CreateHabitUseCase;
-use App\UseCase\Habits\ListHabitsUseCase;
-use App\UseCase\Habits\SubscribeHabitUseCase;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\CompleteWorkoutSetUseCase;
-use App\UseCase\Training\DeleteWorkoutUseCase;
 use App\UseCase\Training\FinishWorkoutUseCase;
 use App\UseCase\Training\GetCurrentWorkoutUseCase;
-use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/** Finishing the workout in progress: every set done, it lands in the history and keeps the workout habit. */
+/** Finishing the workout in progress: every set done, it lands in the history. Its handlers keep the workout habit and the records. */
 final class FinishWorkoutUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -80,35 +73,21 @@ final class FinishWorkoutUseCaseTest extends KernelTestCase
         }
     }
 
-    public function testFinishingKeepsTheWorkoutHabitAndDeletingUnkeepsIt(): void
+    public function testFinishingRaisesItsEventOnce(): void
     {
-        $habit = $this->useCase(CreateHabitUseCase::class)->execute($this->currentAdmin(), new CreateHabitDataInput(
-            'Une séance', HabitIconRegistry::DUMBBELL, HabitSourceRegistry::TRACKER, HabitTrackerRegistry::WORKOUT, 1,
-        ));
-        $this->useCase(SubscribeHabitUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $habit->id);
-
         $workout = $this->addDoneSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10));
-        self::assertFalse($this->isKeptToday($habit->id));
+        $this->forgetRaisedEvents();
 
         $this->finish($workout);
-        self::assertTrue($this->isKeptToday($habit->id));
 
-        $this->useCase(DeleteWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
-        self::assertFalse($this->isKeptToday($habit->id));
-    }
+        $event = $this->assertEventRaised(WorkoutUpdatedEvent::class);
+        self::assertSame($workout->id, $event->workout->id);
+        self::assertNotNull($event->workout->finishedAt);
 
-    /** Finishing gives a workout its length, and the length can be a record. */
-    public function testFinishingAWorkoutCanSetTheLongestOne(): void
-    {
-        $workout = $this->benchWorkout();
-        $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 50.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
-
-        $this->useCase(FinishWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id);
-
-        // Started and finished in the same second: no longer than the seeded hour.
-        self::assertSame(3600.0, $this->session($this->board(), Kind::LONGEST_SESSION)?->current->value);
-        self::assertCount(1, $this->session($this->board(), Kind::LONGEST_SESSION)?->progression ?? []);
+        // Finished already: nothing moves, nothing is said.
+        $this->forgetRaisedEvents();
+        $this->finish($workout);
+        $this->assertNoEventRaised();
     }
 
     public function testFinishingAWorkoutStaysWithinItsQueryBudget(): void
@@ -126,16 +105,5 @@ final class FinishWorkoutUseCaseTest extends KernelTestCase
             fn () => $this->currentUser($this->idOf($this->alice)),
             fn (UserDataModel $currentUser) => $this->useCase(FinishWorkoutUseCase::class)->execute($currentUser, $workout->id),
         );
-    }
-
-    private function isKeptToday(int $habitId): bool
-    {
-        foreach ($this->useCase(ListHabitsUseCase::class)->execute($this->currentUser($this->idOf($this->alice))) as $habit) {
-            if ($habitId === $habit->habitId) {
-                return $habit->isCompletedToday;
-            }
-        }
-
-        throw new LogicException('The habit is not in the list.');
     }
 }

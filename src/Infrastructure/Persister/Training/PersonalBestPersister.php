@@ -27,7 +27,7 @@ final class PersonalBestPersister extends AbstractBaseMysqlPersister implements 
 
         foreach ($rebuilt as $row) {
             $row->set?->personalBests->add($row);
-            $this->persistAndStampCreate($row, flush: false);
+            $this->persistCreate($row, flush: false);
         }
 
         $this->entityManager->flush();

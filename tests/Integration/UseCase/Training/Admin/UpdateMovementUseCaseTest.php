@@ -23,6 +23,7 @@ use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Training\Admin\DeactivateEquipmentUseCase;
 use App\UseCase\Training\Admin\DeactivateMuscleGroupUseCase;
 use App\UseCase\Training\Admin\UpdateMovementUseCase;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /** Reconfiguring a common movement. */
@@ -63,10 +64,13 @@ final class UpdateMovementUseCaseTest extends KernelTestCase
         self::assertSame(['Weighted vest'], array_map(static fn ($equipment) => $equipment->name, $output->equipments));
         self::assertTrue($output->tracksWeight);
 
+        // Read back from the database, not from what the use case held: the links are changed in
+        // place, and only what moved is written.
+        self::getContainer()->get(EntityManagerInterface::class)->clear();
         $reread = $this->movementProviderGateway->findOneCommonById($output->id);
         self::assertNotNull($reread);
         self::assertCount(0, $reread->secondaryMuscles);
-        self::assertCount(1, $reread->equipments);
+        self::assertSame(['Weighted vest'], array_map(static fn ($equipment) => $equipment->name, $reread->equipments->toArray()));
     }
 
     /** What a movement already has and has been retired since stays on it when it changes otherwise. */

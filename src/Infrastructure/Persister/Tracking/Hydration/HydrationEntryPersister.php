@@ -12,7 +12,6 @@ use App\Domain\Event\EventDispatcherInterface;
 use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationEntryPersisterGateway;
 use App\Infrastructure\Persister\AbstractBaseMysqlPersister;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Clock\ClockInterface;
 
 /**
  * @extends AbstractBaseMysqlPersister<HydrationEntryDataModel>
@@ -21,16 +20,15 @@ final class HydrationEntryPersister extends AbstractBaseMysqlPersister implement
 {
     public function __construct(
         EntityManagerInterface $entityManager,
-        ClockInterface $clock,
         private readonly EventDispatcherInterface $eventDispatcher,
     ) {
-        parent::__construct($entityManager, $clock);
+        parent::__construct($entityManager);
     }
 
     public function create(HydrationEntryDataModel $entry): HydrationEntryDataModel
     {
         $this->inTransaction(function () use ($entry): void {
-            $this->persistAndStampCreate($entry);
+            $this->persistCreate($entry);
             // Both sides kept in step before anyone reads the day's total off its entries.
             if (false === $entry->hydrationDay->entries->contains($entry)) {
                 $entry->hydrationDay->entries->add($entry);
@@ -44,7 +42,7 @@ final class HydrationEntryPersister extends AbstractBaseMysqlPersister implement
     public function update(HydrationEntryDataModel $entry): HydrationEntryDataModel
     {
         $this->inTransaction(function () use ($entry): void {
-            $this->persistAndStampUpdate($entry);
+            $this->persistUpdate($entry);
             $this->eventDispatcher->dispatch(new HydrationEntryUpdatedEvent($entry));
         });
 

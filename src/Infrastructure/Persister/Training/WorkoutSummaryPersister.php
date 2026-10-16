@@ -17,14 +17,14 @@ final class WorkoutSummaryPersister extends AbstractBaseMysqlPersister implement
 {
     public function create(WorkoutSummaryDataModel $summary): WorkoutSummaryDataModel
     {
-        return $this->persistAndStampCreate($summary);
+        return $this->persistCreate($summary);
     }
 
     /** @param list<WorkoutSummaryDataModel> $summaries */
     public function updateMany(array $summaries): void
     {
         foreach ($summaries as $summary) {
-            $this->persistAndStampUpdate($summary, flush: false);
+            $this->persistUpdate($summary, flush: false);
         }
         $this->entityManager->flush();
     }

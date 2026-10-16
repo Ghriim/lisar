@@ -15,12 +15,12 @@ final class HydrationPresetPersister extends AbstractBaseMysqlPersister implemen
 {
     public function create(HydrationPresetDataModel $preset): HydrationPresetDataModel
     {
-        return $this->persistAndStampCreate($preset);
+        return $this->persistCreate($preset);
     }
 
     public function update(HydrationPresetDataModel $preset): HydrationPresetDataModel
     {
-        return $this->persistAndStampUpdate($preset);
+        return $this->persistUpdate($preset);
     }
 
     public function delete(HydrationPresetDataModel $preset): void

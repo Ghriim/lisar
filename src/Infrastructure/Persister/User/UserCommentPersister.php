@@ -15,6 +15,6 @@ final class UserCommentPersister extends AbstractBaseMysqlPersister implements U
 {
     public function create(UserCommentDataModel $comment): UserCommentDataModel
     {
-        return $this->persistAndStampCreate($comment);
+        return $this->persistCreate($comment);
     }
 }

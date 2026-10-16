@@ -50,8 +50,10 @@ class WorkoutDataModel implements DataModelInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     public ?DateTimeImmutable $finishedAt = null;
 
+    // Persisted with it: a workout is created whole — a copy with its blocks, movements and sets —
+    // in one flush. Deleted with it by the database, not by Doctrine (§6.1).
     /** @var Collection<int, WorkoutBlockDataModel> */
-    #[ORM\OneToMany(targetEntity: WorkoutBlockDataModel::class, mappedBy: 'workout')]
+    #[ORM\OneToMany(targetEntity: WorkoutBlockDataModel::class, mappedBy: 'workout', cascade: ['persist'])]
     #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     public Collection $blocks;
 

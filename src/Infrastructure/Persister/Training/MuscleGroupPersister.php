@@ -15,12 +15,12 @@ final class MuscleGroupPersister extends AbstractBaseMysqlPersister implements M
 {
     public function create(MuscleGroupDataModel $muscleGroup): MuscleGroupDataModel
     {
-        return $this->persistAndStampCreate($muscleGroup);
+        return $this->persistCreate($muscleGroup);
     }
 
     public function update(MuscleGroupDataModel $muscleGroup): MuscleGroupDataModel
     {
-        return $this->persistAndStampUpdate($muscleGroup);
+        return $this->persistUpdate($muscleGroup);
     }
 
     public function delete(MuscleGroupDataModel $muscleGroup): void

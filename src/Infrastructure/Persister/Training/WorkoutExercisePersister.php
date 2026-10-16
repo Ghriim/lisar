@@ -10,7 +10,6 @@ use App\Domain\Event\EventDispatcherInterface;
 use App\Domain\Gateway\Persister\Training\WorkoutExercisePersisterGateway;
 use App\Infrastructure\Persister\AbstractBaseMysqlPersister;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Clock\ClockInterface;
 
 /**
  * @extends AbstractBaseMysqlPersister<WorkoutExerciseDataModel>
@@ -19,15 +18,14 @@ final class WorkoutExercisePersister extends AbstractBaseMysqlPersister implemen
 {
     public function __construct(
         EntityManagerInterface $entityManager,
-        ClockInterface $clock,
         private readonly EventDispatcherInterface $eventDispatcher,
     ) {
-        parent::__construct($entityManager, $clock);
+        parent::__construct($entityManager);
     }
 
     public function create(WorkoutExerciseDataModel $workoutExercise): WorkoutExerciseDataModel
     {
-        $this->persistAndStampCreate($workoutExercise);
+        $this->persistCreate($workoutExercise);
         if (false === $workoutExercise->block->exercises->contains($workoutExercise)) {
             $workoutExercise->block->exercises->add($workoutExercise);
         }
@@ -37,7 +35,7 @@ final class WorkoutExercisePersister extends AbstractBaseMysqlPersister implemen
 
     public function update(WorkoutExerciseDataModel $workoutExercise): WorkoutExerciseDataModel
     {
-        return $this->persistAndStampUpdate($workoutExercise);
+        return $this->persistUpdate($workoutExercise);
     }
 
     public function delete(WorkoutExerciseDataModel $workoutExercise): void

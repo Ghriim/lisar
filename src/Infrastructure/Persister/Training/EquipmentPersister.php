@@ -15,12 +15,12 @@ final class EquipmentPersister extends AbstractBaseMysqlPersister implements Equ
 {
     public function create(EquipmentDataModel $equipment): EquipmentDataModel
     {
-        return $this->persistAndStampCreate($equipment);
+        return $this->persistCreate($equipment);
     }
 
     public function update(EquipmentDataModel $equipment): EquipmentDataModel
     {
-        return $this->persistAndStampUpdate($equipment);
+        return $this->persistUpdate($equipment);
     }
 
     public function delete(EquipmentDataModel $equipment): void

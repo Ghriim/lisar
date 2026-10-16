@@ -6,6 +6,8 @@ namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutCreatedEvent;
+use App\Domain\DTO\Event\Training\WorkoutSetCreatedEvent;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutNotInProgressConstraint;
@@ -14,6 +16,7 @@ use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\SetTypeFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\Admin\DeactivateMovementUseCase;
 use App\UseCase\Training\Admin\DeactivateSetTypeUseCase;
 use App\UseCase\Training\CopyWorkoutUseCase;
@@ -26,6 +29,7 @@ final class CopyWorkoutUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -129,14 +133,13 @@ final class CopyWorkoutUseCaseTest extends KernelTestCase
         }
     }
 
-    /** Laid out like a past workout, a copy has done nothing yet: its sets are all still to do. */
-    public function testACopyStartsWithAnEmptySummary(): void
+    /** Its summary is its handler's to create: the copy is written whole, and said once. */
+    public function testCopyingAWorkoutRaisesItsEvent(): void
     {
-        $source = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
+        $copy = $this->copy(WorkoutFixtures::ALICE_FINISHED);
 
-        $copy = $this->useCase(CopyWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $source->id ?? 0);
-
-        self::assertSame(0, $this->summaryOf($copy->workout->id)->setCount);
+        self::assertSame($copy->workout->id, $this->assertEventRaised(WorkoutCreatedEvent::class)->workout->id);
+        $this->assertNoEventRaised(WorkoutSetCreatedEvent::class);
     }
 
     public function testCopyingAWorkoutStaysWithinItsQueryBudget(): void
@@ -146,6 +149,9 @@ final class CopyWorkoutUseCaseTest extends KernelTestCase
         $this->assertQueryCountAtMost(
             fn () => $this->currentUser($this->idOf($this->alice)),
             fn (UserDataModel $currentUser) => $this->useCase(CopyWorkoutUseCase::class)->execute($currentUser, $workoutId),
+            // Three reads — the workout copied, the one in progress, the default set type — then one
+            // INSERT per row of the copy: the workout, 2 blocks, 3 movements, 8 sets.
+            max: 17,
         );
     }
 }

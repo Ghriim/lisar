@@ -15,12 +15,12 @@ final class MovementPersister extends AbstractBaseMysqlPersister implements Move
 {
     public function create(MovementDataModel $movement): MovementDataModel
     {
-        return $this->persistAndStampCreate($movement);
+        return $this->persistCreate($movement);
     }
 
     public function update(MovementDataModel $movement): MovementDataModel
     {
-        return $this->persistAndStampUpdate($movement);
+        return $this->persistUpdate($movement);
     }
 
     public function delete(MovementDataModel $movement): void

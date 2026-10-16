@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutSetUpdatedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
-use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
-use App\Fixtures\Training\MovementFixtures;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\CompleteWorkoutSetUseCase;
 use App\UseCase\Training\UncompleteWorkoutSetUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/** Unticking a set: it is to do again, and counts for nothing until ticked anew. */
+/** Unticking a set: it is to do again, and counts for nothing until ticked anew — which its handlers see to. */
 final class UncompleteWorkoutSetUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -26,16 +27,23 @@ final class UncompleteWorkoutSetUseCaseTest extends KernelTestCase
         $this->loadWorkoutFixtures();
     }
 
-    public function testUntickingASetHandsTheRecordBack(): void
+    /** What an unticked set hands back — its records, its share of the summary — is its handlers' to test. */
+    public function testUntickingASetRaisesItsEventOnce(): void
     {
-        $workout = $this->benchWorkout();
-        $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
+        $workout = $this->addDoneSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
+        $this->forgetRaisedEvents();
 
-        $output = $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
+        $untick = fn () => $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
+        $untick();
 
-        self::assertSame([], $this->lastSet($output)->personalBests);
-        self::assertSame(60.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
+        $event = $this->assertEventRaised(WorkoutSetUpdatedEvent::class);
+        self::assertSame($this->lastSet($workout)->id, $event->set->id);
+        self::assertFalse($event->set->isComplete);
+
+        // To do already: nothing moves, nothing is said.
+        $this->forgetRaisedEvents();
+        $untick();
+        $this->assertNoEventRaised();
     }
 
     public function testUntickingASetStaysWithinItsQueryBudget(): void

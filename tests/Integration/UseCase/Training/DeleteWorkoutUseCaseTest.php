@@ -6,20 +6,22 @@ namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutDeletedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
-use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\DeleteWorkoutUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/** Deleting a workout, in progress or finished, and what it counted for: the habit it kept, the records it held. */
+/** Deleting a workout, in progress or finished. What it counted for — the habit it kept, the records it held — its handlers hand back. */
 final class DeleteWorkoutUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -37,17 +39,21 @@ final class DeleteWorkoutUseCaseTest extends KernelTestCase
         self::assertNull(self::getContainer()->get(WorkoutProviderGateway::class)->findOneById($workout->id));
     }
 
-    public function testAbandoningAWorkoutHandsItsRecordsBack(): void
+    /** A deleted workout no longer knows its owner nor its movements: the event says them, read before. */
+    public function testDeletingAWorkoutRaisesItsEvent(): void
     {
-        $workout = $this->benchWorkout();
-        $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
+        $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
+        $finishedAt = $workout->finishedAt;
 
-        $this->useCase(DeleteWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id);
+        $this->useCase(DeleteWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id ?? 0);
 
-        $board = $this->board();
-        self::assertSame(60.0, $this->current($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
-        self::assertSame(7.0, $this->session($board, Kind::MAX_SESSION_SETS)?->current->value);
+        $event = $this->assertEventRaised(WorkoutDeletedEvent::class);
+        self::assertSame($this->aliceId, $event->owner->id);
+        self::assertEquals($finishedAt, $event->finishedAt);
+        self::assertSame(
+            [$this->movementId(MovementFixtures::BENCH_PRESS_BARBELL), $this->movementId(MovementFixtures::PUSH_UP), $this->movementId(MovementFixtures::FARMER_WALK_DUMBBELL)],
+            array_map(static fn ($movement) => $movement->id, $event->movements),
+        );
     }
 
     public function testDeletingAWorkoutStaysWithinItsQueryBudget(): void

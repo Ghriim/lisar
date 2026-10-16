@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Domain\DTO\DataModel\DataModelInterface;
+use App\Tests\Integration\Event\RecordingEventDispatcher;
 use Doctrine\Common\DataFixtures\Executor\ORMExecutor;
 use Doctrine\Common\DataFixtures\FixtureInterface;
 use Doctrine\Common\DataFixtures\Purger\ORMPurger;
@@ -40,8 +41,12 @@ trait LoadFixturesTrait
         $purger = new ORMPurger($entityManager);
         $purger->setPurgeMode(ORMPurger::PURGE_MODE_DELETE);
 
+        // The handlers run for the fixtures: a seeded workout comes with its summary and its
+        // records, as a request would have left it. What they raised is no test's business.
+        $dispatcher = $container->get(RecordingEventDispatcher::class);
         $executor = new ORMExecutor($entityManager, $purger);
-        $executor->execute($loader->getFixtures());
+        $dispatcher->withHandlers(static fn () => $executor->execute($loader->getFixtures()));
+        $dispatcher->forget();
 
         $this->referenceRepository = $executor->getReferenceRepository();
 

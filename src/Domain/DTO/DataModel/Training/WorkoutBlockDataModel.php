@@ -30,8 +30,10 @@ class WorkoutBlockDataModel implements DataModelInterface
     #[ORM\Column]
     public int $position = 0;
 
+    // Persisted with it: a workout is created whole — a copy with its blocks, movements and sets —
+    // in one flush. Deleted with it by the database, not by Doctrine (§6.1).
     /** @var Collection<int, WorkoutExerciseDataModel> */
-    #[ORM\OneToMany(targetEntity: WorkoutExerciseDataModel::class, mappedBy: 'block')]
+    #[ORM\OneToMany(targetEntity: WorkoutExerciseDataModel::class, mappedBy: 'block', cascade: ['persist'])]
     #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     public Collection $exercises;
 

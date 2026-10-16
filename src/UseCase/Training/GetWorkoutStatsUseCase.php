@@ -37,7 +37,7 @@ final readonly class GetWorkoutStatsUseCase implements UseCaseInterface
      */
     public function execute(UserDataModel $currentUser, int $workoutId): WorkoutStatsDataOutput
     {
-        $workout = $this->workoutProviderGateway->findOneById($workoutId);
+        $workout = $this->workoutProviderGateway->findOneWithMusclesById($workoutId);
         if (null === $workout) {
             throw new DataModelNotFoundException(WorkoutDataModel::class);
         }

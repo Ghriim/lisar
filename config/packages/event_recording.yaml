@@ -1,0 +1,9 @@
+# Integration tests record the events a use case raises instead of running their handlers
+# (tests/Integration/Event/RecordingEventDispatcher.php). The test environment only: production
+# always runs them.
+when@test:
+    services:
+        App\Tests\Integration\Event\RecordingEventDispatcher:
+            decorates: App\Infrastructure\EventHandler\SynchronousEventDispatcher
+            arguments: ['@.inner']
+            public: true

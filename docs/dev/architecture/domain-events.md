@@ -43,11 +43,19 @@ listen to one event; none may count on running before another.
 - **An event that only matters for some changes says so**: it carries what changed, read from
   Doctrine's original data before the flush, and the handler skips the rest.
 
+## Testing
+
+A use case test does not run the handlers: in the test environment the dispatcher records the
+events and stops there. The use case asserts the event it raised and what it carries; each handler
+has its own integration test, which hands it the event a real write raised, and its own query
+budget; one test checks the table below against the container. The how is in
+[backend-architecture.md §9.3](backend-architecture.md#93-integration-tests-use-cases).
+
 ## What exists
 
 | Event | Raised by | Handled by |
 | --- | --- | --- |
-| `WorkoutCreatedEvent` | `WorkoutPersister::create` / `createWhole` | `RefreshWorkoutSummaryEventHandler` |
+| `WorkoutCreatedEvent` | `WorkoutPersister::create` | `RefreshWorkoutSummaryEventHandler` |
 | `WorkoutSetCreatedEvent` · `WorkoutSetUpdatedEvent` · `WorkoutSetDeletedEvent` | `WorkoutSetPersister` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
 | `WorkoutExerciseDeletedEvent` | `WorkoutExercisePersister::delete` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
 | `WorkoutBlockDeletedEvent` | `WorkoutBlockPersister::delete` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
@@ -70,8 +78,9 @@ replaced, recounts every workout that held one before or holds one after.
 
 The workout's persisters keep the tree in step in memory — a set added to its exercise's
 `sets`, a block taken out of its workout's `blocks` — before they dispatch: the summary is added
-up off what the request holds. `WorkoutPersister::delete` removes the summary with the workout,
-or the identity map would keep one pointing at a workout that is gone.
+up off what the request holds. A deleted workout's summary goes with it through the database
+(`ON DELETE CASCADE`); `persistDelete` detaches it from the identity map, where it would point at
+a workout that is gone.
 
 ### The habits a tracker keeps
 

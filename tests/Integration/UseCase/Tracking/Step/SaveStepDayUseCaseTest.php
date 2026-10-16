@@ -5,34 +5,33 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Tracking\Step;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Tracking\StepDayCreatedEvent;
+use App\Domain\DTO\Event\Tracking\StepDayUpdatedEvent;
 use App\Domain\DTO\Input\Tracking\Step\SaveStepDayDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Tracking\Step\StepDayProviderGateway;
 use App\Domain\Registry\Tracking\Step\StepSourceRegistry;
 use App\Domain\Tracking\DayClock;
-use App\Fixtures\Habits\HabitFixtures;
-use App\Fixtures\Habits\HabitSubscriptionFixtures;
 use App\Fixtures\Tracking\Step\StepDayFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\Tests\Integration\SignedInUserTrait;
-use App\Tests\Integration\UseCase\Habits\HabitTestTrait;
 use App\UseCase\Tracking\Step\SaveStepDayUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * Recording today's step count: one count per day, cumulative, so recording again corrects it,
- * and only the day in progress can be written. The step habits follow the count.
+ * and only the day in progress can be written. The step habits follow the count, on its handler.
  */
 final class SaveStepDayUseCaseTest extends KernelTestCase
 {
-    use HabitTestTrait, StepTestTrait {
-        StepTestTrait::idOf insteadof HabitTestTrait;
-    }
+    use StepTestTrait;
     use LoadFixturesTrait;
     use QueryCountTrait;
     use SignedInUserTrait;
+    use RecordedEventsTrait;
 
     private SaveStepDayUseCase $save;
     private UserDataModel $alice;
@@ -43,8 +42,7 @@ final class SaveStepDayUseCaseTest extends KernelTestCase
 
         $this->save = self::getContainer()->get(SaveStepDayUseCase::class);
 
-        // Alice keeps the 5000-step habit, which the tracker-habit tests watch.
-        $this->loadFixtures(StepDayFixtures::class, HabitSubscriptionFixtures::class);
+        $this->loadFixtures(StepDayFixtures::class);
 
         $this->alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
     }
@@ -117,23 +115,19 @@ final class SaveStepDayUseCaseTest extends KernelTestCase
         );
     }
 
-    public function testTheStepTrackerKeepsItsHabitWhenItCrossesTheMark(): void
+    /** The first count of the day creates it, the next ones correct it: each says which. */
+    public function testRecordingRaisesTheDaysCreationThenItsCorrections(): void
     {
-        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(5000));
-
-        self::assertTrue($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);
-    }
-
-    public function testTheStepTrackerUnkeepsWhenCorrectedBelowTheMark(): void
-    {
-        // Over the 5000-step mark first, then corrected under it.
         $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(6000));
-        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(4000));
+        self::assertSame(6000, $this->assertEventRaised(StepDayCreatedEvent::class)->stepDay->countInSteps);
 
-        self::assertFalse($this->habitOf($this->alice, HabitFixtures::WALK)->isCompletedToday);
+        $this->forgetRaisedEvents();
+        $this->save->execute($this->currentUser($this->idOf($this->alice)), new SaveStepDayDataInput(4000));
+        self::assertSame(4000, $this->assertEventRaised(StepDayUpdatedEvent::class)->stepDay->countInSteps);
+        $this->assertNoEventRaised(StepDayCreatedEvent::class);
     }
 
-    /** Correcting today's count: read, rewritten, and the step habits kept to match. */
+    /** Correcting today's count: read, then rewritten. */
     public function testCorrectingTodaysCountStaysWithinItsQueryBudget(): void
     {
         $aliceId = $this->idOf($this->alice);

@@ -12,7 +12,6 @@ use App\Domain\Event\EventDispatcherInterface;
 use App\Domain\Gateway\Persister\Training\WorkoutSetPersisterGateway;
 use App\Infrastructure\Persister\AbstractBaseMysqlPersister;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Clock\ClockInterface;
 
 /**
  * @extends AbstractBaseMysqlPersister<WorkoutSetDataModel>
@@ -21,16 +20,15 @@ final class WorkoutSetPersister extends AbstractBaseMysqlPersister implements Wo
 {
     public function __construct(
         EntityManagerInterface $entityManager,
-        ClockInterface $clock,
         private readonly EventDispatcherInterface $eventDispatcher,
     ) {
-        parent::__construct($entityManager, $clock);
+        parent::__construct($entityManager);
     }
 
     public function create(WorkoutSetDataModel $workoutSet): WorkoutSetDataModel
     {
         $this->inTransaction(function () use ($workoutSet): void {
-            $this->persistAndStampCreate($workoutSet);
+            $this->persistCreate($workoutSet);
             // Both sides kept in step before anyone adds the workout up off its sets.
             if (false === $workoutSet->exercise->sets->contains($workoutSet)) {
                 $workoutSet->exercise->sets->add($workoutSet);
@@ -44,7 +42,7 @@ final class WorkoutSetPersister extends AbstractBaseMysqlPersister implements Wo
     public function update(WorkoutSetDataModel $workoutSet): WorkoutSetDataModel
     {
         $this->inTransaction(function () use ($workoutSet): void {
-            $this->persistAndStampUpdate($workoutSet);
+            $this->persistUpdate($workoutSet);
             $this->eventDispatcher->dispatch(new WorkoutSetUpdatedEvent($workoutSet));
         });
 

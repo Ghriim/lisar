@@ -5,26 +5,21 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
-use App\Domain\DTO\Input\Training\AddWorkoutBlockDataInput;
-use App\Domain\DTO\Input\Training\AddWorkoutBlockExerciseDataInput;
-use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
-use App\Domain\DTO\Input\Training\StartWorkoutDataInput;
+use App\Domain\DTO\Event\Training\WorkoutBlockDeletedEvent;
+use App\Domain\DTO\Event\Training\WorkoutExerciseDeletedEvent;
 use App\Fixtures\Training\MovementFixtures;
 use App\Tests\Integration\QueryCountTrait;
-use App\UseCase\Training\AddWorkoutBlockUseCase;
-use App\UseCase\Training\AddWorkoutSetUseCase;
-use App\UseCase\Training\CompleteWorkoutSetUseCase;
-use App\UseCase\Training\DeleteWorkoutBlockUseCase;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\DeleteWorkoutExerciseUseCase;
 use App\UseCase\Training\GetWorkoutUseCase;
-use App\UseCase\Training\StartWorkoutUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/** Removing a movement from a workout, its sets with it. */
+/** Removing a movement from a workout, its sets with it. What they counted for, its handlers hand back. */
 final class DeleteWorkoutExerciseUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -47,32 +42,30 @@ final class DeleteWorkoutExerciseUseCaseTest extends KernelTestCase
         self::assertSame([], $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id)->blocks);
     }
 
-    /** A movement removed from a superset takes its sets with it; a block removed, all of its own. */
-    public function testRemovingAMovementOrABlockTakesTheirSetsOut(): void
+    /** What the movement's sets counted for is handed back by its handlers. */
+    public function testRemovingAMovementRaisesItsEvent(): void
     {
-        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), new StartWorkoutDataInput());
-        $workout = $this->useCase(AddWorkoutBlockUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, new AddWorkoutBlockDataInput([
-            new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL)),
-            new AddWorkoutBlockExerciseDataInput($this->movementId(MovementFixtures::PUSH_UP)),
-        ]));
-        $bench = $workout->blocks[0]->exercises[0];
-        $pushUp = $workout->blocks[0]->exercises[1];
-        $workout = $this->useCase(AddWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $bench->id, new AddWorkoutSetDataInput(reps: 10, weightInKilograms: 40.0));
-        $workout = $this->useCase(AddWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $pushUp->id, new AddWorkoutSetDataInput(reps: 15));
-        foreach ($workout->blocks[0]->exercises as $exercise) {
-            $workout = $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $exercise->sets[0]->id);
-        }
-        self::assertSame(2, $this->summaryOf($workout->id)->setCount);
+        $workout = $this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL, MovementFixtures::PUSH_UP);
+        $this->forgetRaisedEvents();
 
-        $workout = $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $pushUp->id);
-        $summary = $this->summaryOf($workout->id);
-        self::assertSame(1, $summary->setCount);
-        self::assertSame(400.0, (float) $summary->volumeInKilograms);
+        $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $workout->blocks[0]->exercises[1]->id);
 
-        $this->useCase(DeleteWorkoutBlockUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $workout->blocks[0]->id);
-        $summary = $this->summaryOf($workout->id);
-        self::assertSame(0, $summary->setCount);
-        self::assertNull($summary->volumeInKilograms);
+        $event = $this->assertEventRaised(WorkoutExerciseDeletedEvent::class);
+        self::assertSame($workout->id, $event->workout->id);
+        self::assertSame($this->movementId(MovementFixtures::PUSH_UP), $event->movement->id);
+    }
+
+    /** Its last movement removed, the block goes: that is a block removed, with its movements. */
+    public function testRemovingTheLastMovementRaisesTheBlocksEvent(): void
+    {
+        $workout = $this->addBlock($this->start(), MovementFixtures::PUSH_UP);
+        $this->forgetRaisedEvents();
+
+        $this->useCase(DeleteWorkoutExerciseUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $workout->blocks[0]->exercises[0]->id);
+
+        $event = $this->assertEventRaised(WorkoutBlockDeletedEvent::class);
+        self::assertSame([$this->movementId(MovementFixtures::PUSH_UP)], array_map(static fn ($movement) => $movement->id, $event->movements));
+        $this->assertNoEventRaised(WorkoutExerciseDeletedEvent::class);
     }
 
     public function testRemovingAMovementStaysWithinItsQueryBudget(): void

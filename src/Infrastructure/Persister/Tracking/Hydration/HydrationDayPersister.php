@@ -15,11 +15,11 @@ final class HydrationDayPersister extends AbstractBaseMysqlPersister implements 
 {
     public function create(HydrationDayDataModel $day): HydrationDayDataModel
     {
-        return $this->persistAndStampCreate($day);
+        return $this->persistCreate($day);
     }
 
     public function update(HydrationDayDataModel $day): HydrationDayDataModel
     {
-        return $this->persistAndStampUpdate($day);
+        return $this->persistUpdate($day);
     }
 }

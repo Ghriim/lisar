@@ -15,11 +15,11 @@ final class SleepNightPersister extends AbstractBaseMysqlPersister implements Sl
 {
     public function create(SleepNightDataModel $night): SleepNightDataModel
     {
-        return $this->persistAndStampCreate($night);
+        return $this->persistCreate($night);
     }
 
     public function update(SleepNightDataModel $night): SleepNightDataModel
     {
-        return $this->persistAndStampUpdate($night);
+        return $this->persistUpdate($night);
     }
 }

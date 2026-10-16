@@ -6,11 +6,13 @@ namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Domain\DTO\Input\Training\UpdateWorkoutDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutExerciseDataInput;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\UpdateWorkoutExerciseUseCase;
 use App\UseCase\Training\UpdateWorkoutUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -20,6 +22,7 @@ final class UpdateWorkoutUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -44,6 +47,15 @@ final class UpdateWorkoutUseCaseTest extends KernelTestCase
         self::assertSame(5, $output->feeling);
         self::assertSame('Coudes serrés', $output->blocks[0]->exercises[0]->note);
         self::assertSame($workout->startedAt, $output->startedAt);
+    }
+
+    public function testUpdatingAWorkoutRaisesItsEvent(): void
+    {
+        $workout = $this->start();
+
+        $this->useCase(UpdateWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, new UpdateWorkoutDataInput('Jambes'));
+
+        self::assertSame('Jambes', $this->assertEventRaised(WorkoutUpdatedEvent::class)->workout->name);
     }
 
     public function testUpdatingAWorkoutStaysWithinItsQueryBudget(): void

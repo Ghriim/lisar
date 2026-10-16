@@ -15,11 +15,11 @@ final class HabitPersister extends AbstractBaseMysqlPersister implements HabitPe
 {
     public function create(HabitDataModel $habit): HabitDataModel
     {
-        return $this->persistAndStampCreate($habit);
+        return $this->persistCreate($habit);
     }
 
     public function update(HabitDataModel $habit): HabitDataModel
     {
-        return $this->persistAndStampUpdate($habit);
+        return $this->persistUpdate($habit);
     }
 }

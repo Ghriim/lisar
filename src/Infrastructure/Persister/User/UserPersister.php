@@ -15,11 +15,11 @@ final class UserPersister extends AbstractBaseMysqlPersister implements UserPers
 {
     public function create(UserDataModel $user): UserDataModel
     {
-        return $this->persistAndStampCreate($user);
+        return $this->persistCreate($user);
     }
 
     public function update(UserDataModel $user): UserDataModel
     {
-        return $this->persistAndStampUpdate($user);
+        return $this->persistUpdate($user);
     }
 }

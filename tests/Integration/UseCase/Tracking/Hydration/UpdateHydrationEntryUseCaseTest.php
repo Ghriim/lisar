@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Tracking\Hydration;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Tracking\HydrationEntryUpdatedEvent;
 use App\Domain\DTO\Input\Tracking\Hydration\CreateHydrationEntryDataInput;
 use App\Domain\DTO\Input\Tracking\Hydration\UpdateHydrationEntryDataInput;
-use App\Fixtures\Habits\HabitFixtures;
-use App\Fixtures\Habits\HabitSubscriptionFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\Tests\Integration\SignedInUserTrait;
-use App\Tests\Integration\UseCase\Habits\HabitTestTrait;
-use App\UseCase\Habits\SubscribeHabitUseCase;
 use App\UseCase\Tracking\Hydration\CreateHydrationEntryUseCase;
 use App\UseCase\Tracking\Hydration\UpdateHydrationEntryUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -22,15 +20,14 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 /** Correcting a drink of the day in progress, and answering the whole day. */
 final class UpdateHydrationEntryUseCaseTest extends KernelTestCase
 {
-    use HabitTestTrait;
     use HydrationTestTrait;
     use LoadFixturesTrait;
     use QueryCountTrait;
     use SignedInUserTrait;
+    use RecordedEventsTrait;
 
     private CreateHydrationEntryUseCase $create;
     private UpdateHydrationEntryUseCase $update;
-    private SubscribeHabitUseCase $subscribe;
     private UserDataModel $alice;
 
     protected function setUp(): void
@@ -39,11 +36,8 @@ final class UpdateHydrationEntryUseCaseTest extends KernelTestCase
 
         $this->create = self::getContainer()->get(CreateHydrationEntryUseCase::class);
         $this->update = self::getContainer()->get(UpdateHydrationEntryUseCase::class);
-        $this->subscribe = self::getContainer()->get(SubscribeHabitUseCase::class);
 
-        // The habit subscriptions are for the tracker-habit test: Alice keeps no hydration habit
-        // until a test subscribes her.
-        $this->loadFixtures(UserFixtures::class, HabitSubscriptionFixtures::class);
+        $this->loadFixtures(UserFixtures::class);
 
         $this->alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
     }
@@ -58,17 +52,18 @@ final class UpdateHydrationEntryUseCaseTest extends KernelTestCase
         self::assertSame(300, $output->totalInMillilitres);
     }
 
-    public function testTheHydrationTrackerUnkeepsWhenADrinkIsCorrectedBelowTheMark(): void
+    /** The day the event carries holds the corrected volume: its handler reads the total off it. */
+    public function testCorrectingADrinkRaisesItsEvent(): void
     {
-        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::DRINK));
         $this->drink(1000);
         $day = $this->drink(600);
+        $this->forgetRaisedEvents();
 
-        self::getContainer()->get(UpdateHydrationEntryUseCase::class)->execute(
-            $this->currentUser($this->idOf($this->alice)), $this->entryId($day, 600), new UpdateHydrationEntryDataInput(300),
-        );
+        $this->update->execute($this->currentUser($this->aliceId()), $this->entryId($day, 600), new UpdateHydrationEntryDataInput(300));
 
-        self::assertFalse($this->habitOf($this->alice, HabitFixtures::DRINK)->isCompletedToday);
+        $entry = $this->assertEventRaised(HydrationEntryUpdatedEvent::class)->entry;
+        self::assertSame(300, $entry->volumeInMillilitres);
+        self::assertSame(1300, $entry->hydrationDay->getTotalInMillilitres());
     }
 
     public function testCorrectingADrinkStaysWithinItsQueryBudget(): void

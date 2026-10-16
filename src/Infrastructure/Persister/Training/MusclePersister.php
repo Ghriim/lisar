@@ -15,12 +15,12 @@ final class MusclePersister extends AbstractBaseMysqlPersister implements Muscle
 {
     public function create(MuscleDataModel $muscle): MuscleDataModel
     {
-        return $this->persistAndStampCreate($muscle);
+        return $this->persistCreate($muscle);
     }
 
     public function update(MuscleDataModel $muscle): MuscleDataModel
     {
-        return $this->persistAndStampUpdate($muscle);
+        return $this->persistUpdate($muscle);
     }
 
     public function delete(MuscleDataModel $muscle): void

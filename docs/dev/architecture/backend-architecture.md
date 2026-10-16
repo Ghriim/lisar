@@ -246,6 +246,7 @@ src/
 │   ├── Repository/<Perimeter>/<Noun>Repository.php # implements a ProviderGateway
 │   ├── Persister/
 │   │   ├── AbstractBaseMysqlPersister.php
+│   │   ├── TimestampListener.php                   # stamps createdAt / updatedAt on every write
 │   │   └── <Perimeter>/<Noun>Persister.php         # implements a PersisterGateway
 │   ├── HttpClient/
 │   │   ├── <Integration>/                         # one namespace per outbound integration family
@@ -462,7 +463,12 @@ Rules:
 - Implement the empty marker `DataModelInterface` (it types the abstract persister's generic).
 - **Every data model declares `createdAt` and `updatedAt`**, nullable `?\DateTimeImmutable = null` —
   projections, cache tables and append-only logs included, with no exception to remember. They
-  are stamped by the abstract persister; never assign them by hand.
+  are stamped by `Infrastructure\Persister\TimestampListener`, a Doctrine listener on
+  `prePersist` and `preUpdate`; never assign them by hand. Why a listener and not the persister:
+  it sees every row Doctrine writes — a child persisted through a cascade, a row a handler
+  updates — where a persister only stamps the data model it is handed, and a tree written whole
+  then needed a loop to stamp its children. `updatedAt` moves with the row's own columns: a flush
+  that changes nothing on it, or only its link-table rows, leaves it.
 - **A decimal is a `float` on `Types::FLOAT`** — a `DOUBLE PRECISION` column on MySQL, PHP's
   own float, so what is written is exactly what is read back. Never `Types::DECIMAL`: Doctrine
   reads it back as a string, compares that string to the float the data model holds, sees a
@@ -489,12 +495,19 @@ Rules:
   What the unit of work had already loaded of those children is detached by `persistDelete`,
   without a query (§6.4). A child that is not removed with its parent — a reference such as a
   movement or a set type — takes `onDelete: 'RESTRICT'`, never `cascade` either.
+- **A tree created whole is persisted from its root**: its collections carry
+  `cascade: ['persist']` — and that alone — so the persister persists the root and flushes once,
+  instead of walking the tree. It costs nothing: persisting only registers a row with the unit of
+  work, and the flush sends the same one `INSERT` per row, in one transaction, cascade or not.
+  Only an aggregate a use case writes whole takes it (a workout, its blocks, movements and sets),
+  never a reference it merely points at.
 - A moment written to a `DATETIME` column is stored in **UTC**, always — see
   `Domain\Tracking\DayClock::asStoredInstant()`. The column has no timezone, so it keeps the wall
   clock it is handed and drops the offset: give it a moment carried in `Europe/Paris` and the
   same moment reads back two hours early. Anything that builds a moment out of a calendar day or
   a local time (a fixture, an import) passes it through the clock first.
-- No data model lifecycle callbacks; side effects live in the persister.
+- No data model lifecycle callbacks; side effects live in the persister. The timestamps are the
+  one thing a Doctrine listener does, in `Infrastructure/` — never on the data model.
 - Inline `//` comments on non-obvious columns (units, business meaning, why nullable) are
   encouraged and reviewed.
 
@@ -627,16 +640,17 @@ namespace App\Infrastructure\Persister;
 
 use App\Domain\DTO\DataModel\DataModelInterface;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Clock\ClockInterface;
 
 /**
+ * Owns the flush. The timestamps are not its business: TimestampListener stamps every row
+ * Doctrine writes (§6.1).
+ *
  * @template T of DataModelInterface
  */
 abstract class AbstractBaseMysqlPersister
 {
     public function __construct(
         protected EntityManagerInterface $entityManager,
-        protected ClockInterface $clock,
     ) {
     }
 
@@ -645,17 +659,8 @@ abstract class AbstractBaseMysqlPersister
      *
      * @return T
      */
-    protected function persistAndStampCreate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface
+    protected function persistCreate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface
     {
-        $now = \DateTimeImmutable::createFromInterface($this->clock->now());
-
-        if (property_exists($dataModel, 'createdAt')) {
-            $dataModel->createdAt = $now;
-        }
-        if (property_exists($dataModel, 'updatedAt')) {
-            $dataModel->updatedAt = $now;
-        }
-
         $this->entityManager->persist($dataModel);
 
         if (true === $flush) {
@@ -666,7 +671,7 @@ abstract class AbstractBaseMysqlPersister
     }
 
     /** @param T $dataModel @return T */
-    protected function persistAndStampUpdate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface { /* … */ }
+    protected function persistUpdate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface { /* … */ }
 
     /**
      * Deletes the row alone; the database deletes its children (ON DELETE CASCADE, §6.1). The
@@ -688,19 +693,19 @@ final class SubscriptionPersister extends AbstractBaseMysqlPersister implements 
 {
     public function create(SubscriptionDataModel $subscription): SubscriptionDataModel
     {
-        return $this->persistAndStampCreate($subscription);
+        return $this->persistCreate($subscription);
     }
 
     public function update(SubscriptionDataModel $subscription): SubscriptionDataModel
     {
-        return $this->persistAndStampUpdate($subscription);
+        return $this->persistUpdate($subscription);
     }
 
     /** @param SubscriptionDataModel[] $subscriptions */
     public function updateMany(array $subscriptions): void
     {
         foreach ($subscriptions as $subscription) {
-            $this->persistAndStampUpdate($subscription, flush: false);
+            $this->persistUpdate($subscription, flush: false);
         }
 
         $this->entityManager->flush();
@@ -715,8 +720,8 @@ final class SubscriptionPersister extends AbstractBaseMysqlPersister implements 
 
 Rules:
 
-- Time comes from `Psr\Clock\ClockInterface`, never `new \DateTimeImmutable()`. That is what makes
-  timestamps assertable in tests.
+- Time comes from `Psr\Clock\ClockInterface`, never `new \DateTimeImmutable()` — in
+  `TimestampListener` as anywhere else. That is what makes timestamps assertable in tests.
 - Batch methods take `flush: false` per item and flush once at the end.
 - **All post-create/update/delete side effects start in the persister** (cache invalidation,
   denormalised counters, outbound notifications). A use case that persists gets them for free.
@@ -1824,9 +1829,9 @@ board to see the records an update rebuilt).
 **A rule is tested where it fires.** A refusal is tested in the class of the use case that raises
 it, whoever manages the object it is about: "a deactivated movement can no longer be added to a
 workout" is an `AddWorkoutBlockUseCaseTest`, "a movement cannot take an inactive family" a
-`CreateMovementUseCaseTest` — the deactivation is only the arrangement. The same goes for what an
-event derives: the records rebuilt when an admin makes a set type count are an
-`UpdateSetTypeUseCaseTest`, since that is the call that triggers them.
+`CreateMovementUseCaseTest` — the deactivation is only the arrangement. What follows from a
+write through an event is the exception: the use case proves it raised the event, the handler's
+own test proves what follows (*Events* below).
 
 What several classes of a perimeter share — a `start()`, an `addBlock()`, the fixtures they load — goes in a `<Perimeter>TestTrait`
 next to them, never in a parent class.
@@ -1923,6 +1928,63 @@ public function testListingTheWorkoutsDoesNotGrowWithThem(): void
     );
 
     self::assertCount(count($fewer->items) + 1, $more->items);
+}
+```
+
+**Events: the use case says it, its handler does it.** In the test environment the dispatcher is
+`tests/Integration/Event/RecordingEventDispatcher` (wired in `config/packages/event_recording.yaml`
+under `when@test`): it records every event raised and runs no handler. Why:
+
+- a use case test proves the use case — its write, its answer, the event it raises. With the
+  handlers running, it also proved theirs: a set's write measured 35 queries of which 31 were
+  its handlers', and one handler's regression failed a dozen use case tests far from its code;
+- each handler is tested once, on its own, against its own budget — not again through every use
+  case whose write reaches it.
+
+So:
+
+- **A use case whose write raises an event asserts it**, through `RecordedEventsTrait`:
+  `assertEventRaised(XEvent::class)` hands the one event back, and the test checks what it
+  carries — what its handlers read: the set written, the day holding every drink, the owner and
+  movements read before a delete. A call that writes nothing says nothing: `assertNoEventRaised()`.
+  A use case test never asserts what a handler wrote — a summary, a record, a habit kept.
+- **Every handler has its own test class**, `tests/Integration/Infrastructure/EventHandler/<Perimeter>/XEventHandlerTest`,
+  with `EventHandlerTestTrait`: the state laid out as production leaves it, handlers on
+  (`withHandlers(…)`); the write made through its use case, handlers off; and the event it raised
+  handed to the one handler under test — `handle($this->eventRaisedBy(XEvent::class, fn () => …))`.
+  The assertions are on what the handler wrote. Its **budget test** puts the write in `$arrange`
+  and `handle` in `$act`, so it counts the handler alone.
+- **The fixtures run the handlers** (`LoadFixturesTrait`): a seeded workout has its summary and
+  its records, as a request would have left it.
+- `withHandlers(…)` is for an arrangement that needs what the handlers write — a growth test
+  growing the records board — never for the call a test is about.
+- **The wiring has one test**, `SynchronousEventDispatcherTest`: which handlers the container hands
+  each event to, against the table of [domain-events.md](domain-events.md). A new event or handler
+  changes both.
+
+```php
+// The use case: it wrote, and it said so.
+public function testRemovingASetRaisesItsEvent(): void
+{
+    $workout = $this->addDoneSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
+    $this->forgetRaisedEvents();
+
+    $this->useCase(DeleteWorkoutSetUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id);
+
+    $event = $this->assertEventRaised(WorkoutSetDeletedEvent::class);
+    self::assertSame($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL), $event->movement->id);
+}
+
+// Its handler: what follows.
+public function testRemovingASetHandsTheRecordBack(): void
+{
+    $workout = $this->withHandlers(fn () => $this->addDoneSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0)));
+
+    $this->handle($this->eventRaisedBy(WorkoutSetDeletedEvent::class, fn () => $this->useCase(DeleteWorkoutSetUseCase::class)->execute(
+        $this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id,
+    )));
+
+    self::assertSame(60.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
 }
 ```
 
@@ -2162,7 +2224,9 @@ Adding a "create X" endpoint, end to end:
     constraint/factory.
 12. **Integration test** for the use case, in its own `XUseCaseTest` (happy path asserting
     output *and* a gateway re-read, plus one method per error branch, conflicts set up in-test),
-    **its query budget test**, and for a `List…` use case its growth test (§9.3).
+    **its query budget test**, and for a `List…` use case its growth test (§9.3). A write that
+    raises an event asserts it there; a new handler gets its own `XEventHandlerTest` with its
+    budget, and its line in `SynchronousEventDispatcherTest` (§9.3).
 13. **Fixtures** — `Fixtures/<Perimeter>/XFixtures.php`, with `public const string`
     reference keys; the integration test lists the fixture classes it needs and reaches rows
     through `getReference()`, never through a hardcoded id.
@@ -2229,7 +2293,7 @@ Rejected in review, every time:
 - Business logic in a controller or in a command.
 - A validator that fails fast instead of accumulating.
 - A constraint that queries the database.
-- `new \DateTimeImmutable()` outside a persister's clock.
+- `new \DateTimeImmutable()` instead of the clock (`Psr\Clock\ClockInterface`, `DayClock`).
 - Any method but the constructor on a DTO — data model, DataInput, DataOutput, event,
   aggregate (§6.0); a constructor that does more than initialise.
 - A use case without its own validator, or a use case calling a Constraint itself.
@@ -2247,6 +2311,8 @@ Rejected in review, every time:
   `XUseCaseTest`, or a rule tested anywhere but in the use case that raises it (§9.3).
 - A use case without its query budget test, a `List…` use case without its growth test, or a
   `max:` raised without the line saying why (§9.3).
+- A use case test asserting what a handler wrote, a handler tested only through the use cases
+  that reach it, or a handler without its own test class and budget (§9.3).
 - A back-office validator whose first rule is not `IsAdminConstraint`.
 - A use case returning early before its validator has run.
 - A rule written inline in a validator instead of a Constraint class.

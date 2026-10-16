@@ -13,13 +13,16 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use DateTimeImmutable;
 
 /**
- * A workout always comes back whole — its blocks, their movements, their sets and set types —
- * because everything that reads one reads all of it.
+ * A workout always comes back whole — its blocks, their movements and their families, their sets
+ * and set types — because everything that reads one reads all of it.
  */
 interface WorkoutProviderGateway
 {
     /** Whoever it belongs to: whether the caller may touch it is the validator's to say. */
     public function findOneById(int $id): ?WorkoutDataModel;
+
+    /** Whole, and each movement with the muscles it works: what a workout's stats spread its sets over. */
+    public function findOneWithMusclesById(int $id): ?WorkoutDataModel;
 
     public function findOneInProgressForOwner(UserDataModel $owner): ?WorkoutDataModel;
 

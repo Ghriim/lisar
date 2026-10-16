@@ -57,7 +57,7 @@ final readonly class CopyWorkoutUseCase implements UseCaseInterface
         }
 
         $copy = $this->workoutDataModelFactory->buildCopy($source, $this->clock->now(), $defaultSetType);
-        $this->workoutPersisterGateway->createWhole($copy);
+        $this->workoutPersisterGateway->create($copy);
 
         return $this->outputFactory->buildOne($copy, $this->workoutDataModelFactory->movementsLeftOut($source));
     }

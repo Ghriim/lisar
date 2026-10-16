@@ -5,20 +5,17 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persister;
 
 use App\Domain\DTO\DataModel\DataModelInterface;
-use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ToOneOwningSideMapping;
-use Psr\Clock\ClockInterface;
 use Throwable;
 
 use function is_object;
 use function spl_object_id;
 
 /**
- * Stamps createdAt/updatedAt and owns the flush. A persister whose writes others react to raises
- * an event after its flush, inside `inTransaction`, so the handlers and the write stand or fall
- * together. Time comes from the clock, never from
- * `new \DateTimeImmutable()`: that is what makes timestamps assertable in tests.
+ * Owns the flush. A persister whose writes others react to raises an event after its flush,
+ * inside `inTransaction`, so the handlers and the write stand or fall together. The timestamps are
+ * not its business: `TimestampListener` stamps every row Doctrine writes.
  *
  * @template T of DataModelInterface
  */
@@ -26,7 +23,6 @@ abstract class AbstractBaseMysqlPersister
 {
     public function __construct(
         protected EntityManagerInterface $entityManager,
-        protected ClockInterface $clock,
     ) {
     }
 
@@ -35,17 +31,8 @@ abstract class AbstractBaseMysqlPersister
      *
      * @return T
      */
-    protected function persistAndStampCreate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface
+    protected function persistCreate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface
     {
-        $now = DateTimeImmutable::createFromInterface($this->clock->now());
-
-        if (true === property_exists($dataModel, 'createdAt')) {
-            $dataModel->createdAt = $now;
-        }
-        if (true === property_exists($dataModel, 'updatedAt')) {
-            $dataModel->updatedAt = $now;
-        }
-
         $this->entityManager->persist($dataModel);
 
         if (true === $flush) {
@@ -60,12 +47,8 @@ abstract class AbstractBaseMysqlPersister
      *
      * @return T
      */
-    protected function persistAndStampUpdate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface
+    protected function persistUpdate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface
     {
-        if (true === property_exists($dataModel, 'updatedAt')) {
-            $dataModel->updatedAt = DateTimeImmutable::createFromInterface($this->clock->now());
-        }
-
         $this->entityManager->persist($dataModel);
 
         if (true === $flush) {

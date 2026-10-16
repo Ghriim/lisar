@@ -15,12 +15,12 @@ final class CategoryPersister extends AbstractBaseMysqlPersister implements Cate
 {
     public function create(CategoryDataModel $category): CategoryDataModel
     {
-        return $this->persistAndStampCreate($category);
+        return $this->persistCreate($category);
     }
 
     public function update(CategoryDataModel $category): CategoryDataModel
     {
-        return $this->persistAndStampUpdate($category);
+        return $this->persistUpdate($category);
     }
 
     public function delete(CategoryDataModel $category): void

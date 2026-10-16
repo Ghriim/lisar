@@ -11,7 +11,6 @@ use App\Domain\Event\EventDispatcherInterface;
 use App\Domain\Gateway\Persister\Tracking\Step\StepDayPersisterGateway;
 use App\Infrastructure\Persister\AbstractBaseMysqlPersister;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Clock\ClockInterface;
 
 /**
  * @extends AbstractBaseMysqlPersister<StepDayDataModel>
@@ -20,16 +19,15 @@ final class StepDayPersister extends AbstractBaseMysqlPersister implements StepD
 {
     public function __construct(
         EntityManagerInterface $entityManager,
-        ClockInterface $clock,
         private readonly EventDispatcherInterface $eventDispatcher,
     ) {
-        parent::__construct($entityManager, $clock);
+        parent::__construct($entityManager);
     }
 
     public function create(StepDayDataModel $stepDay): StepDayDataModel
     {
         $this->inTransaction(function () use ($stepDay): void {
-            $this->persistAndStampCreate($stepDay);
+            $this->persistCreate($stepDay);
             $this->eventDispatcher->dispatch(new StepDayCreatedEvent($stepDay));
         });
 
@@ -39,7 +37,7 @@ final class StepDayPersister extends AbstractBaseMysqlPersister implements StepD
     public function update(StepDayDataModel $stepDay): StepDayDataModel
     {
         $this->inTransaction(function () use ($stepDay): void {
-            $this->persistAndStampUpdate($stepDay);
+            $this->persistUpdate($stepDay);
             $this->eventDispatcher->dispatch(new StepDayUpdatedEvent($stepDay));
         });
 

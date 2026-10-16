@@ -15,11 +15,11 @@ final class WeightEntryPersister extends AbstractBaseMysqlPersister implements W
 {
     public function create(WeightEntryDataModel $entry): WeightEntryDataModel
     {
-        return $this->persistAndStampCreate($entry);
+        return $this->persistCreate($entry);
     }
 
     public function update(WeightEntryDataModel $entry): WeightEntryDataModel
     {
-        return $this->persistAndStampUpdate($entry);
+        return $this->persistUpdate($entry);
     }
 }

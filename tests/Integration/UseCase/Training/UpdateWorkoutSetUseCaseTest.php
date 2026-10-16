@@ -4,25 +4,24 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\UseCase\Training;
 
-use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutSetUpdatedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
-use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\SetTypeFixtures;
-use App\Fixtures\Training\WorkoutFixtures;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\Admin\DeactivateSetTypeUseCase;
-use App\UseCase\Training\GetWorkoutUseCase;
 use App\UseCase\Training\UpdateWorkoutSetUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/** Correcting a set: its measures and its type; its workout's summary and the records follow. */
+/** Correcting a set: its measures and its type. Its handlers move its workout's summary and the records. */
 final class UpdateWorkoutSetUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -94,50 +93,18 @@ final class UpdateWorkoutSetUseCaseTest extends KernelTestCase
         self::assertTrue($output->blocks[0]->exercises[0]->sets[0]->isComplete);
     }
 
-    public function testCorrectingASetDownHandsTheRecordBack(): void
+    public function testCorrectingASetRaisesItsEvent(): void
     {
-        $workout = $this->benchWorkout();
-        $workout = $this->addSet($workout, new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
-
-        $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id, new UpdateWorkoutSetDataInput(reps: 5, weightInKilograms: 50.0),
-        );
-
-        self::assertSame(60.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
-    }
-
-    public function testCorrectingADoneSetMovesTheTotals(): void
-    {
-        $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 8, weightInKilograms: 50.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
+        $workout = $this->addDoneSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 8, weightInKilograms: 50.0));
+        $this->forgetRaisedEvents();
 
         $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
             $this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id, new UpdateWorkoutSetDataInput(reps: 10, weightInKilograms: 50.0),
         );
 
-        self::assertSame(500.0, (float) $this->summaryOf($workout->id)->volumeInKilograms);
-    }
-
-    /**
-     * A record taken back by an older workout leaves the newer one: its count moves although none
-     * of its own sets did.
-     */
-    public function testARecordTakenBackByAnotherWorkoutLeavesTheCount(): void
-    {
-        $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 8, weightInKilograms: 70.0));
-        $workout = $this->complete($workout, $this->lastSet($workout));
-        $before = $this->summaryOf($workout->id)->personalBestCount;
-        self::assertGreaterThan(0, $before);
-
-        // The seeded workout's heaviest bench set, corrected up past the new one.
-        $seededId = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class)->id ?? 0;
-        $seeded = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $seededId);
-        $this->useCase(UpdateWorkoutSetUseCase::class)->execute(
-            $this->currentUser($this->aliceId), $seededId, $seeded->blocks[0]->exercises[0]->sets[1]->id, new UpdateWorkoutSetDataInput(reps: 8, weightInKilograms: 90.0),
-        );
-
-        self::assertLessThan($before, $this->summaryOf($workout->id)->personalBestCount);
+        $event = $this->assertEventRaised(WorkoutSetUpdatedEvent::class);
+        self::assertSame($this->lastSet($workout)->id, $event->set->id);
+        self::assertSame(10, $event->set->reps);
     }
 
     public function testUpdatingASetStaysWithinItsQueryBudget(): void

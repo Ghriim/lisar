@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCase\Training\Admin;
 
+use App\Domain\DTO\DataModel\Training\EquipmentDataModel;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\MovementFamilyDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
@@ -20,7 +21,7 @@ use App\Domain\Gateway\Provider\Training\MuscleProviderGateway;
 use App\Domain\Validation\Validator\Training\UpdateMovementValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
-use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 /**
  * Reconfiguring a common movement. What it held and has been retired since may stay on it; what
@@ -50,10 +51,21 @@ final readonly class UpdateMovementUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(MovementDataModel::class);
         }
 
-        $movementFamily = $this->movementFamilyProviderGateway->findOneById($input->movementFamilyId);
-        $primaryMuscle = $this->muscleProviderGateway->findOneById($input->primaryMuscleId);
-        $secondaryMuscles = $this->muscleProviderGateway->findByIds($input->getSecondaryMuscleIds());
-        $equipments = $this->equipmentProviderGateway->findByIds($input->getEquipmentIds());
+        // What the movement holds already came with it: only the rows it takes on are read.
+        $movementFamily = $input->movementFamilyId === $movement->movementFamily->id
+            ? $movement->movementFamily
+            : $this->movementFamilyProviderGateway->findOneById($input->movementFamilyId);
+        $muscles = $this->rowsAskedFor(
+            [$movement->primaryMuscle, ...$movement->secondaryMuscles],
+            [$input->primaryMuscleId, ...$input->getSecondaryMuscleIds()],
+            $this->muscleProviderGateway->findByIds(...),
+        );
+        $primaryMuscle = $muscles[$input->primaryMuscleId] ?? null;
+        $secondaryMuscles = $this->pick($muscles, $input->getSecondaryMuscleIds());
+        $equipments = $this->pick(
+            $this->rowsAskedFor($movement->equipments, $input->getEquipmentIds(), $this->equipmentProviderGateway->findByIds(...)),
+            $input->getEquipmentIds(),
+        );
 
         $this->validator->validate(
             $currentUser,
@@ -80,8 +92,10 @@ final readonly class UpdateMovementUseCase implements UseCaseInterface
         $movement->videoUrl = $input->getVideoUrl();
         $movement->movementFamily = $movementFamily;
         $movement->primaryMuscle = $primaryMuscle;
-        $movement->secondaryMuscles = new ArrayCollection($secondaryMuscles);
-        $movement->equipments = new ArrayCollection($equipments);
+        // Changed in place, not replaced: Doctrine then writes only the links that moved, where a
+        // new collection deletes every link and inserts them all again.
+        $this->keepOnly($movement->secondaryMuscles, $secondaryMuscles);
+        $this->keepOnly($movement->equipments, $equipments);
         $movement->tracksReps = $input->tracksReps;
         $movement->tracksWeight = $input->tracksWeight;
         $movement->tracksDuration = $input->tracksDuration;
@@ -91,5 +105,77 @@ final readonly class UpdateMovementUseCase implements UseCaseInterface
         $this->movementPersisterGateway->update($movement);
 
         return $this->outputFactory->buildOne($movement);
+    }
+
+    /**
+     * The rows asked for, by id: those the movement holds are taken from it, the others read in
+     * one query. An id nothing answers is left out, for the validator to refuse.
+     *
+     * @template T of MuscleDataModel|EquipmentDataModel
+     *
+     * @param iterable<T>                  $held
+     * @param list<int>                    $ids
+     * @param callable(list<int>): list<T> $read
+     *
+     * @return array<int, T>
+     */
+    private function rowsAskedFor(iterable $held, array $ids, callable $read): array
+    {
+        $rows = [];
+        foreach ($held as $row) {
+            $rows[(int) $row->id] = $row;
+        }
+
+        $missing = array_values(array_diff($ids, array_keys($rows)));
+        if ([] !== $missing) {
+            foreach ($read($missing) as $row) {
+                $rows[(int) $row->id] = $row;
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Those of `$ids` that `$rows` answers, in the order asked.
+     *
+     * @template T of MuscleDataModel|EquipmentDataModel
+     *
+     * @param array<int, T> $rows
+     * @param list<int>     $ids
+     *
+     * @return list<T>
+     */
+    private function pick(array $rows, array $ids): array
+    {
+        $picked = [];
+        foreach ($ids as $id) {
+            if (true === isset($rows[$id])) {
+                $picked[] = $rows[$id];
+            }
+        }
+
+        return $picked;
+    }
+
+    /**
+     * @template T of MuscleDataModel|EquipmentDataModel
+     *
+     * @param Collection<int, T> $collection
+     * @param list<T>            $wanted
+     */
+    private function keepOnly(Collection $collection, array $wanted): void
+    {
+        foreach ($collection->toArray() as $row) {
+            if (false === in_array($row, $wanted, true)) {
+                $collection->removeElement($row);
+            }
+        }
+
+        foreach ($wanted as $row) {
+            if (false === $collection->contains($row)) {
+                $collection->add($row);
+            }
+        }
     }
 }

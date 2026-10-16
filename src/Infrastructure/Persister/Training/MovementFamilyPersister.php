@@ -15,12 +15,12 @@ final class MovementFamilyPersister extends AbstractBaseMysqlPersister implement
 {
     public function create(MovementFamilyDataModel $movementFamily): MovementFamilyDataModel
     {
-        return $this->persistAndStampCreate($movementFamily);
+        return $this->persistCreate($movementFamily);
     }
 
     public function update(MovementFamilyDataModel $movementFamily): MovementFamilyDataModel
     {
-        return $this->persistAndStampUpdate($movementFamily);
+        return $this->persistUpdate($movementFamily);
     }
 
     public function delete(MovementFamilyDataModel $movementFamily): void

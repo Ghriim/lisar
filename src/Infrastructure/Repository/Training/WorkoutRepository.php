@@ -36,6 +36,18 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->getOneOrNullResult();
     }
 
+    public function findOneWithMusclesById(int $id): ?WorkoutDataModel
+    {
+        return $this->whole()
+            ->leftJoin('movement.primaryMuscle', 'primaryMuscle')
+            ->leftJoin('movement.secondaryMuscles', 'secondaryMuscle')
+            ->addSelect('primaryMuscle', 'secondaryMuscle')
+            ->andWhere('workout.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function findOneInProgressForOwner(UserDataModel $owner): ?WorkoutDataModel
     {
         // One at most by rule; should two ever exist, the latest started is the one carried on.
@@ -266,10 +278,12 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->leftJoin('workout.blocks', 'block')
             ->leftJoin('block.exercises', 'exercise')
             ->leftJoin('exercise.movement', 'movement')
+            // Whether a movement is still offered reads its family: a copy leaves out what is not.
+            ->leftJoin('movement.movementFamily', 'movementFamily')
             ->leftJoin('exercise.sets', 'workoutSet')
             ->leftJoin('workoutSet.setType', 'setType')
             ->leftJoin('workoutSet.personalBests', 'setPersonalBest')
-            ->addSelect('block', 'exercise', 'movement', 'workoutSet', 'setType', 'setPersonalBest');
+            ->addSelect('block', 'exercise', 'movement', 'movementFamily', 'workoutSet', 'setType', 'setPersonalBest');
     }
 
     private function finished(UserDataModel $owner): QueryBuilder

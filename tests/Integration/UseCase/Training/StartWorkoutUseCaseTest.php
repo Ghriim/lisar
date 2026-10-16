@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutCreatedEvent;
 use App\Domain\DTO\Input\Training\StartWorkoutDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Training\WorkoutNotInProgressConstraint;
 use App\Domain\Validation\Validator\Training\StartWorkoutValidator;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\GetCurrentWorkoutUseCase;
 use App\UseCase\Training\StartWorkoutUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -19,6 +21,7 @@ final class StartWorkoutUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -58,15 +61,12 @@ final class StartWorkoutUseCaseTest extends KernelTestCase
         }
     }
 
-    public function testStartingAWorkoutCreatesItsSummary(): void
+    /** Its summary is its handler's to create. */
+    public function testStartingAWorkoutRaisesItsEvent(): void
     {
-        $workout = $this->useCase(StartWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), new StartWorkoutDataInput());
+        $output = $this->start();
 
-        $summary = $this->summaryOf($workout->id);
-
-        self::assertSame(0, $summary->setCount);
-        self::assertNull($summary->volumeInKilograms);
-        self::assertSame(0, $summary->personalBestCount);
+        self::assertSame($output->id, $this->assertEventRaised(WorkoutCreatedEvent::class)->workout->id);
     }
 
     public function testStartingAWorkoutStaysWithinItsQueryBudget(): void

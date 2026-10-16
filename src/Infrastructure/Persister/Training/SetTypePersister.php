@@ -15,7 +15,7 @@ final class SetTypePersister extends AbstractBaseMysqlPersister implements SetTy
 {
     public function create(SetTypeDataModel $setType): SetTypeDataModel
     {
-        return $this->persistAndStampCreate($setType);
+        return $this->persistCreate($setType);
     }
 
     public function update(SetTypeDataModel $setType): SetTypeDataModel
@@ -29,7 +29,7 @@ final class SetTypePersister extends AbstractBaseMysqlPersister implements SetTy
     public function updateMany(array $setTypes): void
     {
         foreach ($setTypes as $setType) {
-            $this->persistAndStampUpdate($setType, flush: false);
+            $this->persistUpdate($setType, flush: false);
         }
         $this->entityManager->flush();
     }

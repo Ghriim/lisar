@@ -15,12 +15,12 @@ final class TaskPersister extends AbstractBaseMysqlPersister implements TaskPers
 {
     public function create(TaskDataModel $task): TaskDataModel
     {
-        return $this->persistAndStampCreate($task);
+        return $this->persistCreate($task);
     }
 
     public function update(TaskDataModel $task): TaskDataModel
     {
-        return $this->persistAndStampUpdate($task);
+        return $this->persistUpdate($task);
     }
 
     public function delete(TaskDataModel $task): void

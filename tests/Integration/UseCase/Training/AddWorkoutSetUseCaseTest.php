@@ -6,9 +6,9 @@ namespace App\Tests\Integration\UseCase\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Training\WorkoutSetCreatedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
 use App\Domain\Validation\Validator\Training\AddWorkoutSetValidator;
@@ -16,6 +16,7 @@ use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\SetTypeFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\AddWorkoutSetUseCase;
 use App\UseCase\Training\Admin\DeactivateSetTypeUseCase;
 use App\UseCase\Training\GetWorkoutUseCase;
@@ -26,6 +27,7 @@ final class AddWorkoutSetUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
     use WorkoutTestTrait;
+    use RecordedEventsTrait;
 
     protected function setUp(): void
     {
@@ -105,13 +107,12 @@ final class AddWorkoutSetUseCaseTest extends KernelTestCase
         self::assertFalse($output->isInProgress);
     }
 
-    /** A set logged but not ticked is still to do: it beats nothing yet. */
-    public function testASetNotTickedBeatsNothing(): void
+    /** What a logged set moves — the records, its workout's summary — is its handlers' to test. */
+    public function testLoggingASetRaisesItsEvent(): void
     {
         $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0));
 
-        self::assertSame([], $this->lastSet($workout)->personalBests);
-        self::assertSame(60.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
+        self::assertSame($this->lastSet($workout)->id, $this->assertEventRaised(WorkoutSetCreatedEvent::class)->set->id);
     }
 
     public function testAddingASetStaysWithinItsQueryBudget(): void

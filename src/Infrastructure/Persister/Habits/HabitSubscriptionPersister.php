@@ -15,11 +15,11 @@ final class HabitSubscriptionPersister extends AbstractBaseMysqlPersister implem
 {
     public function create(HabitSubscriptionDataModel $subscription): HabitSubscriptionDataModel
     {
-        return $this->persistAndStampCreate($subscription);
+        return $this->persistCreate($subscription);
     }
 
     public function update(HabitSubscriptionDataModel $subscription): HabitSubscriptionDataModel
     {
-        return $this->persistAndStampUpdate($subscription);
+        return $this->persistUpdate($subscription);
     }
 }

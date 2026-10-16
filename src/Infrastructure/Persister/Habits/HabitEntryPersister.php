@@ -15,11 +15,11 @@ final class HabitEntryPersister extends AbstractBaseMysqlPersister implements Ha
 {
     public function create(HabitEntryDataModel $entry): HabitEntryDataModel
     {
-        return $this->persistAndStampCreate($entry);
+        return $this->persistCreate($entry);
     }
 
     public function update(HabitEntryDataModel $entry): HabitEntryDataModel
     {
-        return $this->persistAndStampUpdate($entry);
+        return $this->persistUpdate($entry);
     }
 }

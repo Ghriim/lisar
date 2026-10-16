@@ -15,19 +15,19 @@ final class SessionPersister extends AbstractBaseMysqlPersister implements Sessi
 {
     public function create(SessionDataModel $session): SessionDataModel
     {
-        return $this->persistAndStampCreate($session);
+        return $this->persistCreate($session);
     }
 
     public function update(SessionDataModel $session): SessionDataModel
     {
-        return $this->persistAndStampUpdate($session);
+        return $this->persistUpdate($session);
     }
 
     /** @param SessionDataModel[] $sessions */
     public function updateMany(array $sessions): void
     {
         foreach ($sessions as $session) {
-            $this->persistAndStampUpdate($session, flush: false);
+            $this->persistUpdate($session, flush: false);
         }
 
         $this->entityManager->flush();
