@@ -39,6 +39,8 @@ final class UncompleteWorkoutSetUseCaseTest extends KernelTestCase
         $event = $this->assertEventRaised(WorkoutSetUpdatedEvent::class);
         self::assertSame($this->lastSet($workout)->id, $event->set->id);
         self::assertFalse($event->set->isComplete);
+        // Done until now: it counted, it no longer does.
+        self::assertTrue($event->countedBefore);
 
         // To do already: nothing moves, nothing is said.
         $this->forgetRaisedEvents();

@@ -71,6 +71,21 @@ final class SyncWorkoutHabitsEventHandlerTest extends KernelTestCase
         self::assertFalse($this->isKeptToday());
     }
 
+    /** A finished workout stays on its day: renaming it recounts nothing. */
+    public function testRenamingAFinishedWorkoutCostsNothing(): void
+    {
+        $workout = $this->withHandlers(fn () => $this->finish($this->addDoneSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10))));
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->eventRaisedBy(WorkoutUpdatedEvent::class, fn () => $this->useCase(UpdateWorkoutUseCase::class)->execute(
+                $this->currentUser($this->aliceId), $workout->id, new UpdateWorkoutDataInput('Jambes'),
+            )),
+            fn (EventInterface $event) => $this->handle($event),
+            max: 0,
+        );
+        self::assertTrue($this->isKeptToday());
+    }
+
     public function testKeepingTheHabitsStaysWithinItsQueryBudget(): void
     {
         $workout = $this->withHandlers(fn () => $this->addDoneSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10)));

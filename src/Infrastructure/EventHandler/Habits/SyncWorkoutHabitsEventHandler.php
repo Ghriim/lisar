@@ -19,8 +19,8 @@ use LogicException;
 
 /**
  * The workout tracker's figure is how many workouts the owner finished on a day. It moves when
- * one is finished — a workout update — or when a finished one is deleted; one in progress counts
- * for nothing, so writes on it move nothing.
+ * one is finished — the workout update that finishes it — or when a finished one is deleted; one
+ * in progress counts for nothing, and a finished one edited stays on its day.
  */
 final readonly class SyncWorkoutHabitsEventHandler extends AbstractTrackerHabitsEventHandler
 {
@@ -42,7 +42,8 @@ final readonly class SyncWorkoutHabitsEventHandler extends AbstractTrackerHabits
     public function handle(EventInterface $event): void
     {
         [$owner, $finishedAt] = match (true) {
-            $event instanceof WorkoutUpdatedEvent => [$event->workout->owner, $event->workout->finishedAt],
+            // Only finishing moves its day's count: a finished workout renamed changes nothing.
+            $event instanceof WorkoutUpdatedEvent => [$event->workout->owner, true === $event->finishes ? $event->workout->finishedAt : null],
             $event instanceof WorkoutDeletedEvent => [$event->owner, $event->finishedAt],
             default => throw new LogicException(sprintf('%s does not handle %s.', self::class, $event::class)),
         };

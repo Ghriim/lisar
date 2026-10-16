@@ -23,28 +23,19 @@ final class PersonalBestRepository extends ServiceEntityRepository implements Pe
     }
 
     /** @return list<PersonalBestDataModel> */
-    public function findAllForOwnerAndMovements(UserDataModel $owner, array $movements): array
+    public function findPersonalBestsForRefreshEvent(UserDataModel $owner, array $movements): array
     {
+        $query = $this->ordered()
+            ->andWhere('personalBest.owner = :owner')
+            ->setParameter('owner', $owner);
+
         if ([] === $movements) {
-            return [];
+            return $query->andWhere('personalBest.movement IS NULL')->getQuery()->getResult();
         }
 
-        return $this->ordered()
-            ->andWhere('personalBest.owner = :owner')
-            ->andWhere('personalBest.movement IN (:movements)')
-            ->setParameter('owner', $owner)
+        return $query
+            ->andWhere('(personalBest.movement IS NULL OR personalBest.movement IN (:movements))')
             ->setParameter('movements', $movements)
-            ->getQuery()
-            ->getResult();
-    }
-
-    /** @return list<PersonalBestDataModel> */
-    public function findAllSessionsForOwner(UserDataModel $owner): array
-    {
-        return $this->ordered()
-            ->andWhere('personalBest.owner = :owner')
-            ->andWhere('personalBest.movement IS NULL')
-            ->setParameter('owner', $owner)
             ->getQuery()
             ->getResult();
     }

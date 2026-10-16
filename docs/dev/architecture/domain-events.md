@@ -41,7 +41,12 @@ listen to one event; none may count on running before another.
 - **A handler holds no business rule it could hand to the domain.** It gathers, calls a domain
   factory or service, and writes. The rule — what beats a record — is unit-tested in the domain.
 - **An event that only matters for some changes says so**: it carries what changed, read from
-  Doctrine's original data before the flush, and the handler skips the rest.
+  Doctrine's original data before the flush (`AbstractBaseMysqlPersister::originalValueOf()`),
+  or from what is deleted before it goes, and the handler skips the rest without a query.
+  `WorkoutSetUpdatedEvent` says whether the set counted before (`countedBefore`), the deletions
+  whether what went held a set that counts, `WorkoutUpdatedEvent` whether the write finishes
+  the workout (`finishes`): a set that counts neither before nor after, a finished workout
+  renamed, move no record and no habit.
 
 ## Testing
 
@@ -73,8 +78,10 @@ time a set, a movement or a block of the workout moves.
 
 The record count is not its to keep. Two handlers of one event cannot count on their order, and
 a rebuild moves the rows of other workouts than the one written to — a record taken back by an
-older workout leaves the newer one. So `RefreshPersonalBestsEventHandler`, once its rows are
-replaced, recounts every workout that held one before or holds one after.
+older workout leaves the newer one. So `RefreshPersonalBestsEventHandler` recounts every workout
+whose rows its rebuild wrote — `PersonalBestPersister::replace` writes only the rows that differ,
+and says which — plus the workout a set, a movement or a block was removed from: their rows went
+with them through the database, before the rebuild read what was left.
 
 The workout's persisters keep the tree in step in memory — a set added to its exercise's
 `sets`, a block taken out of its workout's `blocks` — before they dispatch: the summary is added

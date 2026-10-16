@@ -12,20 +12,14 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 interface PersonalBestProviderGateway
 {
     /**
-     * The owner's rows for those movements.
+     * What a rebuild of the records replaces: the owner's rows for whole workouts, of no movement,
+     * and their rows for those movements, in one read.
      *
-     * @param list<MovementDataModel> $movements
-     *
-     * @return list<PersonalBestDataModel>
-     */
-    public function findAllForOwnerAndMovements(UserDataModel $owner, array $movements): array;
-
-    /**
-     * The owner's rows for whole workouts, of no movement.
+     * @param list<MovementDataModel> $movements none for a write that moves only the workouts' records
      *
      * @return list<PersonalBestDataModel>
      */
-    public function findAllSessionsForOwner(UserDataModel $owner): array;
+    public function findPersonalBestsForRefreshEvent(UserDataModel $owner, array $movements): array;
 
     /**
      * Every row of the owner, each record's progression oldest first.

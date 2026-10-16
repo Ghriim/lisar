@@ -50,6 +50,7 @@ final class DeleteWorkoutUseCaseTest extends KernelTestCase
         $event = $this->assertEventRaised(WorkoutDeletedEvent::class);
         self::assertSame($this->aliceId, $event->owner->id);
         self::assertEquals($finishedAt, $event->finishedAt);
+        self::assertTrue($event->heldCountingSets);
         self::assertSame(
             [$this->movementId(MovementFixtures::BENCH_PRESS_BARBELL), $this->movementId(MovementFixtures::PUSH_UP), $this->movementId(MovementFixtures::FARMER_WALK_DUMBBELL)],
             array_map(static fn ($movement) => $movement->id, $event->movements),

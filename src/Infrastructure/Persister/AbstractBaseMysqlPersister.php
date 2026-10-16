@@ -126,6 +126,17 @@ abstract class AbstractBaseMysqlPersister
     }
 
     /**
+     * What a field held when the data model was loaded, before the changes a flush is about to
+     * write: for an event that says what changed. Read it before the flush, which forgets it.
+     *
+     * @param T $dataModel
+     */
+    protected function originalValueOf(DataModelInterface $dataModel, string $field): mixed
+    {
+        return $this->entityManager->getUnitOfWork()->getOriginalEntityData($dataModel)[$field] ?? null;
+    }
+
+    /**
      * Runs a write and the handlers of what it raised as one transaction: a handler that throws
      * takes the write back with it, so a write never stands without what follows from it.
      */

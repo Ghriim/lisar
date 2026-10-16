@@ -10,7 +10,10 @@ use App\Domain\DTO\Event\EventInterface;
 /** A workout was renamed, noted, felt — or finished. */
 final readonly class WorkoutUpdatedEvent implements EventInterface
 {
-    public function __construct(public WorkoutDataModel $workout)
-    {
+    public function __construct(
+        public WorkoutDataModel $workout,
+        /** Whether this write is the one finishing it: the only change its length and its day follow. */
+        public bool $finishes,
+    ) {
     }
 }

@@ -53,6 +53,8 @@ final class DeleteWorkoutExerciseUseCaseTest extends KernelTestCase
         $event = $this->assertEventRaised(WorkoutExerciseDeletedEvent::class);
         self::assertSame($workout->id, $event->workout->id);
         self::assertSame($this->movementId(MovementFixtures::PUSH_UP), $event->movement->id);
+        // No set logged on it: there is no record to hand back.
+        self::assertFalse($event->heldCountingSets);
     }
 
     /** Its last movement removed, the block goes: that is a block removed, with its movements. */

@@ -22,6 +22,7 @@ use App\Infrastructure\EventHandler\Training\RefreshPersonalBestsEventHandler;
 use App\Tests\Integration\Infrastructure\EventHandler\EventHandlerTestTrait;
 use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\UseCase\Training\WorkoutTestTrait;
+use App\UseCase\Training\CompleteWorkoutSetUseCase;
 use App\UseCase\Training\DeleteWorkoutSetUseCase;
 use App\UseCase\Training\DeleteWorkoutUseCase;
 use App\UseCase\Training\GetWorkoutUseCase;
@@ -177,7 +178,8 @@ final class RefreshPersonalBestsEventHandlerTest extends KernelTestCase
         self::assertCount(1, $longest?->progression ?? []);
     }
 
-    public function testRefreshingTheRecordsStaysWithinItsQueryBudget(): void
+    /** A set that counts neither before nor after a write moves no record: nothing is read. */
+    public function testAWriteThatCannotMoveARecordCostsNothing(): void
     {
         $workout = $this->inProgressPush();
         $setId = $workout->blocks[0]->exercises[0]->sets[1]->id;
@@ -187,6 +189,38 @@ final class RefreshPersonalBestsEventHandlerTest extends KernelTestCase
                 $this->currentUser($this->aliceId), $workout->id, $setId, new UpdateWorkoutSetDataInput(reps: 6, weightInKilograms: 72.5),
             )),
             fn (EventInterface $event) => $this->handle($event),
+            max: 0,
+        );
+    }
+
+    /** A set removed takes its rows with it through the database: its workout is recounted all the same. */
+    public function testRemovingASetThatHeldRecordsRecountsItsWorkout(): void
+    {
+        $workout = $this->withHandlers(fn () => $this->addDoneSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0)));
+        self::assertGreaterThan(0, $this->summaryOf($workout->id)->personalBestCount);
+
+        $this->handle($this->eventRaisedBy(WorkoutSetDeletedEvent::class, fn () => $this->useCase(DeleteWorkoutSetUseCase::class)->execute(
+            $this->currentUser($this->aliceId), $workout->id, $this->lastSet($workout)->id,
+        )));
+
+        self::assertSame(0, $this->summaryOf($workout->id)->personalBestCount);
+    }
+
+    /** Ticking a set that beats the bench's records: the case that writes. */
+    public function testRefreshingTheRecordsStaysWithinItsQueryBudget(): void
+    {
+        $workout = $this->withHandlers(fn () => $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 70.0)));
+        $setId = $this->lastSet($workout)->id;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->eventRaisedBy(WorkoutSetUpdatedEvent::class, fn () => $this->useCase(CompleteWorkoutSetUseCase::class)->execute(
+                $this->currentUser($this->aliceId), $workout->id, $setId,
+            )),
+            fn (EventInterface $event) => $this->handle($event),
+            // Three reads to rebuild — the rows standing, the sets that count, the workouts'
+            // tallies — one INSERT per record the set beats, 5 here, then two reads and an UPDATE
+            // to recount.
+            max: 11,
         );
     }
 

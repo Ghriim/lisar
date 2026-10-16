@@ -55,7 +55,10 @@ final class UpdateWorkoutUseCaseTest extends KernelTestCase
 
         $this->useCase(UpdateWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id, new UpdateWorkoutDataInput('Jambes'));
 
-        self::assertSame('Jambes', $this->assertEventRaised(WorkoutUpdatedEvent::class)->workout->name);
+        $event = $this->assertEventRaised(WorkoutUpdatedEvent::class);
+        self::assertSame('Jambes', $event->workout->name);
+        // Renamed, not finished: neither its length nor its day moves.
+        self::assertFalse($event->finishes);
     }
 
     public function testUpdatingAWorkoutStaysWithinItsQueryBudget(): void

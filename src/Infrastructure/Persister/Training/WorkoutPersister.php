@@ -39,9 +39,13 @@ final class WorkoutPersister extends AbstractBaseMysqlPersister implements Worko
 
     public function update(WorkoutDataModel $workout): WorkoutDataModel
     {
-        $this->inTransaction(function () use ($workout): void {
+        // Read before the flush forgets it: a finished workout's moment is never rewritten, so only
+        // the write giving it one finishes it.
+        $finishes = null === $this->originalValueOf($workout, 'finishedAt') && null !== $workout->finishedAt;
+
+        $this->inTransaction(function () use ($workout, $finishes): void {
             $this->persistUpdate($workout);
-            $this->eventDispatcher->dispatch(new WorkoutUpdatedEvent($workout));
+            $this->eventDispatcher->dispatch(new WorkoutUpdatedEvent($workout, $finishes));
         });
 
         return $workout;
@@ -49,7 +53,15 @@ final class WorkoutPersister extends AbstractBaseMysqlPersister implements Worko
 
     public function delete(WorkoutDataModel $workout): void
     {
-        $event = new WorkoutDeletedEvent($workout->owner, $workout->movements(), $workout->finishedAt);
+        $heldCountingSets = false;
+        foreach ($workout->blocks as $block) {
+            foreach ($block->exercises as $exercise) {
+                foreach ($exercise->sets as $set) {
+                    $heldCountingSets = $heldCountingSets || $set->countsForPersonalBests();
+                }
+            }
+        }
+        $event = new WorkoutDeletedEvent($workout->owner, $workout->movements(), $workout->finishedAt, $heldCountingSets);
 
         $this->inTransaction(function () use ($workout, $event): void {
             $this->persistDelete($workout);

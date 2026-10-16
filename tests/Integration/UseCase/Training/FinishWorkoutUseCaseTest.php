@@ -83,6 +83,7 @@ final class FinishWorkoutUseCaseTest extends KernelTestCase
         $event = $this->assertEventRaised(WorkoutUpdatedEvent::class);
         self::assertSame($workout->id, $event->workout->id);
         self::assertNotNull($event->workout->finishedAt);
+        self::assertTrue($event->finishes);
 
         // Finished already: nothing moves, nothing is said.
         $this->forgetRaisedEvents();

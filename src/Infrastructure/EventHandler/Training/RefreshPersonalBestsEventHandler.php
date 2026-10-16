@@ -30,9 +30,13 @@ use LogicException;
  * owner, and those of the owner's whole workouts. Rebuilt from the sets rather than adjusted, so
  * a set unticked, corrected or removed hands its records back to whoever held them before.
  *
- * Then recounts the records of every workout that lost or gained one — not only the one written
- * to: a record beaten again hands the row of an older workout back, or takes it away — on their
- * summaries.
+ * A write that cannot move one is let go without a query: only a set that counts — done, of a
+ * type that counts — before or after the write makes a record, and only finishing gives a workout
+ * its length. The events say which.
+ *
+ * Then recounts, on their summaries, the records of every workout whose rows the rebuild wrote —
+ * not only the one written to: a record beaten again hands the row of an older workout back, or
+ * takes it away.
  */
 final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInterface
 {
@@ -61,58 +65,93 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
 
     public function handle(EventInterface $event): void
     {
-        /** @var array<int, WorkoutDataModel> $workouts */
-        $workouts = [];
-        foreach ($this->touched($event) as [$owner, $movements]) {
-            $workouts += $this->refreshMovements($owner, $movements);
-            $workouts += $this->refreshSessions($owner);
+        $touched = $this->touched($event);
+        if (null === $touched) {
+            return;
         }
 
-        $this->recount(array_values($workouts));
+        [$owner, $movements, $emptied] = $touched;
+        $movements = $this->eachOnce($movements);
+
+        // What stands now, the records of whole workouts and those of the movements touched, in
+        // one read; then only what differs from the rebuild is written, in one flush.
+        $written = $this->personalBestPersisterGateway->replace(
+            $this->personalBestProviderGateway->findPersonalBestsForRefreshEvent($owner, $movements),
+            [...$this->rebuildMovements($owner, $movements), ...$this->rebuildSessions($owner)],
+        );
+
+        $workoutsById = [];
+        foreach ($written as $row) {
+            $workoutsById[(int) $row->workout->id] = $row->workout;
+        }
+        foreach ($emptied as $workout) {
+            $workoutsById[(int) $workout->id] = $workout;
+        }
+
+        if ([] !== $workoutsById) {
+            $this->recount(array_values($workoutsById));
+        }
     }
 
     /**
-     * Who the write touched, and which of their movements.
+     * Who the write touched, which of their movements, and the workouts to recount whatever the
+     * rebuild writes; null when it cannot move a record.
      *
-     * @return list<array{UserDataModel, list<MovementDataModel>}>
+     * A set removed takes its rows with it, through the database, before the rebuild reads what
+     * is left: its workout may have lost records the rebuild never sees go.
+     *
+     * @return array{UserDataModel, list<MovementDataModel>, list<WorkoutDataModel>}|null
      */
-    private function touched(EventInterface $event): array
+    private function touched(EventInterface $event): ?array
     {
         return match (true) {
-            $event instanceof WorkoutSetCreatedEvent, $event instanceof WorkoutSetUpdatedEvent => [[
-                $event->set->exercise->block->workout->owner,
-                [$event->set->exercise->movement],
-            ]],
-            $event instanceof WorkoutSetDeletedEvent, $event instanceof WorkoutExerciseDeletedEvent => [[$event->workout->owner, [$event->movement]]],
-            $event instanceof WorkoutBlockDeletedEvent => [[$event->workout->owner, $event->movements]],
-            $event instanceof WorkoutDeletedEvent => [[$event->owner, $event->movements]],
-            // Finishing gives a workout its length; nothing else about it moves a movement's record.
-            $event instanceof WorkoutUpdatedEvent => [[$event->workout->owner, []]],
+            $event instanceof WorkoutSetCreatedEvent => true === $event->set->countsForPersonalBests()
+                ? [$event->set->exercise->block->workout->owner, [$event->set->exercise->movement], []]
+                : null,
+            $event instanceof WorkoutSetUpdatedEvent => true === $event->countedBefore || true === $event->set->countsForPersonalBests()
+                ? [$event->set->exercise->block->workout->owner, [$event->set->exercise->movement], []]
+                : null,
+            $event instanceof WorkoutSetDeletedEvent => true === $event->counted ? [$event->workout->owner, [$event->movement], [$event->workout]] : null,
+            $event instanceof WorkoutExerciseDeletedEvent => true === $event->heldCountingSets ? [$event->workout->owner, [$event->movement], [$event->workout]] : null,
+            $event instanceof WorkoutBlockDeletedEvent => true === $event->heldCountingSets ? [$event->workout->owner, $event->movements, [$event->workout]] : null,
+            // A finished workout held its length, even without a set that counts. Its summary went
+            // with it.
+            $event instanceof WorkoutDeletedEvent => true === $event->heldCountingSets || null !== $event->finishedAt ? [$event->owner, $event->movements, []] : null,
+            // Finishing gives a workout its length; nothing else about it moves a record.
+            $event instanceof WorkoutUpdatedEvent => true === $event->finishes ? [$event->workout->owner, [], []] : null,
             default => throw new LogicException(sprintf('%s does not handle %s.', self::class, $event::class)),
         };
     }
 
     /**
-     * Every movement touched at once: their rows and their sets read in one query each, the sets
-     * sorted out per movement here.
+     * Each movement once, however the event names them: rebuilt twice, its rows would double.
      *
      * @param list<MovementDataModel> $movements
      *
-     * @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id
+     * @return list<MovementDataModel>
      */
-    private function refreshMovements(UserDataModel $owner, array $movements): array
+    private function eachOnce(array $movements): array
     {
-        // Each movement rebuilt once, however the event names them: twice would double its rows.
         $movementsById = [];
         foreach ($movements as $movement) {
             $movementsById[(int) $movement->id] = $movement;
         }
 
-        if ([] === $movementsById) {
+        return array_values($movementsById);
+    }
+
+    /**
+     * Every movement touched at once: their sets read in one query, sorted out per movement here.
+     *
+     * @param list<MovementDataModel> $movements
+     *
+     * @return list<PersonalBestDataModel>
+     */
+    private function rebuildMovements(UserDataModel $owner, array $movements): array
+    {
+        if ([] === $movements) {
             return [];
         }
-
-        $movements = array_values($movementsById);
 
         $setsByMovementId = [];
         foreach ($this->workoutProviderGateway->findSetsCountingForPersonalBests($owner, $movements) as $set) {
@@ -127,37 +166,16 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
             ];
         }
 
-        return $this->replace($this->personalBestProviderGateway->findAllForOwnerAndMovements($owner, $movements), $rebuilt);
+        return $rebuilt;
     }
 
-    /** @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id */
-    private function refreshSessions(UserDataModel $owner): array
+    /** @return list<PersonalBestDataModel> */
+    private function rebuildSessions(UserDataModel $owner): array
     {
-        return $this->replace(
-            $this->personalBestProviderGateway->findAllSessionsForOwner($owner),
-            $this->personalBestDataModelFactory->buildSessionProgression(
-                $owner,
-                $this->workoutProviderGateway->findTalliesForOwner($owner),
-            ),
+        return $this->personalBestDataModelFactory->buildSessionProgression(
+            $owner,
+            $this->workoutProviderGateway->findTalliesForOwner($owner),
         );
-    }
-
-    /**
-     * @param list<PersonalBestDataModel> $previous
-     * @param list<PersonalBestDataModel> $rebuilt
-     *
-     * @return array<int, WorkoutDataModel> the workouts holding a row, before or after, by id
-     */
-    private function replace(array $previous, array $rebuilt): array
-    {
-        $this->personalBestPersisterGateway->replace($previous, $rebuilt);
-
-        $workouts = [];
-        foreach ([...$previous, ...$rebuilt] as $row) {
-            $workouts[(int) $row->workout->id] = $row->workout;
-        }
-
-        return $workouts;
     }
 
     /** @param list<WorkoutDataModel> $workouts */

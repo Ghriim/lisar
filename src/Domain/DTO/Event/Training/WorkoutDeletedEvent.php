@@ -18,6 +18,8 @@ final readonly class WorkoutDeletedEvent implements EventInterface
         public array $movements,
         /** Null for one abandoned in progress. */
         public ?DateTimeImmutable $finishedAt,
+        /** Whether one of its sets counted for the personal bests. */
+        public bool $heldCountingSets,
     ) {
     }
 }
