@@ -12,6 +12,7 @@ use App\Domain\Registry\User\SessionAudienceRegistry;
 use App\Domain\User\RefreshTokenGenerator;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\UseCase\User\LoginUseCase;
 use App\UseCase\User\LogoutUseCase;
 use App\UseCase\User\RefreshSessionUseCase;
@@ -20,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class LogoutUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
 
     private LogoutUseCase $useCase;
     private LoginUseCase $createSessionUseCase;
@@ -36,6 +38,16 @@ final class LogoutUseCaseTest extends KernelTestCase
         $this->refreshTokenGenerator = self::getContainer()->get(RefreshTokenGenerator::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    public function testSigningOutStaysWithinItsQueryBudget(): void
+    {
+        $refreshToken = $this->signIn()->refreshToken;
+
+        $this->assertQueryCountAtMost(
+            fn () => null,
+            fn () => $this->useCase->execute($refreshToken),
+        );
     }
 
     public function testItRevokesTheSession(): void

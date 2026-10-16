@@ -20,6 +20,7 @@ use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Habits\CompleteHabitValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
+use DateTimeImmutable;
 
 use function sprintf;
 
@@ -64,7 +65,10 @@ final readonly class CompleteHabitUseCase implements UseCaseInterface
 
         $today = $this->clock->today();
 
-        $entry = $this->habitEntryProviderGateway->findOneForSubscriptionAndDay($subscription, $today);
+        $since = $today->modify(sprintf('-%d days', HabitOutputFactory::WINDOW_IN_DAYS - 1));
+        // One read for the whole window the output shows; today's entry is in it.
+        $entries = $this->habitEntryProviderGateway->findForSubscriptionSince($subscription, $since);
+        $entry = $this->entryOn($entries, $today);
         $isNew = null === $entry;
 
         if (null === $entry) {
@@ -82,13 +86,27 @@ final readonly class CompleteHabitUseCase implements UseCaseInterface
 
         if (true === $isNew) {
             $this->habitEntryPersisterGateway->create($entry);
+            $entries[] = $entry;
         } else {
             $this->habitEntryPersisterGateway->update($entry);
         }
 
-        $since = $today->modify(sprintf('-%d days', HabitOutputFactory::WINDOW_IN_DAYS - 1));
-        $entries = $this->habitEntryProviderGateway->findForSubscriptionSince($subscription, $since);
-
         return $this->outputFactory->buildOne($subscription, $entries, $today);
+    }
+
+    /**
+     * Today's entry, picked out of the window rather than read on its own: the window holds it.
+     *
+     * @param list<HabitEntryDataModel> $entries
+     */
+    private function entryOn(array $entries, DateTimeImmutable $day): ?HabitEntryDataModel
+    {
+        foreach ($entries as $entry) {
+            if ($day->format('Y-m-d') === $entry->day->format('Y-m-d')) {
+                return $entry;
+            }
+        }
+
+        return null;
     }
 }

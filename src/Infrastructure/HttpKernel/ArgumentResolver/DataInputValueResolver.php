@@ -116,7 +116,7 @@ final readonly class DataInputValueResolver implements ValueResolverInterface
         return $payload;
     }
 
-    /** Walks into lists too: the tags of a task arrive as an array of strings. */
+    /** Walks into lists too: a list of strings is trimmed item by item. */
     private function trimDeep(mixed $value): mixed
     {
         if (true === is_string($value)) {

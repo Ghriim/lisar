@@ -4,19 +4,14 @@ declare(strict_types=1);
 
 namespace App\UseCase\Todo;
 
-use App\Domain\DTO\DataModel\Todo\TagDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\UpdateTaskDataInput;
 use App\Domain\DTO\Output\Todo\TaskDataOutput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Factory\DataModelFactory\Todo\TagDataModelFactory;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
-use App\Domain\Gateway\Persister\Todo\TagPersisterGateway;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
 use App\Domain\Gateway\Provider\Todo\CategoryProviderGateway;
-use App\Domain\Gateway\Provider\Todo\PriorityProviderGateway;
-use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
 use App\Domain\Validation\Validator\Todo\UpdateTaskValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -26,13 +21,9 @@ final readonly class UpdateTaskUseCase implements UseCaseInterface
 {
     public function __construct(
         private UpdateTaskValidator $validator,
-        private PriorityProviderGateway $priorityProviderGateway,
         private CategoryProviderGateway $categoryProviderGateway,
         private TaskProviderGateway $taskProviderGateway,
-        private TagProviderGateway $tagProviderGateway,
         private TaskPersisterGateway $taskPersisterGateway,
-        private TagPersisterGateway $tagPersisterGateway,
-        private TagDataModelFactory $tagDataModelFactory,
         private TaskOutputFactory $outputFactory,
     ) {
     }
@@ -48,53 +39,21 @@ final readonly class UpdateTaskUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(TaskDataModel::class);
         }
 
-        $priority = null === $input->priorityId
-            ? null
-            : $this->priorityProviderGateway->findOneById($input->priorityId);
-
         $category = null === $input->categoryId
             ? null
             : $this->categoryProviderGateway->findOneById($input->categoryId);
 
-        $this->validator->validate($currentUser, $task, $input, $priority, $category, $currentUser);
+        $this->validator->validate($currentUser, $task, $input, $category, $currentUser);
 
         $task->title = $input->title;
         $task->description = $input->description;
         $task->dueDate = $input->getDueDate();
         // Unlike a creation, clearing the priority is meant: the default is not re-applied.
-        $task->priority = $priority;
+        $task->priority = $input->priority;
         $task->category = $category;
-
-        // The tags are the whole set: what the caller left out is taken off the task. The tag
-        // itself stays on the account, which is what lets it be offered again.
-        $task->tags->clear();
-        foreach ($this->resolveTags($input->getTagLabels(), $currentUser) as $tag) {
-            $task->tags->add($tag);
-        }
 
         $this->taskPersisterGateway->update($task);
 
         return $this->outputFactory->buildOne($task);
-    }
-
-    /**
-     * @param list<string> $labels
-     *
-     * @return list<TagDataModel>
-     */
-    private function resolveTags(array $labels, UserDataModel $currentUser): array
-    {
-        if ([] === $labels) {
-            return [];
-        }
-
-        $existingTags = $this->tagProviderGateway->findAllByLabelsForOwner($currentUser, $labels);
-        $newTags = $this->tagDataModelFactory->buildMany($labels, $currentUser, $existingTags);
-
-        if ([] !== $newTags) {
-            $this->tagPersisterGateway->createMany($newTags);
-        }
-
-        return [...$existingTags, ...$newTags];
     }
 }

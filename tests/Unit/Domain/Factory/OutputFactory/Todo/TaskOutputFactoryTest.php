@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\Factory\OutputFactory\Todo;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
-use App\Domain\DTO\DataModel\Todo\PriorityDataModel;
-use App\Domain\DTO\DataModel\Todo\TagDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Factory\OutputFactory\Todo\CategoryOutputFactory;
-use App\Domain\Factory\OutputFactory\Todo\PriorityOutputFactory;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
+use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Registry\Todo\TaskStateRegistry;
 use App\Domain\Todo\TaskState;
 use DateTimeImmutable;
@@ -32,7 +30,6 @@ final class TaskOutputFactoryTest extends TestCase
         $this->factory = new TaskOutputFactory(
             $mapper,
             new TaskState(),
-            new PriorityOutputFactory($mapper),
             new CategoryOutputFactory(),
         );
     }
@@ -54,17 +51,11 @@ final class TaskOutputFactoryTest extends TestCase
         self::assertSame([], $output->subtasks);
     }
 
-    public function testItNestsThePriorityAndTheCategory(): void
+    public function testItCarriesThePriorityAndNestsTheCategory(): void
     {
         $task = $this->buildTask('Buy a present');
 
-        $priority = new PriorityDataModel();
-        $priority->id = 7;
-        $priority->label = 'High';
-        $priority->colour = '#e5484d';
-        $priority->weight = 10;
-        $priority->isDefault = false;
-        $task->priority = $priority;
+        $task->priority = TaskPriorityRegistry::HIGH;
 
         $category = new CategoryDataModel();
         $category->id = 3;
@@ -74,9 +65,7 @@ final class TaskOutputFactoryTest extends TestCase
 
         $output = $this->factory->buildOne($task);
 
-        self::assertNotNull($output->priority);
-        self::assertSame('High', $output->priority->label);
-        self::assertSame(10, $output->priority->weight);
+        self::assertSame(TaskPriorityRegistry::HIGH, $output->priority);
 
         self::assertNotNull($output->category);
         self::assertSame('Home', $output->category->label);
@@ -97,15 +86,6 @@ final class TaskOutputFactoryTest extends TestCase
 
         self::assertNotNull($output->category);
         self::assertTrue($output->category->isPersonal);
-    }
-
-    public function testItReturnsTagsAsSortedLabels(): void
-    {
-        $task = $this->buildTask('Buy a present');
-        $task->tags->add($this->buildTag('urgent', $task->owner));
-        $task->tags->add($this->buildTag('errand', $task->owner));
-
-        self::assertSame(['errand', 'urgent'], $this->factory->buildOne($task)->tags);
     }
 
     public function testItNestsTheSubtasksAndDerivesTheState(): void
@@ -155,14 +135,5 @@ final class TaskOutputFactoryTest extends TestCase
         $task->owner = $owner;
 
         return $task;
-    }
-
-    private function buildTag(string $label, UserDataModel $owner): TagDataModel
-    {
-        $tag = new TagDataModel();
-        $tag->label = $label;
-        $tag->owner = $owner;
-
-        return $tag;
     }
 }

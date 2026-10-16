@@ -13,6 +13,7 @@ use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\GetTaskUseCase;
 use LogicException;
@@ -21,6 +22,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class GetTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private GetTaskUseCase $useCase;
@@ -77,6 +79,17 @@ final class GetTaskUseCaseTest extends KernelTestCase
         $this->expectException(DataModelNotFoundException::class);
 
         $this->useCase->execute($this->currentUser($this->aliceId()), 123456789);
+    }
+
+    public function testGettingATaskStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+        $taskId = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $taskId),
+        );
     }
 
     private function aliceId(): int

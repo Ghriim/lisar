@@ -20,10 +20,7 @@ const SECTIONS: Section[] = [
     {
         key: 'todo',
         label: 'Todo',
-        children: [
-            { key: '/priorites', label: 'Priorités' },
-            { key: '/categories', label: 'Catégories' },
-        ],
+        children: [{ key: '/categories', label: 'Catégories' }],
     },
     {
         key: 'hydration',

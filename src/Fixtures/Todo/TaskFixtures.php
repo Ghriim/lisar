@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace App\Fixtures\Todo;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
-use App\Domain\DTO\DataModel\Todo\PriorityDataModel;
-use App\Domain\DTO\DataModel\Todo\TagDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
-use App\Domain\Factory\DataModelFactory\Todo\TagDataModelFactory;
-use App\Domain\Gateway\Persister\Todo\TagPersisterGateway;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
+use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Fixtures\User\UserFixtures;
 use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -31,8 +28,6 @@ final class TaskFixtures extends Fixture implements DependentFixtureInterface
 
     public function __construct(
         private readonly TaskPersisterGateway $taskPersisterGateway,
-        private readonly TagPersisterGateway $tagPersisterGateway,
-        private readonly TagDataModelFactory $tagDataModelFactory,
     ) {
     }
 
@@ -41,7 +36,7 @@ final class TaskFixtures extends Fixture implements DependentFixtureInterface
      */
     public function getDependencies(): array
     {
-        return [UserFixtures::class, PriorityFixtures::class, CategoryFixtures::class];
+        return [UserFixtures::class, CategoryFixtures::class];
     }
 
     public function load(ObjectManager $manager): void
@@ -49,24 +44,17 @@ final class TaskFixtures extends Fixture implements DependentFixtureInterface
         $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
         $home = $this->getReference(CategoryFixtures::HOME, CategoryDataModel::class);
         $work = $this->getReference(CategoryFixtures::WORK, CategoryDataModel::class);
-        $high = $this->getReference(PriorityFixtures::HIGH, PriorityDataModel::class);
-        $low = $this->getReference(PriorityFixtures::LOW, PriorityDataModel::class);
-
-        $urgent = $this->tagDataModelFactory->buildOne('urgent', $alice);
-        $errand = $this->tagDataModelFactory->buildOne('errand', $alice);
-        $this->tagPersisterGateway->createMany([$urgent, $errand]);
 
         $this->addReference(self::ALICE_PLAIN, $this->createTask(
             $alice,
             'Buy a birthday present',
             category: $home,
-            priority: $high,
+            priority: TaskPriorityRegistry::HIGH,
             dueDate: new DateTimeImmutable('2026-09-30'),
-            tags: [$urgent, $errand],
         ));
 
         // A task with subtasks, one of them done: it reads as "in progress".
-        $withSubtasks = $this->createTask($alice, 'Move the flat', category: $home, priority: $high);
+        $withSubtasks = $this->createTask($alice, 'Move the flat', category: $home, priority: TaskPriorityRegistry::HIGH);
         $this->addReference(self::ALICE_WITH_SUBTASKS, $withSubtasks);
         $this->addReference(self::ALICE_SUBTASK_DONE, $this->createTask(
             $alice,
@@ -78,7 +66,7 @@ final class TaskFixtures extends Fixture implements DependentFixtureInterface
             $alice,
             'Pack the kitchen',
             parent: $withSubtasks,
-            priority: $low,
+            priority: TaskPriorityRegistry::LOW,
         ));
 
         // And one already ticked off, for the completed view.
@@ -90,18 +78,14 @@ final class TaskFixtures extends Fixture implements DependentFixtureInterface
         ));
     }
 
-    /**
-     * @param TagDataModel[] $tags
-     */
     private function createTask(
         UserDataModel $owner,
         string $title,
         ?CategoryDataModel $category = null,
-        ?PriorityDataModel $priority = null,
+        ?string $priority = null,
         ?DateTimeImmutable $dueDate = null,
         ?TaskDataModel $parent = null,
         ?DateTimeImmutable $completedAt = null,
-        array $tags = [],
     ): TaskDataModel {
         $task = new TaskDataModel();
         $task->owner = $owner;
@@ -111,10 +95,6 @@ final class TaskFixtures extends Fixture implements DependentFixtureInterface
         $task->dueDate = $dueDate;
         $task->parent = $parent;
         $task->completedAt = $completedAt;
-
-        foreach ($tags as $tag) {
-            $task->tags->add($tag);
-        }
 
         return $this->taskPersisterGateway->create($task);
     }

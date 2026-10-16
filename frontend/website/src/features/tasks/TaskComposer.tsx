@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import type { Task } from '../../api/types'
+import { TASK_PRIORITIES, type Task, type TaskPriority } from '../../api/types'
 import {
     Button,
     Field,
@@ -8,10 +8,10 @@ import {
     Select,
     TextArea,
     TextInput,
-    ToggleChip,
     useViolations,
 } from '../../components'
-import { useCategories, useCreateTask, usePriorities, useTags, useUpdateTask } from './queries'
+import { useCategories, useCreateTask, useUpdateTask } from './queries'
+import { priorityDisplay } from './taskDisplay'
 
 interface TaskComposerProps {
     /** Set when writing a subtask: the quest it hangs from. */
@@ -25,23 +25,21 @@ interface FormState {
     title: string
     description: string
     dueDate: string
-    priorityId: string
+    priority: TaskPriority | ''
     categoryId: string
-    tags: string
 }
 
 /**
- * What a new quest starts as: no category, no tag, no rank. The only default anywhere is the
- * priority, and it is the back-office that decides it — server side, once the form is submitted
- * without one.
+ * What a new quest starts as: no category, no rank. The only default anywhere is the
+ * priority, and it is the server that applies it — Normale, once the form is submitted without
+ * one.
  */
 const EMPTY: FormState = {
     title: '',
     description: '',
     dueDate: '',
-    priorityId: '',
+    priority: '',
     categoryId: '',
-    tags: '',
 }
 
 function fromTask(task: Task): FormState {
@@ -49,9 +47,8 @@ function fromTask(task: Task): FormState {
         title: task.title,
         description: task.description ?? '',
         dueDate: task.dueDate ?? '',
-        priorityId: task.priority === null ? '' : String(task.priority.id),
+        priority: task.priority ?? '',
         categoryId: task.category === null ? '' : String(task.category.id),
-        tags: task.tags.join(', '),
     }
 }
 
@@ -61,9 +58,7 @@ function fromTask(task: Task): FormState {
  */
 export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
     const [form, setForm] = useState<FormState>(() => (editing === null ? EMPTY : fromTask(editing)))
-    const priorities = usePriorities()
     const categories = useCategories()
-    const tags = useTags()
     const create = useCreateTask()
     const update = useUpdateTask()
 
@@ -73,19 +68,6 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
     const set = (field: keyof FormState) => (value: string) =>
         setForm((current) => ({ ...current, [field]: value }))
 
-    const chosenTags = form.tags
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag !== '')
-
-    const toggleTag = (label: string) => {
-        const next = chosenTags.includes(label)
-            ? chosenTags.filter((tag) => tag !== label)
-            : [...chosenTags, label]
-
-        set('tags')(next.join(', '))
-    }
-
     const submit = async (event: FormEvent) => {
         event.preventDefault()
 
@@ -93,9 +75,8 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
             title: form.title,
             description: form.description === '' ? null : form.description,
             dueDate: form.dueDate === '' ? null : form.dueDate,
-            priorityId: form.priorityId === '' ? null : Number(form.priorityId),
+            priority: form.priority === '' ? null : form.priority,
             categoryId: form.categoryId === '' ? null : Number(form.categoryId),
-            tags: chosenTags,
         }
 
         try {
@@ -145,28 +126,20 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
                     />
                 </Field>
 
-                <Field label="Priorité" errors={violations.for('priorityId')}>
+                <Field label="Priorité" errors={violations.for('priority')}>
                     <Select
-                        value={form.priorityId}
-                        onChange={set('priorityId')}
+                        value={form.priority}
+                        onChange={set('priority')}
                         placeholder="Par défaut"
-                        options={(priorities.data ?? []).map((priority) => ({
-                            value: String(priority.id),
-                            label: priority.label,
+                        options={TASK_PRIORITIES.map((priority) => ({
+                            value: priority,
+                            label: priorityDisplay(priority).label,
                         }))}
                     />
                 </Field>
             </FormGrid>
 
             <FormGrid columns={2}>
-                <Field label="Étiquettes" errors={violations.for('tags')}>
-                    <TextInput
-                        value={form.tags}
-                        onChange={(event) => set('tags')(event.target.value)}
-                        placeholder="séparées par des virgules"
-                    />
-                </Field>
-
                 <Field label="Échéance" errors={violations.for('dueDate')}>
                     <TextInput
                         type="date"
@@ -175,20 +148,6 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
                     />
                 </Field>
             </FormGrid>
-
-            {(tags.data ?? []).length > 0 && (
-                <div className="tag-suggestions">
-                    {(tags.data ?? []).map((label) => (
-                        <ToggleChip
-                            key={label}
-                            pressed={chosenTags.includes(label)}
-                            onToggle={() => toggleTag(label)}
-                        >
-                            #{label}
-                        </ToggleChip>
-                    ))}
-                </div>
-            )}
 
             <FormActions>
                 <Button variant="quiet" onClick={onDone}>

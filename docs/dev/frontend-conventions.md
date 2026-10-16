@@ -112,7 +112,7 @@ whether the app forgot one. `DefinitionList` does this on the website.
 
 ## 4. Nothing is selected by default
 
-A creation form starts empty: no category, no tag, no preselected option in a list. Where a
+A creation form starts empty: no category, no preselected option in a list. Where a
 default exists — the task priority — it is the **server** that applies it, once, on a payload
 that named none. A front end never guesses on the person's behalf.
 

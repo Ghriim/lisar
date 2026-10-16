@@ -9,7 +9,6 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\UpdateTaskDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
-use App\Domain\Validation\Constraint\Todo\PriorityExistsConstraint;
 use App\Domain\Validation\Validator\Todo\UpdateTaskValidator;
 use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
@@ -36,7 +35,7 @@ final class UpdateTaskValidatorTest extends TestCase
 
     public function testItAcceptsATitleOnly(): void
     {
-        $this->validator->validate($this->anyCurrentUser(), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput('Buy oat milk'), null, null, $this->owner);
+        $this->validator->validate($this->anyCurrentUser(), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput('Buy oat milk'), null, $this->owner);
 
         $this->expectNotToPerformAssertions();
     }
@@ -45,7 +44,7 @@ final class UpdateTaskValidatorTest extends TestCase
     public function testItRefusesSomeoneElsesTask(): void
     {
         try {
-            $this->validator->validate($this->currentUser(99), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput('Buy oat milk'), null, null, $this->owner);
+            $this->validator->validate($this->currentUser(99), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput('Buy oat milk'), null, $this->owner);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateTaskValidator::ERROR_CODE, $exception->errorCode);
@@ -56,7 +55,7 @@ final class UpdateTaskValidatorTest extends TestCase
     public function testItRejectsABlankTitle(): void
     {
         try {
-            $this->validator->validate($this->anyCurrentUser(), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput(''), null, null, $this->owner);
+            $this->validator->validate($this->anyCurrentUser(), $this->taskOf($this->anyCurrentUser()), new UpdateTaskDataInput(''), null, $this->owner);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(UpdateTaskValidator::ERROR_CODE, $exception->errorCode);
@@ -64,23 +63,19 @@ final class UpdateTaskValidatorTest extends TestCase
         }
     }
 
-    public function testItRejectsAPriorityThatDoesNotExist(): void
+    public function testItRejectsAPriorityOutsideTheRegistry(): void
     {
         try {
             $this->validator->validate(
                 $this->anyCurrentUser(),
                 $this->taskOf($this->anyCurrentUser()),
-                new UpdateTaskDataInput('Buy oat milk', priorityId: 404),
-                null,
+                new UpdateTaskDataInput('Buy oat milk', priority: 'urgent'),
                 null,
                 $this->owner,
             );
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertContains(
-                PriorityExistsConstraint::PRIORITY_NOT_FOUND,
-                $exception->violations['priorityId'],
-            );
+            self::assertContains('priority_unknown', $exception->violations['priority']);
         }
     }
 
@@ -93,7 +88,6 @@ final class UpdateTaskValidatorTest extends TestCase
             $this->anyCurrentUser(),
             $this->taskOf($this->anyCurrentUser()),
             new UpdateTaskDataInput('Buy oat milk', categoryId: 2),
-            null,
             $category,
             $this->owner,
         );
@@ -107,8 +101,7 @@ final class UpdateTaskValidatorTest extends TestCase
             $this->validator->validate(
                 $this->anyCurrentUser(),
                 $this->taskOf($this->anyCurrentUser()),
-                new UpdateTaskDataInput('', dueDate: 'nope', priorityId: 404, categoryId: 404),
-                null,
+                new UpdateTaskDataInput('', dueDate: 'nope', priority: 'urgent', categoryId: 404),
                 null,
                 $this->owner,
             );
@@ -116,7 +109,7 @@ final class UpdateTaskValidatorTest extends TestCase
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('title', $exception->violations);
             self::assertArrayHasKey('dueDate', $exception->violations);
-            self::assertArrayHasKey('priorityId', $exception->violations);
+            self::assertArrayHasKey('priority', $exception->violations);
             self::assertArrayHasKey('categoryId', $exception->violations);
         }
     }

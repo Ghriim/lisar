@@ -36,25 +36,10 @@ export interface UserComment {
     createdAt: string | null
 }
 
-export interface Priority {
-    id: number
-    label: string
-    colour: string
-    weight: number
-    isDefault: boolean
-}
-
 export interface Category {
     id: number
     label: string
     isPersonal: boolean
-}
-
-export interface PriorityPayload {
-    label: string
-    weight: number
-    colour: string
-    isDefault: boolean
 }
 
 /** The habit-catalogue vocabularies, mirroring the backend registries. Kept in sync by hand. */
@@ -125,7 +110,8 @@ export interface SetTypePayload {
     name: string
     colour: string
     isDefaultType: boolean
-    countsForPersonalBests: boolean
+    /** Settled on the creation only: an update leaves it out. */
+    countsForPersonalBests?: boolean
 }
 
 export interface MuscleGroup {

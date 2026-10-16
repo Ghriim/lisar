@@ -17,13 +17,13 @@ export interface Session {
     tokenType: string
 }
 
-export interface Priority {
-    id: number
-    label: string
-    colour: string
-    weight: number
-    isDefault: boolean
-}
+/**
+ * The task priorities, mirroring the backend registry, highest first. Kept in sync by hand: the
+ * code is the contract, the word and the colour are this front end's business.
+ */
+export const TASK_PRIORITIES = ['high', 'normal', 'low'] as const
+
+export type TaskPriority = (typeof TASK_PRIORITIES)[number]
 
 export interface Category {
     id: number
@@ -40,9 +40,8 @@ export interface Task {
     /** A calendar day, YYYY-MM-DD. */
     dueDate: string | null
     state: TaskState
-    priority: Priority | null
+    priority: TaskPriority | null
     category: Category | null
-    tags: string[]
     subtasks: Task[]
     parentId: number | null
     completedAt: string | null
@@ -54,9 +53,8 @@ export interface CreateTaskPayload {
     title: string
     description?: string | null
     dueDate?: string | null
-    priorityId?: number | null
+    priority?: TaskPriority | null
     categoryId?: number | null
-    tags?: string[]
     parentId?: number | null
 }
 

@@ -22,17 +22,6 @@ final class HabitEntryRepository extends ServiceEntityRepository implements Habi
         parent::__construct($registry, HabitEntryDataModel::class);
     }
 
-    public function findOneForSubscriptionAndDay(HabitSubscriptionDataModel $subscription, DateTimeImmutable $day): ?HabitEntryDataModel
-    {
-        return $this->createQueryBuilder('entry')
-            ->andWhere('entry.subscription = :subscription')
-            ->andWhere('entry.day = :day')
-            ->setParameter('subscription', $subscription)
-            ->setParameter('day', $day)
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
-
     /** @return list<HabitEntryDataModel> */
     public function findForOwnerSince(UserDataModel $owner, DateTimeImmutable $since): array
     {

@@ -14,7 +14,7 @@ export function RoleTag({ role }: { role: string }) {
     return <Tag colour="gold">admin</Tag>
 }
 
-/** The colour a priority is rendered in, as the front ends show it. */
+/** A colour swatch: a set type's, as the front ends show it. */
 export function ColourDot({ colour }: { colour: string }) {
     return (
         <span

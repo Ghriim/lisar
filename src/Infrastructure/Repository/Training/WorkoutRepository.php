@@ -259,22 +259,6 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
         return $tallies;
     }
 
-    /** @return list<WorkoutExerciseDataModel> */
-    public function findExercisesWithSetType(SetTypeDataModel $setType): array
-    {
-        return $this->getEntityManager()->createQueryBuilder()
-            ->select('exercise', 'movement', 'block', 'workout', 'owner')
-            ->from(WorkoutExerciseDataModel::class, 'exercise')
-            ->innerJoin('exercise.movement', 'movement')
-            ->innerJoin('exercise.block', 'block')
-            ->innerJoin('block.workout', 'workout')
-            ->innerJoin('workout.owner', 'owner')
-            ->andWhere('EXISTS (SELECT 1 FROM '.WorkoutSetDataModel::class.' typedSet WHERE typedSet.exercise = exercise AND typedSet.setType = :setType)')
-            ->setParameter('setType', $setType)
-            ->getQuery()
-            ->getResult();
-    }
-
     /** A workout with everything its output reads, joined and selected. */
     private function whole(): QueryBuilder
     {

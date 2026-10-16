@@ -9,8 +9,9 @@ use App\Domain\Registry\Training\SetTypeColourRegistry;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Renaming or recolouring a set type, or making it the default. Same shape as creating one: a create and an update do not
- * share a DataInput, their rules diverge the day one of them gains a field.
+ * Renaming or recolouring a set type, or making it the default. Whether its sets count for records
+ * is not among it: that is settled once, on the creation — switching it would rebuild the records
+ * of every set carrying the type, anyone's.
  */
 final readonly class UpdateSetTypeDataInput implements DataInputInterface
 {
@@ -24,9 +25,6 @@ final readonly class UpdateSetTypeDataInput implements DataInputInterface
 
         /** Only ever set to true: the default moves by being given to another type. */
         public bool $isDefaultType = false,
-
-        /** Whether its sets can set a personal best. On unless switched off: a warm-up is the exception. */
-        public bool $countsForPersonalBests = true,
     ) {
     }
 }

@@ -244,8 +244,8 @@
     margin-top: var(--step);
 }
 
-/* The tags the account already uses, offered back rather than retyped. */
-.tag-suggestions {
+/* A row of chips to toggle, each one a choice. */
+.chip-choices {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;

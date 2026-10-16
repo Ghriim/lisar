@@ -19,6 +19,7 @@ use App\Domain\Registry\User\UserRoleRegistry;
 use App\Domain\User\RefreshTokenGenerator;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\UseCase\User\LoginUseCase;
 use App\UseCase\User\RefreshSessionUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -26,6 +27,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class RefreshSessionUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
 
     private RefreshSessionUseCase $useCase;
     private LoginUseCase $createSessionUseCase;
@@ -46,6 +48,16 @@ final class RefreshSessionUseCaseTest extends KernelTestCase
         $this->refreshTokenGenerator = self::getContainer()->get(RefreshTokenGenerator::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    public function testRefreshingASessionStaysWithinItsQueryBudget(): void
+    {
+        $refreshToken = $this->signIn()->refreshToken;
+
+        $this->assertQueryCountAtMost(
+            fn () => null,
+            fn () => $this->useCase->execute($refreshToken, SessionAudienceRegistry::WEBSITE),
+        );
     }
 
     public function testItRotatesTheSession(): void

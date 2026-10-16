@@ -10,13 +10,11 @@ use App\Domain\DTO\Output\Tracking\Hydration\HydrationDayDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Tracking\Hydration\HydrationDayOutputFactory;
 use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationEntryPersisterGateway;
-use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationDayProviderGateway;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationEntryProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Tracking\Hydration\DeleteHydrationEntryValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * Removing something logged by mistake. The day itself stays, goal and all: it is the record
@@ -28,11 +26,8 @@ final readonly class DeleteHydrationEntryUseCase implements UseCaseInterface
         private DeleteHydrationEntryValidator $validator,
         private HydrationEntryProviderGateway $hydrationEntryProviderGateway,
         private HydrationEntryPersisterGateway $hydrationEntryPersisterGateway,
-        private HydrationDayProviderGateway $hydrationDayProviderGateway,
         private HydrationDayOutputFactory $outputFactory,
         private DayClock $clock,
-        #[Autowire('%hydration_daily_goal%')]
-        private int $defaultGoalInMillilitres,
     ) {
     }
 
@@ -51,11 +46,8 @@ final readonly class DeleteHydrationEntryUseCase implements UseCaseInterface
 
         $this->hydrationEntryPersisterGateway->delete($entry);
 
-        $today = $this->clock->today();
-        $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($currentUser, $today);
-
-        return null === $day
-            ? $this->outputFactory->buildEmpty($today, $this->defaultGoalInMillilitres)
-            : $this->outputFactory->buildOne($day);
+        // Today, the validator saw to it, and still standing: the day outlives its entries. The
+        // persister has taken the entry off it, so there is nothing to read again.
+        return $this->outputFactory->buildOne($entry->hydrationDay);
     }
 }

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Button, type ButtonVariant } from './Button'
 
 interface ConfirmButtonProps {
-    /** The question, asked plainly: "Supprimer cette priorité ?" */
+    /** The question, asked plainly: "Supprimer cette catégorie ?" */
     question: string
     children: ReactNode
     onConfirm: () => void

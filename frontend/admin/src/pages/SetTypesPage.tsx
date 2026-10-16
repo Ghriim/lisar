@@ -176,7 +176,7 @@ export function SetTypesPage() {
                                 name: values.name,
                                 colour: values.colour,
                                 isDefaultType: values.isDefaultType,
-                                countsForPersonalBests: values.countsForPersonalBests,
+                                ...(editing === null && { countsForPersonalBests: values.countsForPersonalBests }),
                             },
                         })
                     }
@@ -210,11 +210,13 @@ export function SetTypesPage() {
                         disabled={editing?.isDefaultType === true}
                         hint="Le donner à celui-ci le retire à celui qui l’avait. Il ne se retire jamais seul."
                     />
-                    <SwitchField
-                        name="countsForPersonalBests"
-                        label="Compte pour les records"
-                        hint="Éteint, ses séries ne battent aucun record — un échauffement, par exemple. Le changer recalcule les records des séries qui le portent."
-                    />
+                    {editing === null && (
+                        <SwitchField
+                            name="countsForPersonalBests"
+                            label="Compte pour les records"
+                            hint="Éteint, ses séries ne battent aucun record — un échauffement, par exemple. Il ne se change plus une fois le type créé."
+                        />
+                    )}
                 </FormModal>
             )}
         </Page>

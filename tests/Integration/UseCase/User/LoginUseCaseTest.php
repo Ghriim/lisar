@@ -16,6 +16,7 @@ use App\Domain\Registry\User\SessionAudienceRegistry;
 use App\Domain\User\RefreshTokenGenerator;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\UseCase\User\LoginUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -24,6 +25,7 @@ use const DATE_ATOM;
 final class LoginUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
 
     private LoginUseCase $useCase;
     private SessionProviderGateway $sessionProviderGateway;
@@ -40,6 +42,14 @@ final class LoginUseCaseTest extends KernelTestCase
         $this->refreshTokenGenerator = self::getContainer()->get(RefreshTokenGenerator::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    public function testSigningInStaysWithinItsQueryBudget(): void
+    {
+        $this->assertQueryCountAtMost(
+            fn () => null,
+            fn () => $this->useCase->execute($this->buildInput(), SessionAudienceRegistry::WEBSITE),
+        );
     }
 
     public function testItOpensASession(): void

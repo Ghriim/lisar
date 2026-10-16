@@ -14,8 +14,6 @@ import type {
     MuscleGroup,
     MusclePayload,
     Page,
-    Priority,
-    PriorityPayload,
     Session,
     SetType,
     SetTypePayload,
@@ -89,22 +87,6 @@ export function fetchUserComments(id: number): Promise<UserComment[]> {
 
 export function createUserComment(id: number, body: string): Promise<UserComment> {
     return request<UserComment>(`/api/admin/users/${id}/comments`, { method: 'POST', body: { body } })
-}
-
-export function fetchPriorities(): Promise<Priority[]> {
-    return request<Priority[]>('/api/admin/priorities')
-}
-
-export function createPriority(payload: PriorityPayload): Promise<Priority> {
-    return request<Priority>('/api/admin/priorities', { method: 'POST', body: payload })
-}
-
-export function updatePriority(id: number, payload: PriorityPayload): Promise<Priority> {
-    return request<Priority>(`/api/admin/priorities/${id}`, { method: 'PUT', body: payload })
-}
-
-export function deletePriority(id: number): Promise<void> {
-    return request<void>(`/api/admin/priorities/${id}`, { method: 'DELETE' })
 }
 
 export function fetchCategories(): Promise<Category[]> {

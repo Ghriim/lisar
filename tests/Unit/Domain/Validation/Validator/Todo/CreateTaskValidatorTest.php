@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\Validation\Validator\Todo;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
-use App\Domain\DTO\DataModel\Todo\PriorityDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Validation\Constraint\Todo\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\ParentTaskUsableConstraint;
-use App\Domain\Validation\Constraint\Todo\PriorityExistsConstraint;
 use App\Domain\Validation\Validator\Todo\CreateTaskValidator;
 use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
@@ -39,7 +38,7 @@ final class CreateTaskValidatorTest extends TestCase
 
     public function testItAcceptsATaskWithNothingButATitle(): void
     {
-        $this->validator->validate($this->anyCurrentUser(), new CreateTaskDataInput('Buy milk'), null, null, null, $this->owner);
+        $this->validator->validate($this->anyCurrentUser(), new CreateTaskDataInput('Buy milk'), null, null, $this->owner);
 
         $this->expectNotToPerformAssertions();
     }
@@ -61,18 +60,11 @@ final class CreateTaskValidatorTest extends TestCase
         $this->assertViolatesOn($input, 'dueDate', 'due_date_invalid');
     }
 
-    public function testItRejectsATagLongerThanTheColumn(): void
+    public function testItRejectsAPriorityOutsideTheRegistry(): void
     {
-        $input = new CreateTaskDataInput('Buy milk', tags: [str_repeat('a', 33)]);
+        $input = new CreateTaskDataInput('Buy milk', priority: 'urgent');
 
-        $this->assertViolatesOn($input, 'tags[0]', 'tag_too_long');
-    }
-
-    public function testItRejectsAPriorityThatDoesNotExist(): void
-    {
-        $input = new CreateTaskDataInput('Buy milk', priorityId: 404);
-
-        $this->assertViolatesOn($input, 'priorityId', PriorityExistsConstraint::PRIORITY_NOT_FOUND);
+        $this->assertViolatesOn($input, 'priority', 'priority_unknown');
     }
 
     public function testItRejectsSomeoneElsesPersonalCategory(): void
@@ -87,7 +79,6 @@ final class CreateTaskValidatorTest extends TestCase
             $this->validator->validate(
                 $this->anyCurrentUser(),
                 new CreateTaskDataInput('Buy milk', categoryId: 9),
-                null,
                 $category,
                 null,
                 $this->owner,
@@ -109,7 +100,6 @@ final class CreateTaskValidatorTest extends TestCase
                 $this->anyCurrentUser(),
                 new CreateTaskDataInput('Buy milk', parentId: 9),
                 null,
-                null,
                 $parent,
                 $this->owner,
             );
@@ -122,15 +112,14 @@ final class CreateTaskValidatorTest extends TestCase
         }
     }
 
-    public function testItAcceptsAPriorityAndACategoryThatWereFound(): void
+    public function testItAcceptsAKnownPriorityAndACategoryThatWasFound(): void
     {
         $category = new CategoryDataModel();
         $category->owner = null;
 
         $this->validator->validate(
             $this->anyCurrentUser(),
-            new CreateTaskDataInput('Buy milk', priorityId: 1, categoryId: 2),
-            new PriorityDataModel(),
+            new CreateTaskDataInput('Buy milk', priority: TaskPriorityRegistry::HIGH, categoryId: 2),
             $category,
             null,
             $this->owner,
@@ -144,8 +133,7 @@ final class CreateTaskValidatorTest extends TestCase
         try {
             $this->validator->validate(
                 $this->anyCurrentUser(),
-                new CreateTaskDataInput('', dueDate: 'nope', priorityId: 404, categoryId: 404, parentId: 404),
-                null,
+                new CreateTaskDataInput('', dueDate: 'nope', priority: 'urgent', categoryId: 404, parentId: 404),
                 null,
                 null,
                 $this->owner,
@@ -155,17 +143,10 @@ final class CreateTaskValidatorTest extends TestCase
             self::assertSame(CreateTaskValidator::ERROR_CODE, $exception->errorCode);
             self::assertArrayHasKey('title', $exception->violations);
             self::assertArrayHasKey('dueDate', $exception->violations);
-            self::assertArrayHasKey('priorityId', $exception->violations);
+            self::assertArrayHasKey('priority', $exception->violations);
             self::assertArrayHasKey('categoryId', $exception->violations);
             self::assertArrayHasKey('parentId', $exception->violations);
         }
-    }
-
-    public function testItTidiesTheTagsUp(): void
-    {
-        $input = new CreateTaskDataInput('Buy milk', tags: ['  urgent  ', 'urgent', '', 'errand']);
-
-        self::assertSame(['urgent', 'errand'], $input->getTagLabels());
     }
 
     public function testItReadsTheDueDateAsADay(): void
@@ -178,7 +159,7 @@ final class CreateTaskValidatorTest extends TestCase
     private function assertViolatesOn(CreateTaskDataInput $input, string $propertyPath, string $errorCode): void
     {
         try {
-            $this->validator->validate($this->anyCurrentUser(), $input, null, null, null, $this->owner);
+            $this->validator->validate($this->anyCurrentUser(), $input, null, null, $this->owner);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateTaskValidator::ERROR_CODE, $exception->errorCode);

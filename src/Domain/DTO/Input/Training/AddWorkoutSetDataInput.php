@@ -14,6 +14,9 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 final readonly class AddWorkoutSetDataInput implements DataInputInterface
 {
+    /** How much of a typed load is kept. */
+    public const int DECIMALS = 2;
+
     public function __construct(
         #[Assert\Range(min: 1, max: 10000, notInRangeMessage: 'reps_invalid')]
         public ?int $reps = null,

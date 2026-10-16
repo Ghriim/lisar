@@ -5,21 +5,20 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Todo;
 
 use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
-use App\Domain\DTO\DataModel\Todo\PriorityDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
+use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Registry\Todo\TaskStateRegistry;
 use App\Domain\Validation\Constraint\Todo\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\ParentTaskUsableConstraint;
 use App\Fixtures\Todo\CategoryFixtures;
-use App\Fixtures\Todo\PriorityFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\CreateTaskUseCase;
 use LogicException;
@@ -28,11 +27,11 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class CreateTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private CreateTaskUseCase $useCase;
     private TaskProviderGateway $taskProviderGateway;
-    private TagProviderGateway $tagProviderGateway;
     private UserDataModel $alice;
 
     protected function setUp(): void
@@ -41,7 +40,6 @@ final class CreateTaskUseCaseTest extends KernelTestCase
 
         $this->useCase = self::getContainer()->get(CreateTaskUseCase::class);
         $this->taskProviderGateway = self::getContainer()->get(TaskProviderGateway::class);
-        $this->tagProviderGateway = self::getContainer()->get(TagProviderGateway::class);
 
         $this->loadFixtures(TaskFixtures::class);
 
@@ -71,28 +69,23 @@ final class CreateTaskUseCaseTest extends KernelTestCase
     }
 
     /**
-     * The back-office default applies when the caller names no priority.
+     * The default applies when the caller names no priority.
      */
     public function testItAppliesTheDefaultPriority(): void
     {
         $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput('Call the dentist'));
 
-        self::assertNotNull($output->priority);
-        self::assertSame('Normal', $output->priority->label);
-        self::assertTrue($output->priority->isDefault);
+        self::assertSame(TaskPriorityRegistry::NORMAL, $output->priority);
     }
 
     public function testItKeepsThePriorityTheCallerAsksFor(): void
     {
-        $high = $this->getReference(PriorityFixtures::HIGH, PriorityDataModel::class);
-
         $output = $this->useCase->execute(
             $this->currentUser($this->aliceId()),
-            new CreateTaskDataInput('Call the dentist', priorityId: $high->id),
+            new CreateTaskDataInput('Call the dentist', priority: TaskPriorityRegistry::HIGH),
         );
 
-        self::assertNotNull($output->priority);
-        self::assertSame('High', $output->priority->label);
+        self::assertSame(TaskPriorityRegistry::HIGH, $output->priority);
     }
 
     public function testItAcceptsAReferenceCategoryAndAPersonalOne(): void
@@ -132,25 +125,6 @@ final class CreateTaskUseCaseTest extends KernelTestCase
                 $exception->violations['categoryId'],
             );
         }
-    }
-
-    public function testItReusesTheAccountsTagsAndCreatesTheNewOnes(): void
-    {
-        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput(
-            title: 'Call the dentist',
-            // "urgent" already exists on the account, "health" does not.
-            tags: ['urgent', 'health', '  urgent  '],
-        ));
-
-        self::assertSame(['health', 'urgent'], $output->tags);
-
-        $labels = [];
-        foreach ($this->tagProviderGateway->findAllForOwner($this->alice) as $tag) {
-            $labels[] = $tag->label;
-        }
-
-        // "urgent" was not created a second time.
-        self::assertSame(['errand', 'health', 'urgent'], $labels);
     }
 
     public function testItCreatesASubtask(): void
@@ -212,6 +186,23 @@ final class CreateTaskUseCaseTest extends KernelTestCase
             self::assertArrayHasKey('title', $exception->violations);
             self::assertArrayHasKey('dueDate', $exception->violations);
         }
+    }
+
+    public function testCreatingATaskStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+        $categoryId = $this->getReference(CategoryFixtures::HOME, CategoryDataModel::class)->id;
+        $parentId = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class)->id;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, new CreateTaskDataInput(
+                title: 'Return the keys',
+                priority: TaskPriorityRegistry::HIGH,
+                categoryId: $categoryId,
+                parentId: $parentId,
+            )),
+        );
     }
 
     private function aliceId(): int

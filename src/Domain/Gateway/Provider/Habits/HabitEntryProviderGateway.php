@@ -11,9 +11,6 @@ use DateTimeImmutable;
 
 interface HabitEntryProviderGateway
 {
-    /** That subscription's day, or null when it was neither kept nor evaluated. */
-    public function findOneForSubscriptionAndDay(HabitSubscriptionDataModel $subscription, DateTimeImmutable $day): ?HabitEntryDataModel;
-
     /**
      * Every entry from `$since` onward across the person's subscriptions — what the seven-day
      * marks are read from. The subscription is joined.

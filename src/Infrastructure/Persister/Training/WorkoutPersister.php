@@ -13,7 +13,6 @@ use App\Domain\DTO\Event\Training\WorkoutDeletedEvent;
 use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Domain\Event\EventDispatcherInterface;
 use App\Domain\Gateway\Persister\Training\WorkoutPersisterGateway;
-use App\Domain\Gateway\Provider\Training\WorkoutSummaryProviderGateway;
 use App\Infrastructure\Persister\AbstractBaseMysqlPersister;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -28,7 +27,6 @@ final class WorkoutPersister extends AbstractBaseMysqlPersister implements Worko
         EntityManagerInterface $entityManager,
         ClockInterface $clock,
         private readonly EventDispatcherInterface $eventDispatcher,
-        private readonly WorkoutSummaryProviderGateway $workoutSummaryProviderGateway,
     ) {
         parent::__construct($entityManager, $clock);
     }
@@ -79,14 +77,8 @@ final class WorkoutPersister extends AbstractBaseMysqlPersister implements Worko
     public function delete(WorkoutDataModel $workout): void
     {
         $event = new WorkoutDeletedEvent($workout->owner, $workout->movements(), $workout->finishedAt);
-        // Removed with it in memory too, not only by the database's cascade: a summary left in the
-        // identity map would point at a workout that is gone at the next flush.
-        $summary = $this->workoutSummaryProviderGateway->findOneForWorkout($workout);
 
-        $this->inTransaction(function () use ($workout, $summary, $event): void {
-            if (null !== $summary) {
-                $this->entityManager->remove($summary);
-            }
+        $this->inTransaction(function () use ($workout, $event): void {
             $this->persistDelete($workout);
             $this->eventDispatcher->dispatch($event);
         });

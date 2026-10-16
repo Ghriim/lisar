@@ -41,11 +41,11 @@ class PersonalBestDataModel implements DataModelInterface
 
     // The tier within the kind — a number of reps, a distance in metres, a load — or null for a
     // kind without tiers.
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
+    #[ORM\Column(type: Types::FLOAT, nullable: true)]
     public ?float $tier = null;
 
     // In the kind's unit: kilograms, reps, seconds, metres, seconds per kilometre.
-    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2)]
+    #[ORM\Column(type: Types::FLOAT)]
     public float $value;
 
     #[ORM\ManyToOne(targetEntity: WorkoutDataModel::class)]

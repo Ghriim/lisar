@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\UseCase\Habits;
 
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
+use App\Domain\DTO\DataModel\Habits\HabitEntryDataModel;
 use App\Domain\DTO\DataModel\Habits\HabitSubscriptionDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Output\Habits\HabitDataOutput;
@@ -18,6 +19,7 @@ use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Habits\UncompleteHabitValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
+use DateTimeImmutable;
 
 use function sprintf;
 
@@ -61,7 +63,10 @@ final readonly class UncompleteHabitUseCase implements UseCaseInterface
 
         $today = $this->clock->today();
 
-        $entry = $this->habitEntryProviderGateway->findOneForSubscriptionAndDay($subscription, $today);
+        $since = $today->modify(sprintf('-%d days', HabitOutputFactory::WINDOW_IN_DAYS - 1));
+        // One read for the whole window the output shows; today's entry is in it.
+        $entries = $this->habitEntryProviderGateway->findForSubscriptionSince($subscription, $since);
+        $entry = $this->entryOn($entries, $today);
         // Only touch a row that was actually kept; an absent or already-unkept day needs nothing.
         if (null !== $entry && true === $entry->isCompleted) {
             $entry->isCompleted = false;
@@ -70,9 +75,22 @@ final readonly class UncompleteHabitUseCase implements UseCaseInterface
             $this->habitEntryPersisterGateway->update($entry);
         }
 
-        $since = $today->modify(sprintf('-%d days', HabitOutputFactory::WINDOW_IN_DAYS - 1));
-        $entries = $this->habitEntryProviderGateway->findForSubscriptionSince($subscription, $since);
-
         return $this->outputFactory->buildOne($subscription, $entries, $today);
+    }
+
+    /**
+     * Today's entry, picked out of the window rather than read on its own: the window holds it.
+     *
+     * @param list<HabitEntryDataModel> $entries
+     */
+    private function entryOn(array $entries, DateTimeImmutable $day): ?HabitEntryDataModel
+    {
+        foreach ($entries as $entry) {
+            if ($day->format('Y-m-d') === $entry->day->format('Y-m-d')) {
+                return $entry;
+            }
+        }
+
+        return null;
     }
 }

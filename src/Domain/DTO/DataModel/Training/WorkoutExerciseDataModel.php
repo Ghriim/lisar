@@ -42,10 +42,8 @@ class WorkoutExerciseDataModel implements DataModelInterface
     #[ORM\Column(nullable: true)]
     public ?int $restInSeconds = null;
 
-    // Removed with it in memory too, not only by the database's cascade: a child left in the
-    // identity map would be found again, orphaned, at the next flush.
     /** @var Collection<int, WorkoutSetDataModel> */
-    #[ORM\OneToMany(targetEntity: WorkoutSetDataModel::class, mappedBy: 'exercise', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: WorkoutSetDataModel::class, mappedBy: 'exercise')]
     #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     public Collection $sets;
 

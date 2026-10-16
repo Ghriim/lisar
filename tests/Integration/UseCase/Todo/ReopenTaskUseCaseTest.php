@@ -14,6 +14,7 @@ use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\ListTasksUseCase;
 use App\UseCase\Todo\ReopenTaskUseCase;
@@ -23,6 +24,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ReopenTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private ReopenTaskUseCase $useCase;
@@ -91,6 +93,17 @@ final class ReopenTaskUseCaseTest extends KernelTestCase
         } catch (ValidationException $exception) {
             self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
         }
+    }
+
+    public function testReopeningATaskStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+        $taskId = $this->getReference(TaskFixtures::ALICE_DONE, TaskDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $taskId),
+        );
     }
 
     private function aliceId(): int

@@ -283,7 +283,7 @@ same names everywhere:
 | `Training/` | workouts and their reference data: movements, families, muscles, groups, equipment, set types |
 | `Tracking/` | the trackers, one sub-folder each: `Hydration/`, `Sleep/`, `Step/`, `Weight/` |
 | `Habits/` | the habit catalogue, subscriptions, entries |
-| `Todo/` | tasks and their categories, priorities, tags |
+| `Todo/` | tasks and their categories; priorities are a registry |
 | `User/` | accounts, identities, sessions, admin comments |
 
 - **What the back-office alone uses goes in an `Admin/` sub-folder of its perimeter**
@@ -428,8 +428,8 @@ class SubscriptionDataModel implements DataModelInterface
     #[ORM\Column(length: 64, unique: true)]
     public string $reference;
 
-    // Percentages and money are float columns typed DECIMAL — never decimal-as-string.
-    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, options: ['default' => 0.0])]
+    // A decimal measure is a float on a DOUBLE column, rounded by the use case before writing.
+    #[ORM\Column(type: Types::FLOAT, options: ['default' => 0.0])]
     public float $discountRate = 0.0;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
@@ -438,8 +438,10 @@ class SubscriptionDataModel implements DataModelInterface
     #[ORM\ManyToOne(targetEntity: AccountDataModel::class, inversedBy: 'subscriptions')]
     public AccountDataModel $account;
 
+    // No cascade here: InvoiceDataModel::$subscription carries onDelete: 'CASCADE', and the
+    // database deletes the invoices with their subscription.
     /** @var Collection<int, InvoiceDataModel> */
-    #[ORM\OneToMany(targetEntity: InvoiceDataModel::class, mappedBy: 'subscription', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: InvoiceDataModel::class, mappedBy: 'subscription')]
     public Collection $invoices;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
@@ -461,10 +463,32 @@ Rules:
 - **Every data model declares `createdAt` and `updatedAt`**, nullable `?\DateTimeImmutable = null` —
   projections, cache tables and append-only logs included, with no exception to remember. They
   are stamped by the abstract persister; never assign them by hand.
-- Decimal columns are `float` + `Types::DECIMAL` with explicit `precision`/`scale`. Do not use
-  decimal-as-string. The use case rounds to the column's `scale` before writing: what comes back
-  from the database must be the number that was sent, and `assertSame(71.85, $entry->weight)` is
-  the assertion to write.
+- **A decimal is a `float` on `Types::FLOAT`** — a `DOUBLE PRECISION` column on MySQL, PHP's
+  own float, so what is written is exactly what is read back. Never `Types::DECIMAL`: Doctrine
+  reads it back as a string, compares that string to the float the data model holds, sees a
+  change that is not one, and sends an `UPDATE` for every loaded row at every flush. Never
+  `Types::SMALLFLOAT` either: a single-precision `FLOAT` keeps six or seven significant digits,
+  and a training volume of 123456.78 kg comes back as 123457. Never decimal-as-string.
+- **The use case rounds, the column does not.** A `DOUBLE` has no scale: it keeps whatever it is
+  handed. The number of decimals kept is a `DECIMALS` constant on the data input, applied with
+  `round()` before the value is assigned, and tested where it fires
+  (`assertSame(62.46, …)` for a typed 62.456). A computed value — a sum, a record — is rounded
+  where it is computed.
+- **A child is deleted with its parent by the database, never by Doctrine.** The child's
+  `JoinColumn` carries `onDelete: 'CASCADE'`; the parent's collection carries no
+  `cascade: ['remove']`, and no `orphanRemoval`. Why:
+  - **cost** — Doctrine's cascade loads every child it has not loaded yet, level by level, then
+    sends one `DELETE` per row: a workout of 3 blocks, 4 exercises and 9 sets is 16 `DELETE`s and
+    the reads before them. The foreign key does the same in the parent's single `DELETE`;
+  - **one truth** — the rule lives in the schema, where every write sees it: a migration, a
+    `DELETE` by hand, a future bulk delete. A cascade declared in the mapping only exists for the
+    writes that go through the unit of work, and the two drift apart;
+  - **nothing to forget** — a child type added later is covered by its own foreign key, with no
+    collection to remember on the parent.
+
+  What the unit of work had already loaded of those children is detached by `persistDelete`,
+  without a query (§6.4). A child that is not removed with its parent — a reference such as a
+  movement or a set type — takes `onDelete: 'RESTRICT'`, never `cascade` either.
 - A moment written to a `DATETIME` column is stored in **UTC**, always — see
   `Domain\Tracking\DayClock::asStoredInstant()`. The column has no timezone, so it keeps the wall
   clock it is handed and drops the offset: give it a moment carried in `Europe/Paris` and the
@@ -644,7 +668,14 @@ abstract class AbstractBaseMysqlPersister
     /** @param T $dataModel @return T */
     protected function persistAndStampUpdate(DataModelInterface $dataModel, bool $flush = true): DataModelInterface { /* … */ }
 
-    /** @param T $dataModel */
+    /**
+     * Deletes the row alone; the database deletes its children (ON DELETE CASCADE, §6.1). The
+     * children the unit of work had loaded are detached, without a query, following the CASCADE
+     * foreign keys of the mapping: left in the identity map, they would point at a parent that is
+     * gone, and the next flush — a handler's — would take it for a new row.
+     *
+     * @param T $dataModel
+     */
     protected function persistDelete(DataModelInterface $dataModel, bool $flush = true): void { /* … */ }
 }
 ```
@@ -714,8 +745,8 @@ final readonly class CreateSubscriptionDataInput implements DataInputInterface
         #[Assert\NotBlank]
         public string $planCode,
 
-        // Upper bound imposed by the DECIMAL(5,2) column, not a business rule.
-        #[Assert\Range(min: 0, max: 999.99)]
+        // A percentage, kept to two decimals by the use case.
+        #[Assert\Range(min: 0, max: 100)]
         public ?float $discountRate = null,
 
         public ?string $comments = null,
@@ -1784,6 +1815,22 @@ Other rules:
 Extends `KernelTestCase`, pulls the use case **and the gateways** from `self::getContainer()`
 (the test container exposes private services).
 
+**One use case, one test class.** `XUseCase` is tested by `XUseCaseTest`, at the mirrored path,
+and nowhere else: no `…BackOfficeTest` or `WorkoutTest` gathering the use cases of a screen or a
+perimeter. A test belongs to the use case whose behaviour it proves; the other use cases it calls
+are the arrangement (start a workout before adding a block to it) or the observation (read the
+board to see the records an update rebuilt).
+
+**A rule is tested where it fires.** A refusal is tested in the class of the use case that raises
+it, whoever manages the object it is about: "a deactivated movement can no longer be added to a
+workout" is an `AddWorkoutBlockUseCaseTest`, "a movement cannot take an inactive family" a
+`CreateMovementUseCaseTest` — the deactivation is only the arrangement. The same goes for what an
+event derives: the records rebuilt when an admin makes a set type count are an
+`UpdateSetTypeUseCaseTest`, since that is the call that triggers them.
+
+What several classes of a perimeter share — a `start()`, an `addBlock()`, the fixtures they load — goes in a `<Perimeter>TestTrait`
+next to them, never in a parent class.
+
 ```php
 final class CreateSubscriptionUseCaseTest extends KernelTestCase
 {
@@ -1844,6 +1891,40 @@ Rules:
   test is self-contained and readable on its own.
 - Test method names are sentences: `testItRejectsDuplicateReference`,
   `testItDeactivatesSiblingsOnActivate`.
+
+**Query budgets.** In the test environment a DBAL middleware
+(`tests/Integration/Doctrine/QueryCountingMiddleware`, wired in `config/packages/query_count.yaml`
+under `when@test`) counts every statement sent — savepoints aside, the test bundle's doing.
+`QueryCountTrait` reads it:
+
+- **Every use case has a budget test**, `test<Action>StaysWithinItsQueryBudget`:
+  `assertQueryCountAtMost($arrange, $act)` measures one call against `DEFAULT_MAX_QUERIES` (5,
+  at most). A use case that needs more says it on the spot — `max: 7` and a line saying why (an
+  insert per child it creates, a synchronous handler) — and a reviewer reads that line. Never a
+  ceiling raised to swallow a query per item: that is a bug, fixed in the code (§6.2).
+- **Every `List…` use case also has a growth test**, `test<…>DoesNotGrowWith<Them>`:
+  `assertQueryCountDoesNotGrow($arrange, $act, $grow)` measures the call, lets `$grow` add to
+  what it lists, measures again; the count must not move. The test checks on the two answers
+  that the list did grow — a growth test over a list that stayed the same proves nothing.
+- A measure starts from an **empty entity manager**: what the test loaded beforehand would answer
+  the lazy loads and hide them. So `$arrange` loads what the call takes — the caller first, the
+  way the firewall does before the controller — uncounted, and `$act` makes the one call, with
+  ids captured rather than data models loaded earlier.
+- The case measured is a representative one — several items, the collections an output reads —
+  never an empty one, which costs nothing whatever the code does.
+
+```php
+public function testListingTheWorkoutsDoesNotGrowWithThem(): void
+{
+    [$fewer, $more] = $this->assertQueryCountDoesNotGrow(
+        fn () => $this->currentUser($this->idOf($this->alice)),
+        fn (UserDataModel $currentUser) => $this->useCase(ListWorkoutsUseCase::class)->execute($currentUser, new ListWorkoutsDataInput()),
+        fn () => $this->finish($this->addDoneSet($this->addBlock($this->start(), MovementFixtures::PUSH_UP), new AddWorkoutSetDataInput(reps: 10))),
+    );
+
+    self::assertCount(count($fewer->items) + 1, $more->items);
+}
+```
 
 ### 9.4 Fixtures in tests
 
@@ -2079,8 +2160,9 @@ Adding a "create X" endpoint, end to end:
     case injected as a method argument, full OpenAPI attributes.
 11. **Unit test** for the validator (happy path + one per rule + accumulation) and for each
     constraint/factory.
-12. **Integration test** for the use case (happy path asserting output *and* a gateway re-read,
-    plus one method per error branch, conflicts set up in-test).
+12. **Integration test** for the use case, in its own `XUseCaseTest` (happy path asserting
+    output *and* a gateway re-read, plus one method per error branch, conflicts set up in-test),
+    **its query budget test**, and for a `List…` use case its growth test (§9.3).
 13. **Fixtures** — `Fixtures/<Perimeter>/XFixtures.php`, with `public const string`
     reference keys; the integration test lists the fixture classes it needs and reaches rows
     through `getReference()`, never through a hardcoded id.
@@ -2161,6 +2243,10 @@ Rejected in review, every time:
   from its own provider gateway, and let its `…InWorkoutConstraint` check the parent.
 - A gateway call in a loop, directly or through a method the loop calls (§6.2): one
   `findAllByIds`, a join, or a query taking the whole list.
+- An integration test class covering several use cases, a use case tested outside its own
+  `XUseCaseTest`, or a rule tested anywhere but in the use case that raises it (§9.3).
+- A use case without its query budget test, a `List…` use case without its growth test, or a
+  `max:` raised without the line saying why (§9.3).
 - A back-office validator whose first rule is not `IsAdminConstraint`.
 - A use case returning early before its validator has run.
 - A rule written inline in a validator instead of a Constraint class.
@@ -2179,3 +2265,7 @@ Rejected in review, every time:
 - A new pattern introduced next to an existing one without deprecating the old one.
 - A reaction to a write coded inside a persister or a use case instead of an event handler
   ([domain-events.md](domain-events.md)).
+- A `Types::DECIMAL` or `Types::SMALLFLOAT` column, or a decimal left for the column to round
+  (§6.1).
+- A `cascade: ['remove']` or an `orphanRemoval` on a collection, or children deleted one by one
+  before their parent: the child's foreign key carries `onDelete: 'CASCADE'` (§6.1).

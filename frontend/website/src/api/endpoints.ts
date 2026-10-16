@@ -8,7 +8,6 @@ import type {
     HydrationPreset,
     Page,
     PersonalBestBoard,
-    Priority,
     Session,
     SetType,
     SleepNight,
@@ -89,16 +88,8 @@ export function deleteTask(id: number): Promise<void> {
     return request<void>(`/api/tasks/${id}`, { method: 'DELETE' })
 }
 
-export function fetchPriorities(): Promise<Priority[]> {
-    return request<Priority[]>('/api/priorities')
-}
-
 export function fetchCategories(): Promise<Category[]> {
     return request<Category[]>('/api/categories')
-}
-
-export function fetchTags(): Promise<string[]> {
-    return request<string[]>('/api/tags')
 }
 
 export function createCategory(label: string): Promise<Category> {

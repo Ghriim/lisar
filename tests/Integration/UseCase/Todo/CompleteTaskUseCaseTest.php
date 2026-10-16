@@ -15,6 +15,7 @@ use App\Domain\Validation\Validator\Todo\CompleteTaskValidator;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\CompleteTaskUseCase;
 use App\UseCase\Todo\GetTaskUseCase;
@@ -27,6 +28,7 @@ use const DATE_ATOM;
 final class CompleteTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private CompleteTaskUseCase $useCase;
@@ -139,6 +141,17 @@ final class CompleteTaskUseCaseTest extends KernelTestCase
         } catch (ValidationException $exception) {
             self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
         }
+    }
+
+    public function testCompletingATaskStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+        $taskId = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $taskId),
+        );
     }
 
     private function aliceId(): int

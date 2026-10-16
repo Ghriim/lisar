@@ -10,6 +10,7 @@ use App\Fixtures\User\UserCommentFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\CreateUserCommentUseCase;
 use App\UseCase\User\Admin\ListUserCommentsUseCase;
@@ -18,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ListUserCommentsUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private ListUserCommentsUseCase $useCase;
@@ -30,6 +32,34 @@ final class ListUserCommentsUseCaseTest extends KernelTestCase
 
         // UserFixtures comes along on its own: it is a declared dependency of this one.
         $this->loadFixtures(UserCommentFixtures::class);
+    }
+
+    public function testListingTheNotesStaysWithinItsQueryBudget(): void
+    {
+        $bobId = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentAdmin(),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $bobId),
+        );
+    }
+
+    public function testListingTheNotesDoesNotGrowWithThem(): void
+    {
+        $bobId = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class)->id ?? 0;
+        $adminId = $this->getReference(UserFixtures::ADMIN, UserDataModel::class)->id ?? 0;
+
+        [$fewer, $more] = $this->assertQueryCountDoesNotGrow(
+            fn () => $this->currentAdmin(),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $bobId),
+            function () use ($adminId, $bobId): void {
+                $createComment = self::getContainer()->get(CreateUserCommentUseCase::class);
+                $createComment->execute($this->currentUser($adminId), $bobId, new CreateUserCommentDataInput('Called support back.'));
+                $createComment->execute($this->currentUser($adminId), $bobId, new CreateUserCommentDataInput('Refund sent.'));
+            },
+        );
+
+        self::assertCount(count($fewer) + 2, $more);
     }
 
     public function testItReturnsTheThreadOfTheAccount(): void

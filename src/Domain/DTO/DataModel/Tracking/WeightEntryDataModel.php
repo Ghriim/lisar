@@ -38,9 +38,9 @@ class WeightEntryDataModel implements DataModelInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     public DateTimeImmutable $recordedAt;
 
-    // DECIMAL(5,2): up to 999.99 kg, two decimals kept exactly. A float column would drift, and
-    // averaging a drifted series is how a tracker starts disagreeing with the scale.
-    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2)]
+    // A DOUBLE, PHP's own float: what is written is what is read back. The use case rounds to
+    // SaveWeightDataInput::DECIMALS before writing, the column does not.
+    #[ORM\Column(type: Types::FLOAT)]
     public float $weightInKilograms;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

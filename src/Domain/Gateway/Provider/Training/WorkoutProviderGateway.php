@@ -8,7 +8,6 @@ use App\Domain\DTO\Aggregate\Training\WorkoutTally;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
-use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use DateTimeImmutable;
@@ -69,12 +68,4 @@ interface WorkoutProviderGateway
      * @return list<WorkoutTally>
      */
     public function findTalliesForOwner(UserDataModel $owner): array;
-
-    /**
-     * The exercises, anyone's, with at least one set of that type — their workout and movement
-     * read with them.
-     *
-     * @return list<WorkoutExerciseDataModel>
-     */
-    public function findExercisesWithSetType(SetTypeDataModel $setType): array;
 }

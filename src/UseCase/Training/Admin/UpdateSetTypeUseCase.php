@@ -46,7 +46,6 @@ final readonly class UpdateSetTypeUseCase implements UseCaseInterface
         $this->validator->validate($currentUser, $input, $setType, $this->setTypeProviderGateway->findOneByName($input->name));
         $setType->name = $input->name;
         $setType->colour = $input->colour;
-        $setType->countsForPersonalBests = $input->countsForPersonalBests;
 
         $changed = [$setType];
         if (true === $input->isDefaultType && false === $setType->isDefaultType) {

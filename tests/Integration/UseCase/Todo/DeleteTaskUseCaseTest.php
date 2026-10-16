@@ -7,13 +7,13 @@ namespace App\Tests\Integration\UseCase\Todo;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\DeleteTaskUseCase;
 use LogicException;
@@ -22,6 +22,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class DeleteTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private DeleteTaskUseCase $useCase;
@@ -74,18 +75,6 @@ final class DeleteTaskUseCaseTest extends KernelTestCase
         self::assertCount(1, $reread->subtasks);
     }
 
-    /**
-     * The tags survive: they belong to the account, not to the task.
-     */
-    public function testItKeepsTheAccountsTags(): void
-    {
-        $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
-
-        $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0);
-
-        self::assertCount(2, self::getContainer()->get(TagProviderGateway::class)->findAllForOwner($this->alice));
-    }
-
     public function testItRefusesAnotherAccountsTask(): void
     {
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
@@ -104,6 +93,18 @@ final class DeleteTaskUseCaseTest extends KernelTestCase
         $this->expectException(DataModelNotFoundException::class);
 
         $this->useCase->execute($this->currentUser($this->aliceId()), 123456789);
+    }
+
+    /** A task with subtasks: they go with it. */
+    public function testDeletingATaskStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+        $taskId = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $taskId),
+        );
     }
 
     private function aliceId(): int

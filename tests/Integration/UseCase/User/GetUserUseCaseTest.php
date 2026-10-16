@@ -8,6 +8,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\GetUserUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -15,6 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class GetUserUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private GetUserUseCase $useCase;
@@ -26,6 +28,16 @@ final class GetUserUseCaseTest extends KernelTestCase
         $this->useCase = self::getContainer()->get(GetUserUseCase::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    public function testGettingAnAccountStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->anyCurrentUser(),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $aliceId),
+        );
     }
 
     public function testItReturnsTheAccount(): void

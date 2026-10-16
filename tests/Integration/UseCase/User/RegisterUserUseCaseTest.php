@@ -13,11 +13,14 @@ use App\Domain\User\PasswordHasherInterface;
 use App\Domain\Validation\Constraint\User\EmailAvailableConstraint;
 use App\Domain\Validation\Constraint\User\UsernameAvailableConstraint;
 use App\Domain\Validation\Validator\User\RegisterUserValidator;
+use App\Tests\Integration\QueryCountTrait;
 use App\UseCase\User\RegisterUserUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class RegisterUserUseCaseTest extends KernelTestCase
 {
+    use QueryCountTrait;
+
     private RegisterUserUseCase $useCase;
     private UserProviderGateway $userProviderGateway;
     private PasswordHasherInterface $passwordHasher;
@@ -29,6 +32,14 @@ final class RegisterUserUseCaseTest extends KernelTestCase
         $this->useCase = self::getContainer()->get(RegisterUserUseCase::class);
         $this->userProviderGateway = self::getContainer()->get(UserProviderGateway::class);
         $this->passwordHasher = self::getContainer()->get(PasswordHasherInterface::class);
+    }
+
+    public function testRegisteringStaysWithinItsQueryBudget(): void
+    {
+        $this->assertQueryCountAtMost(
+            fn () => null,
+            fn () => $this->useCase->execute($this->buildInput()),
+        );
     }
 
     public function testItCreatesAnAccount(): void

@@ -23,19 +23,11 @@ final class TaskDataOutput
     #[Map(if: false)]
     public string $state;
 
-    #[Map(if: false)]
-    public ?PriorityDataOutput $priority = null;
+    /** One of TaskPriorityRegistry. */
+    public ?string $priority = null;
 
     #[Map(if: false)]
     public ?CategoryDataOutput $category = null;
-
-    /**
-     * The labels, not the rows: a tag is a word to the person using it.
-     *
-     * @var list<string>
-     */
-    #[Map(if: false)]
-    public array $tags = [];
 
     /**
      * Always empty on a subtask — there is only ever one level.

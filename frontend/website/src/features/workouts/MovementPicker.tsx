@@ -84,7 +84,7 @@ export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, o
                     {families.map((family) => (
                         <div key={family.name} className="movement-family">
                             <span className="field-label">{family.name}</span>
-                            <div className="tag-suggestions">
+                            <div className="chip-choices">
                                 {family.movements.map((movement) => (
                                     <ToggleChip
                                         key={movement.id}

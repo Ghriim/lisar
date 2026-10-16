@@ -25,15 +25,6 @@ export function useTask(id: number, fallback: Task) {
     })
 }
 
-export function usePriorities() {
-    return useQuery({
-        queryKey: ['priorities'],
-        queryFn: api.fetchPriorities,
-        // Reference data: it changes in the back-office, not while someone writes a task.
-        staleTime: 5 * 60 * 1000,
-    })
-}
-
 export function useCategories() {
     return useQuery({
         queryKey: ['categories'],
@@ -49,17 +40,9 @@ function useTaskMutation<TVariables, TResult>(mutationFn: (variables: TVariables
         mutationFn,
         onSuccess: async () => {
             // Both lists move together: ticking a task off takes it out of one and into the
-            // other. And writing a task can mint a tag the account did not have.
+            // other.
             await queryClient.invalidateQueries({ queryKey: TASKS })
-            await queryClient.invalidateQueries({ queryKey: ['tags'] })
         },
-    })
-}
-
-export function useTags() {
-    return useQuery({
-        queryKey: ['tags'],
-        queryFn: api.fetchTags,
     })
 }
 

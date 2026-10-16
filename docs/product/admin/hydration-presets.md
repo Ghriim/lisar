@@ -18,8 +18,8 @@ The vocabulary today: `glass`, `bottle`, `mug`, `can`, `carafe`, `soda_cup`.
 
 ## Deleting one is safe, and that is deliberate
 
-Unlike a priority or a common category, **a shortcut can always be deleted**, even after years of
-use. An entry copies the volume it logged rather than pointing at the shortcut, so removing
+Unlike a common category, **a shortcut can always be deleted**, even after years of use. An
+entry copies the volume it logged rather than pointing at the shortcut, so removing
 "bottle · 500 mL" removes a button and nothing else. Nobody's past changes.
 
 This is the whole reason the copy was chosen over a relation, and it is worth remembering before
@@ -33,5 +33,4 @@ the account, not in this reference set.
 
 ## Open question
 
-Whether shortcuts should be orderable by hand, as priorities are by weight, rather than sorted by
-volume.
+Whether shortcuts should be orderable by hand rather than sorted by volume.

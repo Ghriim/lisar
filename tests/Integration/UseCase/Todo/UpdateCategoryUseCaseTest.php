@@ -15,6 +15,7 @@ use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\UpdateCategoryUseCase;
 use LogicException;
@@ -23,6 +24,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class UpdateCategoryUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private UpdateCategoryUseCase $useCase;
@@ -107,6 +109,17 @@ final class UpdateCategoryUseCaseTest extends KernelTestCase
         $this->expectException(DataModelNotFoundException::class);
 
         $this->useCase->execute($this->currentUser($admin->id ?? 0), $category->id ?? 0, new UpdateCategoryDataInput('À moi'));
+    }
+
+    public function testRenamingACategoryStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+        $categoryId = $this->getReference(CategoryFixtures::ALICE_SIDE_PROJECT, CategoryDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $categoryId, new UpdateCategoryDataInput('Startup')),
+        );
     }
 
     private function aliceId(): int

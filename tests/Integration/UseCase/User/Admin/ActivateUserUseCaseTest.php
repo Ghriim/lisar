@@ -11,6 +11,7 @@ use App\Domain\Registry\User\SessionAudienceRegistry;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\ActivateUserUseCase;
 use App\UseCase\User\LoginUseCase;
@@ -19,6 +20,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class ActivateUserUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private ActivateUserUseCase $useCase;
@@ -32,6 +34,16 @@ final class ActivateUserUseCaseTest extends KernelTestCase
         $this->userProviderGateway = self::getContainer()->get(UserProviderGateway::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    public function testReactivatingAnAccountStaysWithinItsQueryBudget(): void
+    {
+        $bobId = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentAdmin(),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $bobId),
+        );
     }
 
     public function testItReactivatesTheAccount(): void

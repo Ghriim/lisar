@@ -12,12 +12,14 @@ use App\Domain\Registry\User\UserRoleRegistry;
 use App\Domain\User\PasswordHasherInterface;
 use App\Domain\Validation\Constraint\User\EmailAvailableConstraint;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\UseCase\User\Admin\CreateAdminUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class CreateAdminUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
 
     private CreateAdminUseCase $useCase;
     private UserProviderGateway $userProviderGateway;
@@ -30,6 +32,14 @@ final class CreateAdminUseCaseTest extends KernelTestCase
         $this->useCase = self::getContainer()->get(CreateAdminUseCase::class);
         $this->userProviderGateway = self::getContainer()->get(UserProviderGateway::class);
         $this->passwordHasher = self::getContainer()->get(PasswordHasherInterface::class);
+    }
+
+    public function testCreatingAnAdministratorStaysWithinItsQueryBudget(): void
+    {
+        $this->assertQueryCountAtMost(
+            fn () => null,
+            fn () => $this->useCase->execute($this->buildInput()),
+        );
     }
 
     public function testItCreatesAnAdministrator(): void

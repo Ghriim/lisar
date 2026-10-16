@@ -11,7 +11,6 @@ use App\Domain\DTO\Output\Tracking\Hydration\HydrationDayDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Tracking\Hydration\HydrationDayOutputFactory;
 use App\Domain\Gateway\Persister\Tracking\Hydration\HydrationEntryPersisterGateway;
-use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationDayProviderGateway;
 use App\Domain\Gateway\Provider\Tracking\Hydration\HydrationEntryProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Tracking\Hydration\UpdateHydrationEntryValidator;
@@ -24,7 +23,6 @@ final readonly class UpdateHydrationEntryUseCase implements UseCaseInterface
         private UpdateHydrationEntryValidator $validator,
         private HydrationEntryProviderGateway $hydrationEntryProviderGateway,
         private HydrationEntryPersisterGateway $hydrationEntryPersisterGateway,
-        private HydrationDayProviderGateway $hydrationDayProviderGateway,
         private HydrationDayOutputFactory $outputFactory,
         private DayClock $clock,
     ) {
@@ -46,10 +44,7 @@ final readonly class UpdateHydrationEntryUseCase implements UseCaseInterface
         $entry->volumeInMillilitres = $input->volumeInMillilitres;
         $this->hydrationEntryPersisterGateway->update($entry);
 
-        // Re-read so the total counts every entry, not just the one in hand.
-        $today = $this->clock->today();
-        $day = $this->hydrationDayProviderGateway->findOneForOwnerAndDay($currentUser, $today) ?? $entry->hydrationDay;
-
-        return $this->outputFactory->buildOne($day);
+        // Today, the validator saw to it: the entry's own day, whose entries count every drink.
+        return $this->outputFactory->buildOne($entry->hydrationDay);
     }
 }

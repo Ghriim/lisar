@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\UseCase\User\Admin;
 
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\User\Admin\ListUsersDataInput;
+use App\Domain\DTO\Input\User\RegisterUserDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\ListUsersUseCase;
+use App\UseCase\User\RegisterUserUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ListUsersUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private ListUsersUseCase $useCase;
@@ -26,6 +31,29 @@ final class ListUsersUseCaseTest extends KernelTestCase
         $this->useCase = self::getContainer()->get(ListUsersUseCase::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    public function testListingTheAccountsStaysWithinItsQueryBudget(): void
+    {
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentAdmin(),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, new ListUsersDataInput()),
+        );
+    }
+
+    public function testListingTheAccountsDoesNotGrowWithThem(): void
+    {
+        [$fewer, $more] = $this->assertQueryCountDoesNotGrow(
+            fn () => $this->currentAdmin(),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, new ListUsersDataInput()),
+            function (): void {
+                $register = self::getContainer()->get(RegisterUserUseCase::class);
+                $register->execute(new RegisterUserDataInput(username: 'carol', email: 'carol@lisar.test', password: 'Corr3ct-Horse!'));
+                $register->execute(new RegisterUserDataInput(username: 'dave', email: 'dave@lisar.test', password: 'Corr3ct-Horse!'));
+            },
+        );
+
+        self::assertCount(count($fewer->items) + 2, $more->items);
     }
 
     public function testItListsEveryAccountNewestFirst(): void

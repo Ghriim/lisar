@@ -16,6 +16,7 @@ use App\Domain\Validation\Validator\User\Admin\DeactivateUserValidator;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\DeactivateUserUseCase;
 use App\UseCase\User\LoginUseCase;
@@ -25,6 +26,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class DeactivateUserUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private DeactivateUserUseCase $useCase;
@@ -42,6 +44,22 @@ final class DeactivateUserUseCaseTest extends KernelTestCase
         $this->userProviderGateway = self::getContainer()->get(UserProviderGateway::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    /** On an account with a live session: deactivating it drops that session too. */
+    public function testDeactivatingAnAccountStaysWithinItsQueryBudget(): void
+    {
+        $this->createSessionUseCase->execute(new LoginDataInput(
+            email: 'alice@lisar.test',
+            password: UserFixtures::PLAIN_PASSWORD,
+        ), SessionAudienceRegistry::WEBSITE);
+        $aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
+        $adminId = $this->getReference(UserFixtures::ADMIN, UserDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($adminId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $aliceId),
+        );
     }
 
     public function testItDeactivatesTheAccount(): void

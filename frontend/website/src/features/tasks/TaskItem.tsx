@@ -4,7 +4,7 @@ import type { Task } from '../../api/types'
 import { humanise } from '../../api/violations'
 import { Chip, DotChip, IconButton, ListItem, StateChip } from '../../components'
 import { useCompleteTask, useReopenTask } from './queries'
-import { formatDay, isOverdue, stateDisplay } from './taskDisplay'
+import { formatDay, isOverdue, priorityDisplay, stateDisplay } from './taskDisplay'
 
 interface TaskItemProps {
     task: Task
@@ -38,7 +38,7 @@ export function TaskItem({ task, onView }: TaskItemProps) {
                 title={task.title}
                 note={subtaskCount > 0 ? `(${doneSubtaskCount}/${subtaskCount})` : undefined}
                 description={task.description}
-                accent={task.priority?.colour}
+                accent={task.priority === null ? undefined : priorityDisplay(task.priority).colour}
                 muted={task.state === 'done'}
                 error={error}
                 meta={
@@ -46,7 +46,9 @@ export function TaskItem({ task, onView }: TaskItemProps) {
                         <StateChip colour={state.colour}>{state.label}</StateChip>
 
                         {task.priority !== null && (
-                            <DotChip colour={task.priority.colour}>{task.priority.label}</DotChip>
+                            <DotChip colour={priorityDisplay(task.priority).colour}>
+                                    {priorityDisplay(task.priority).label}
+                                </DotChip>
                         )}
 
                         {task.dueDate !== null && (
@@ -55,10 +57,6 @@ export function TaskItem({ task, onView }: TaskItemProps) {
                                 {formatDay(task.dueDate)}
                             </Chip>
                         )}
-
-                        {task.tags.map((tag) => (
-                            <Chip key={tag}>#{tag}</Chip>
-                        ))}
                     </>
                 }
                 actions={

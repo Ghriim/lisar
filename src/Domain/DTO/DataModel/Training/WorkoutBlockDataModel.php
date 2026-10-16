@@ -30,10 +30,8 @@ class WorkoutBlockDataModel implements DataModelInterface
     #[ORM\Column]
     public int $position = 0;
 
-    // Removed with it in memory too, not only by the database's cascade: a child left in the
-    // identity map would be found again, orphaned, at the next flush.
     /** @var Collection<int, WorkoutExerciseDataModel> */
-    #[ORM\OneToMany(targetEntity: WorkoutExerciseDataModel::class, mappedBy: 'block', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: WorkoutExerciseDataModel::class, mappedBy: 'block')]
     #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     public Collection $exercises;
 

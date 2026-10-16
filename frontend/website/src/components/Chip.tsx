@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom'
 
 interface ChipProps {
     children: ReactNode
-    /** Overrides the chip's own colour: a priority carries the one the back-office set. */
+    /** Overrides the chip's own colour: a priority carries its own. */
     colour?: string
     tone?: 'default' | 'danger'
 }
 
-/** The small pill the app says everything in: a state, a rank, a tag, a due date. */
+/** The small pill the app says everything in: a state, a rank, a due date. */
 export function Chip({ children, colour, tone = 'default' }: ChipProps) {
     return (
         <span
@@ -57,7 +57,7 @@ interface ToggleChipProps {
     onToggle: () => void
 }
 
-/** A chip that is also a choice: the tags already used, offered back. */
+/** A chip that is also a choice, to toggle on and off. */
 export function ToggleChip({ children, pressed, onToggle }: ToggleChipProps) {
     return (
         <button type="button" className="chip" aria-pressed={pressed} onClick={onToggle}>

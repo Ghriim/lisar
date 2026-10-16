@@ -22,8 +22,8 @@ asks for more. The line carries how far it has got, right after the title — `(
 subtask done out of two — so unfolding is for acting on a subtask, not for finding out where
 things stand. A task without subtasks has neither the control nor the count.
 
-**Default sort, in full**: by category first — a task without one sorts last — then by priority
-weight, again with the ones lacking a priority last, then the newest first. Ties had to break
+**Default sort, in full**: by category first — a task without one sorts last — then by priority,
+high to low, again with the ones lacking a priority last, then the newest first. Ties had to break
 somewhere.
 
 **The list is not paginated.** A personal todo list is small, and a page of a list sorted by
@@ -39,12 +39,16 @@ reopened.
 | title | yes | the only required field |
 | description | no | |
 | due date | no | a calendar day, `YYYY-MM-DD`, **no time of day** |
-| priority | no | from the back-office set; the default applies when left empty |
+| priority | no | one of three, highest first: Haute, Normale, Basse; Normale when left empty |
 | category | no | exactly one, common or personal |
-| tags | no | several, free text, private to the account |
 | parent task | no | present on a subtask only |
 
-**A subtask is a full task**: same fields, its own due date, priority, category and tags. The
+**The priorities are a fixed list of three**, not reference data: *Haute*, *Normale*, *Basse*,
+in that order. The API carries a code (`high`, `normal`, `low`) and the front end words it and
+colours it — red, blue, grey. There is no back-office page for them: changing the list means
+changing the code. A task created without one gets **Normale**, applied by the server.
+
+**A subtask is a full task**: same fields, its own due date, priority and category. The
 only thing that sets it apart is being attached to a parent — and it cannot have subtasks of its
 own. One level, and one only.
 
@@ -82,8 +86,8 @@ closes anything on the person's behalf.
 The eye opens the quest **read-only** in a window headed *Détails de la quête* — generic,
 because the quest's own title is the first field inside it. Field by field under its own heading,
 **on the same grid and in the same order as the form**: the title with its state beside it, the
-detail across the width, then the short fields two to a line — category and priority, then tags
-and due date. The state carries no heading: the chip already says the word. A field is where it
+detail across the width, then the short fields two to a line — category and priority, then
+the due date. The state carries no heading: the chip already says the word. A field is where it
 was when it was filled in, so reading and editing do not ask the eye to relearn the layout. A
 field with no value says so rather than disappearing — "Aucune échéance" — and the reader can
 tell an empty field from a forgotten one.
@@ -104,8 +108,8 @@ A sub-quest's window offers no "add a sub-quest": there is one level, and one on
 The form is a **modal**, opened by the `+` in the panel header — the page shows the list first —
 or reached from a quest's own window.
 
-Nothing is preselected: no category, no tag, no priority. The only default anywhere is the priority,
-and it is applied **by the server** to a payload that named none.
+Nothing is preselected: no category, no priority. The only default anywhere is the priority,
+**Normale**, and it is applied **by the server** to a payload that named none.
 
 ## Categories
 
@@ -124,18 +128,6 @@ alongside, greyed out. The list they choose from is the list they manage.
 - A label only has to be unique **within what one person sees**: their own plus the common ones.
   Two accounts may each have a "Sport", and a personal "Sport" does not block a common one.
 
-## Tags
-
-Free text, several per task, **private to the account**, trimmed and de-duplicated. Two different
-cases are two different tags.
-
-**The tags already used are offered back** as chips to toggle while writing a task. Typing a new
-one still works — the field is free text — but the offer is what stops the same word being
-spelled three ways.
-
-**A tag is a row on the account, not a word on the task.** It survives the tasks that carried it,
-which is what lets it be offered again.
-
 ## Not in v1
 
 - **recurrence** and **scheduling** ("do it on", as opposed to "due by"): standalone components,
@@ -150,5 +142,3 @@ which is what lets it be offered again.
 - is a manual order, drag and drop, expected?
 - how far back the completed view should go
 - which timezone "overdue" is computed against: the profile stores none today
-- should a tag nobody uses any more be offered for deletion, or quietly kept?
-- renaming a tag across every task that carries it: worth doing?

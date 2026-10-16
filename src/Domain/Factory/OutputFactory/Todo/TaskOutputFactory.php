@@ -14,7 +14,6 @@ final readonly class TaskOutputFactory
     public function __construct(
         private ObjectMapperInterface $mapper,
         private TaskState $taskState,
-        private PriorityOutputFactory $priorityOutputFactory,
         private CategoryOutputFactory $categoryOutputFactory,
     ) {
     }
@@ -41,20 +40,9 @@ final readonly class TaskOutputFactory
         $output->state = $this->taskState->resolve($task);
         $output->parentId = $task->parent?->id;
 
-        if (null !== $task->priority) {
-            $output->priority = $this->priorityOutputFactory->buildOne($task->priority);
-        }
-
         if (null !== $task->category) {
             $output->category = $this->categoryOutputFactory->buildOne($task->category);
         }
-
-        $labels = [];
-        foreach ($task->tags as $tag) {
-            $labels[] = $tag->label;
-        }
-        sort($labels);
-        $output->tags = $labels;
 
         // The recursion stops by itself: a subtask never has subtasks, and asking for them
         // would be a query per row.

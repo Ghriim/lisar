@@ -11,7 +11,6 @@ import { HydrationPresetsPage } from './pages/HydrationPresetsPage'
 import { LoginPage } from './pages/LoginPage'
 import { MovementsPage } from './pages/MovementsPage'
 import { MusclesPage } from './pages/MusclesPage'
-import { PrioritiesPage } from './pages/PrioritiesPage'
 import { SetTypesPage } from './pages/SetTypesPage'
 import { UsersPage } from './pages/UsersPage'
 
@@ -46,7 +45,6 @@ export function App() {
             <Route element={<AdminLayout />}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/comptes" element={<UsersPage />} />
-                <Route path="/priorites" element={<PrioritiesPage />} />
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/hydratation/raccourcis" element={<HydrationPresetsPage />} />
                 <Route path="/habitudes/catalogue" element={<HabitsPage />} />

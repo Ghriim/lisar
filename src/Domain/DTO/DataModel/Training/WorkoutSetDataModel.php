@@ -45,8 +45,9 @@ class WorkoutSetDataModel implements DataModelInterface
     #[ORM\Column(nullable: true)]
     public ?int $reps = null;
 
-    // Stored exact, like the weight tracker's: a load is read back as it was typed.
-    #[ORM\Column(type: Types::DECIMAL, precision: 6, scale: 2, nullable: true)]
+    // Read back as it was written, like the weight tracker's: rounded by the use case to
+    // AddWorkoutSetDataInput::DECIMALS, not by the column.
+    #[ORM\Column(type: Types::FLOAT, nullable: true)]
     public ?float $weightInKilograms = null;
 
     #[ORM\Column(nullable: true)]
@@ -56,16 +57,15 @@ class WorkoutSetDataModel implements DataModelInterface
     public ?int $distanceInMetres = null;
 
     // Rate of perceived exertion, 1 to 10 by halves.
-    #[ORM\Column(type: Types::DECIMAL, precision: 3, scale: 1, nullable: true)]
+    #[ORM\Column(type: Types::FLOAT, nullable: true)]
     public ?float $rpe = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     public bool $isComplete = false;
 
-    // The personal bests this set established. Removed with it in memory too, like a workout's
-    // children: a record left in the identity map would point at a set that is gone.
+    // The personal bests this set established.
     /** @var Collection<int, PersonalBestDataModel> */
-    #[ORM\OneToMany(targetEntity: PersonalBestDataModel::class, mappedBy: 'set', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: PersonalBestDataModel::class, mappedBy: 'set')]
     public Collection $personalBests;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

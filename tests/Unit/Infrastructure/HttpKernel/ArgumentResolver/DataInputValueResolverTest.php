@@ -51,11 +51,11 @@ final class DataInputValueResolverTest extends TestCase
     public function testItTrimsInsideLists(): void
     {
         $this->resolve(
-            new Request(content: (string) json_encode(['title' => 'Courir', 'tags' => ['  sport ', 'urgent']])),
+            new Request(content: (string) json_encode(['title' => 'Courir', 'labels' => ['  sport ', 'urgent']])),
             CreateTaskDataInput::class,
         );
 
-        self::assertSame(['sport', 'urgent'], $this->denormalised['tags']);
+        self::assertSame(['sport', 'urgent'], $this->denormalised['labels']);
     }
 
     public function testItTrimsTheQueryStringToo(): void
@@ -68,11 +68,11 @@ final class DataInputValueResolverTest extends TestCase
     public function testItLeavesAnythingThatIsNotAStringAlone(): void
     {
         $this->resolve(
-            new Request(content: (string) json_encode(['title' => 'Courir', 'priorityId' => 3])),
+            new Request(content: (string) json_encode(['title' => 'Courir', 'categoryId' => 3])),
             CreateTaskDataInput::class,
         );
 
-        self::assertSame(3, $this->denormalised['priorityId']);
+        self::assertSame(3, $this->denormalised['categoryId']);
     }
 
     /**

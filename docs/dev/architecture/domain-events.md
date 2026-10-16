@@ -40,9 +40,8 @@ listen to one event; none may count on running before another.
   everything twice.
 - **A handler holds no business rule it could hand to the domain.** It gathers, calls a domain
   factory or service, and writes. The rule — what beats a record — is unit-tested in the domain.
-- **An event that only matters for some changes says so**: `SetTypeUpdatedEvent` carries whether
-  `countsForPersonalBests` changed, read from Doctrine's original data before the flush, and the
-  handler skips the rest.
+- **An event that only matters for some changes says so**: it carries what changed, read from
+  Doctrine's original data before the flush, and the handler skips the rest.
 
 ## What exists
 
@@ -53,7 +52,6 @@ listen to one event; none may count on running before another.
 | `WorkoutExerciseDeletedEvent` | `WorkoutExercisePersister::delete` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
 | `WorkoutBlockDeletedEvent` | `WorkoutBlockPersister::delete` | `RefreshPersonalBestsEventHandler`, `RefreshWorkoutSummaryEventHandler` |
 | `WorkoutUpdatedEvent` · `WorkoutDeletedEvent` | `WorkoutPersister` | `RefreshPersonalBestsEventHandler`, `SyncWorkoutHabitsEventHandler` |
-| `SetTypeUpdatedEvent` | `SetTypePersister::update` / `updateMany` | `RefreshPersonalBestsEventHandler` |
 | `HydrationEntryCreatedEvent` · `HydrationEntryUpdatedEvent` · `HydrationEntryDeletedEvent` | `HydrationEntryPersister` | `SyncHydrationHabitsEventHandler` |
 | `StepDayCreatedEvent` · `StepDayUpdatedEvent` | `StepDayPersister` | `SyncStepHabitsEventHandler` |
 

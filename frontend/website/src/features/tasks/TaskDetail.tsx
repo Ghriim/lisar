@@ -17,7 +17,7 @@ import {
     Stack,
 } from '../../components'
 import { useCompleteTask, useDeleteTask, useReopenTask, useTask } from './queries'
-import { formatDay, isOverdue, stateDisplay } from './taskDisplay'
+import { formatDay, isOverdue, priorityDisplay, stateDisplay } from './taskDisplay'
 
 interface TaskDetailProps {
     task: Task
@@ -88,20 +88,9 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
                         width: 'half',
                         value:
                             task.priority === null ? null : (
-                                <DotChip colour={task.priority.colour}>{task.priority.label}</DotChip>
-                            ),
-                    },
-                    {
-                        label: 'Étiquettes',
-                        placeholder: 'Aucune étiquette',
-                        width: 'half',
-                        value:
-                            task.tags.length === 0 ? null : (
-                                <Row wrap>
-                                    {task.tags.map((tag) => (
-                                        <Chip key={tag}>#{tag}</Chip>
-                                    ))}
-                                </Row>
+                                <DotChip colour={priorityDisplay(task.priority).colour}>
+                                    {priorityDisplay(task.priority).label}
+                                </DotChip>
                             ),
                     },
                     {
@@ -216,7 +205,7 @@ function SubtaskRow({ subtask, onEdit, onDelete }: SubtaskRowProps) {
         <ListItem
             title={subtask.title}
             muted={subtask.state === 'done'}
-            accent={subtask.priority?.colour}
+            accent={subtask.priority === null ? undefined : priorityDisplay(subtask.priority).colour}
             meta={<StateChip colour={state.colour}>{state.label}</StateChip>}
             actions={
                 <>

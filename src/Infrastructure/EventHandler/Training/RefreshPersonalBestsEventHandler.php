@@ -9,7 +9,6 @@ use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Event\EventInterface;
-use App\Domain\DTO\Event\Training\SetTypeUpdatedEvent;
 use App\Domain\DTO\Event\Training\WorkoutBlockDeletedEvent;
 use App\Domain\DTO\Event\Training\WorkoutDeletedEvent;
 use App\Domain\DTO\Event\Training\WorkoutExerciseDeletedEvent;
@@ -57,7 +56,6 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
             WorkoutBlockDeletedEvent::class,
             WorkoutDeletedEvent::class,
             WorkoutUpdatedEvent::class,
-            SetTypeUpdatedEvent::class,
         ];
     }
 
@@ -90,32 +88,8 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
             $event instanceof WorkoutDeletedEvent => [[$event->owner, $event->movements]],
             // Finishing gives a workout its length; nothing else about it moves a movement's record.
             $event instanceof WorkoutUpdatedEvent => [[$event->workout->owner, []]],
-            $event instanceof SetTypeUpdatedEvent => true === $event->countsForPersonalBestsChanged ? $this->carrying($event) : [],
             default => throw new LogicException(sprintf('%s does not handle %s.', self::class, $event::class)),
         };
-    }
-
-    /**
-     * Everyone whose sets carry that type, with the movements they carry it on.
-     *
-     * @return list<array{UserDataModel, list<MovementDataModel>}>
-     */
-    private function carrying(SetTypeUpdatedEvent $event): array
-    {
-        /** @var array<int, array{UserDataModel, array<int, MovementDataModel>}> $byOwner */
-        $byOwner = [];
-        foreach ($this->workoutProviderGateway->findExercisesWithSetType($event->setType) as $exercise) {
-            $owner = $exercise->block->workout->owner;
-            $byOwner[(int) $owner->id][0] = $owner;
-            $byOwner[(int) $owner->id][1][(int) $exercise->movement->id] = $exercise->movement;
-        }
-
-        $touched = [];
-        foreach ($byOwner as [$owner, $movements]) {
-            $touched[] = [$owner, array_values($movements)];
-        }
-
-        return $touched;
     }
 
     /**

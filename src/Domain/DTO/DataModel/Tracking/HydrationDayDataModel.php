@@ -39,8 +39,10 @@ class HydrationDayDataModel implements DataModelInterface
     #[ORM\Column]
     public int $goalInMillilitres;
 
+    // The latest first, like the day's read: a day loaded through an entry renders the same.
     /** @var Collection<int, HydrationEntryDataModel> */
-    #[ORM\OneToMany(targetEntity: HydrationEntryDataModel::class, mappedBy: 'hydrationDay', cascade: ['remove'])]
+    #[ORM\OrderBy(['recordedAt' => 'DESC'])]
+    #[ORM\OneToMany(targetEntity: HydrationEntryDataModel::class, mappedBy: 'hydrationDay')]
     public Collection $entries;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

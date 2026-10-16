@@ -33,7 +33,7 @@ class WorkoutSummaryDataModel implements DataModelInterface
     public int $setCount = 0;
 
     // Reps times load; a unilateral set counts both sides.
-    #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, nullable: true)]
+    #[ORM\Column(type: Types::FLOAT, nullable: true)]
     public ?float $volumeInKilograms = null;
 
     #[ORM\Column(nullable: true)]

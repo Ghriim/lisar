@@ -11,6 +11,7 @@ use App\Domain\Gateway\Provider\User\UserCommentProviderGateway;
 use App\Fixtures\User\UserFixtures;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\User\Admin\CreateUserCommentUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -18,6 +19,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class CreateUserCommentUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private CreateUserCommentUseCase $useCase;
@@ -31,6 +33,17 @@ final class CreateUserCommentUseCaseTest extends KernelTestCase
         $this->userCommentProviderGateway = self::getContainer()->get(UserCommentProviderGateway::class);
 
         $this->loadFixtures(UserFixtures::class);
+    }
+
+    public function testAddingANoteStaysWithinItsQueryBudget(): void
+    {
+        $bobId = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class)->id ?? 0;
+        $adminId = $this->getReference(UserFixtures::ADMIN, UserDataModel::class)->id ?? 0;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($adminId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $bobId, new CreateUserCommentDataInput('Called support back.')),
+        );
     }
 
     public function testItAddsANoteAttributedToItsAuthor(): void

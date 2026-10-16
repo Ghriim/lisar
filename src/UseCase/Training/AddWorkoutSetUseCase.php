@@ -65,7 +65,7 @@ final readonly class AddWorkoutSetUseCase implements UseCaseInterface
         // No type named: the default one, an ordinary working set.
         $set->setType = $setType ?? $this->findDefaultSetType();
         $set->reps = $input->reps;
-        $set->weightInKilograms = $input->weightInKilograms;
+        $set->weightInKilograms = null === $input->weightInKilograms ? null : round($input->weightInKilograms, AddWorkoutSetDataInput::DECIMALS);
         $set->durationInSeconds = $input->durationInSeconds;
         $set->distanceInMetres = $input->distanceInMetres;
         $set->rpe = $input->rpe;

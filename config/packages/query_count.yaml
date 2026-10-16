@@ -1,0 +1,10 @@
+# Counts the statements a use case sends, for the integration tests' query budgets
+# (tests/Integration/QueryCountTrait.php). The test environment only: nothing counts in prod.
+when@test:
+    services:
+        App\Tests\Integration\Doctrine\QueryCounter:
+            public: true
+
+        App\Tests\Integration\Doctrine\QueryCountingMiddleware:
+            arguments: ['@App\Tests\Integration\Doctrine\QueryCounter']
+            tags: [doctrine.middleware]

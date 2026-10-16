@@ -11,7 +11,7 @@ Opening an account shows a drawer: its metadata, and its note thread.
 
 ## What it never shows
 
-**The contents of an account.** Tasks, personal categories, tags: none of it is served to this
+**The contents of an account.** Tasks, personal categories: none of it is served to this
 surface, and no screen asks for it. The rule is enforced by the API, not by a front end
 remembering not to display it.
 

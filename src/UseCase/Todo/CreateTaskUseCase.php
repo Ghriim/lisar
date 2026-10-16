@@ -4,20 +4,16 @@ declare(strict_types=1);
 
 namespace App\UseCase\Todo;
 
-use App\Domain\DTO\DataModel\Todo\TagDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\DTO\Output\Todo\TaskDataOutput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Factory\DataModelFactory\Todo\TagDataModelFactory;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
-use App\Domain\Gateway\Persister\Todo\TagPersisterGateway;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
 use App\Domain\Gateway\Provider\Todo\CategoryProviderGateway;
-use App\Domain\Gateway\Provider\Todo\PriorityProviderGateway;
-use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
+use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Validation\Validator\Todo\CreateTaskValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
@@ -26,13 +22,9 @@ final readonly class CreateTaskUseCase implements UseCaseInterface
 {
     public function __construct(
         private CreateTaskValidator $validator,
-        private PriorityProviderGateway $priorityProviderGateway,
         private CategoryProviderGateway $categoryProviderGateway,
         private TaskProviderGateway $taskProviderGateway,
-        private TagProviderGateway $tagProviderGateway,
         private TaskPersisterGateway $taskPersisterGateway,
-        private TagPersisterGateway $tagPersisterGateway,
-        private TagDataModelFactory $tagDataModelFactory,
         private TaskOutputFactory $outputFactory,
     ) {
     }
@@ -43,10 +35,6 @@ final readonly class CreateTaskUseCase implements UseCaseInterface
      */
     public function execute(UserDataModel $currentUser, CreateTaskDataInput $input): TaskDataOutput
     {
-        $priority = null === $input->priorityId
-            ? null
-            : $this->priorityProviderGateway->findOneById($input->priorityId);
-
         $category = null === $input->categoryId
             ? null
             : $this->categoryProviderGateway->findOneById($input->categoryId);
@@ -56,21 +44,17 @@ final readonly class CreateTaskUseCase implements UseCaseInterface
             ? null
             : $this->taskProviderGateway->findOneById($input->parentId);
 
-        $this->validator->validate($currentUser, $input, $priority, $category, $parent, $currentUser);
+        $this->validator->validate($currentUser, $input, $category, $parent, $currentUser);
 
         $task = new TaskDataModel();
         $task->owner = $currentUser;
         $task->title = $input->title;
         $task->description = $input->description;
         $task->dueDate = $input->getDueDate();
-        // The back-office default applies when the caller names no priority.
-        $task->priority = $priority ?? $this->priorityProviderGateway->findOneDefault();
+        // The default applies when the caller names no priority.
+        $task->priority = $input->priority ?? TaskPriorityRegistry::DEFAULT;
         $task->category = $category;
         $task->parent = $parent;
-
-        foreach ($this->resolveTags($input->getTagLabels(), $currentUser) as $tag) {
-            $task->tags->add($tag);
-        }
 
         $this->taskPersisterGateway->create($task);
 
@@ -79,28 +63,5 @@ final readonly class CreateTaskUseCase implements UseCaseInterface
         $parent?->subtasks->add($task);
 
         return $this->outputFactory->buildOne($task);
-    }
-
-    /**
-     * The account's tags for those labels, creating the ones it does not have yet.
-     *
-     * @param list<string> $labels
-     *
-     * @return list<TagDataModel>
-     */
-    private function resolveTags(array $labels, UserDataModel $currentUser): array
-    {
-        if ([] === $labels) {
-            return [];
-        }
-
-        $existingTags = $this->tagProviderGateway->findAllByLabelsForOwner($currentUser, $labels);
-        $newTags = $this->tagDataModelFactory->buildMany($labels, $currentUser, $existingTags);
-
-        if ([] !== $newTags) {
-            $this->tagPersisterGateway->createMany($newTags);
-        }
-
-        return [...$existingTags, ...$newTags];
     }
 }

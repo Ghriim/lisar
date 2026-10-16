@@ -37,7 +37,7 @@ class UserDataModel implements DataModelInterface
     public ?DateTimeImmutable $lastSignedInAt = null;
 
     /** @var Collection<int, UserIdentityDataModel> */
-    #[ORM\OneToMany(targetEntity: UserIdentityDataModel::class, mappedBy: 'user', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: UserIdentityDataModel::class, mappedBy: 'user')]
     public Collection $identities;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

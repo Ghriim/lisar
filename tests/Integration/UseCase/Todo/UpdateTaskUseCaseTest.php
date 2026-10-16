@@ -9,13 +9,14 @@ use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\UpdateTaskDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Gateway\Provider\Todo\TagProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
+use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\UpdateTaskUseCase;
 use LogicException;
@@ -24,11 +25,11 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class UpdateTaskUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private UpdateTaskUseCase $useCase;
     private TaskProviderGateway $taskProviderGateway;
-    private TagProviderGateway $tagProviderGateway;
     private UserDataModel $alice;
 
     protected function setUp(): void
@@ -37,7 +38,6 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
 
         $this->useCase = self::getContainer()->get(UpdateTaskUseCase::class);
         $this->taskProviderGateway = self::getContainer()->get(TaskProviderGateway::class);
-        $this->tagProviderGateway = self::getContainer()->get(TagProviderGateway::class);
 
         $this->loadFixtures(TaskFixtures::class);
 
@@ -54,14 +54,12 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
             description: 'A book, maybe.',
             dueDate: '2026-10-15',
             categoryId: $work->id,
-            tags: ['gift'],
         ));
 
         self::assertSame('Buy a better present', $output->title);
         self::assertSame('A book, maybe.', $output->description);
         self::assertSame('2026-10-15', $output->dueDate);
         self::assertSame('Work', $output->category?->label);
-        self::assertSame(['gift'], $output->tags);
 
         // Re-read through the gateway: assert it was really persisted.
         $reread = $this->taskProviderGateway->findOneById($task->id ?? 0);
@@ -84,21 +82,6 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
         self::assertNull($output->dueDate);
         self::assertNull($output->priority);
         self::assertNull($output->category);
-        self::assertSame([], $output->tags);
-    }
-
-    public function testItKeepsTheAccountsTagAfterRemovingItFromTheTask(): void
-    {
-        $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
-
-        $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput('Buy a present'));
-
-        // The task no longer carries them, but the account keeps them to be offered again.
-        $labels = [];
-        foreach ($this->tagProviderGateway->findAllForOwner($this->alice) as $tag) {
-            $labels[] = $tag->label;
-        }
-        self::assertSame(['errand', 'urgent'], $labels);
     }
 
     public function testItUpdatesASubtaskWithoutTouchingItsParent(): void
@@ -130,12 +113,28 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
         $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
 
         try {
-            $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput('', priorityId: 404));
+            $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput('', priority: 'urgent'));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertArrayHasKey('title', $exception->violations);
-            self::assertArrayHasKey('priorityId', $exception->violations);
+            self::assertArrayHasKey('priority', $exception->violations);
         }
+    }
+
+    public function testUpdatingATaskStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+        $taskId = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class)->id ?? 0;
+        $categoryId = $this->getReference(CategoryFixtures::WORK, CategoryDataModel::class)->id;
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, $taskId, new UpdateTaskDataInput(
+                title: 'Buy a present',
+                priority: TaskPriorityRegistry::LOW,
+                categoryId: $categoryId,
+            )),
+        );
     }
 
     private function aliceId(): int

@@ -13,7 +13,7 @@ use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
 /**
- * Deleting a shortcut is always allowed — unlike a priority or a common category.
+ * Deleting a shortcut is always allowed — unlike a common category.
  *
  * An entry copies the volume it logged rather than pointing at the shortcut, so removing one
  * removes a button and nothing else. Nobody's past changes. That is the whole reason the copy

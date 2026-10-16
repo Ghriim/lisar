@@ -12,6 +12,7 @@ use App\Domain\Validation\Constraint\Todo\CategoryLabelAvailableConstraint;
 use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\CreateCategoryUseCase;
 use App\UseCase\Todo\ListCategoriesUseCase;
@@ -21,6 +22,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 final class CreateCategoryUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
+    use QueryCountTrait;
     use SignedInUserTrait;
 
     private CreateCategoryUseCase $useCase;
@@ -97,6 +99,16 @@ final class CreateCategoryUseCaseTest extends KernelTestCase
     public function testItRejectsABlankLabel(): void
     {
         $this->assertRejects('', 'label_required');
+    }
+
+    public function testCreatingACategoryStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, new CreateCategoryDataInput('Sport')),
+        );
     }
 
     private function assertRejects(string $label, string $errorCode = CategoryLabelAvailableConstraint::LABEL_ALREADY_USED): void

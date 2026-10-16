@@ -1,4 +1,4 @@
-import type { Task, TaskState } from '../../api/types'
+import type { Task, TaskPriority, TaskState } from '../../api/types'
 
 interface StateDisplay {
     label: string
@@ -15,6 +15,17 @@ const STATES: Record<TaskState, StateDisplay> = {
 
 export function stateDisplay(state: TaskState): StateDisplay {
     return STATES[state]
+}
+
+/** How the System names each priority, and its colour. The codes are the API's, the rest is ours. */
+const PRIORITIES: Record<TaskPriority, StateDisplay> = {
+    high: { label: 'Haute', colour: '#e5484d' },
+    normal: { label: 'Normale', colour: '#3e63dd' },
+    low: { label: 'Basse', colour: '#889096' },
+}
+
+export function priorityDisplay(priority: TaskPriority): StateDisplay {
+    return PRIORITIES[priority]
 }
 
 /** Today, as the API writes a day: the comparison has to happen in the same vocabulary. */

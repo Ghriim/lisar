@@ -50,10 +50,8 @@ class WorkoutDataModel implements DataModelInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     public ?DateTimeImmutable $finishedAt = null;
 
-    // Removed with it in memory too, not only by the database's cascade: a child left in the
-    // identity map would be found again, orphaned, at the next flush.
     /** @var Collection<int, WorkoutBlockDataModel> */
-    #[ORM\OneToMany(targetEntity: WorkoutBlockDataModel::class, mappedBy: 'workout', cascade: ['remove'])]
+    #[ORM\OneToMany(targetEntity: WorkoutBlockDataModel::class, mappedBy: 'workout')]
     #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     public Collection $blocks;
 

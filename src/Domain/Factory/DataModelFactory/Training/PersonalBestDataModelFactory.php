@@ -218,7 +218,8 @@ final readonly class PersonalBestDataModelFactory
         WorkoutDataModel $workout,
         ?WorkoutSetDataModel $set,
     ): void {
-        // Compared as stored: two values the column cannot tell apart are a tie.
+        // Rounded before it is stored and compared: two values that differ past the second decimal
+        // are a tie, not a new record.
         $value = round((float) $value, 2);
         if (0.0 >= $value) {
             return;
