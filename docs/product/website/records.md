@@ -27,8 +27,9 @@ movement is configured for them.
 | a distance and a duration, no load | **the best time for 1 km, 5 km, 10 km, the half, the marathon, 50, 100 and 150 km** · the best pace | |
 | a load and a distance | the heaviest load · **the longest distance for each load carried** | |
 
-- **The estimated 1RM** is Epley's — load × (1 + reps / 30) — over sets of **10 reps at most**:
-  beyond, the formula drifts. A single is its own load.
+- **The estimated 1RM** is Epley's — load × (1 + reps / 30) — over **every set, whatever its
+  reps**: past ten the formula drifts, but a rough figure beats none, and it is what a
+  [routine](routines.md) works its loads out from. A single is its own load.
 - **A time for a distance** counts every set at least that long, **brought back to the distance at
   its own pace**: 6 km in 30 min is 25:00 for the 5 km. A set shorter than the distance does not
   count for it.

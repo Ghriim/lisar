@@ -6,7 +6,7 @@ it.
 
 ```
 website/   what people use          login · register · navigation · dashboard · tasks · hydration
-                                    weight · sleep · steps · habits · workouts · records
+                                    weight · sleep · steps · habits · workouts · routines · records
 admin/     the back-office          login · dashboard · accounts · categories
                                     hydration-presets · habits · equipments · muscles · movements
                                     set-types · icons

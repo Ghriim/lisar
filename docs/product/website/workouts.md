@@ -11,7 +11,9 @@ finished.
 - **When one is**, its **summary** takes that place instead — there is never more than one:
   start, end, duration, feeling, note, and **one action, « Reprendre »** (the play icon), which
   opens its page. Editing, finishing and abandoning it, and its exercises, are on that page only.
-- **The history**, under it: past workouts, latest first, 25 to a page with arrows to turn them.
+- **A card with two tabs** under it: **« Historique »**, open by default, and **« Routines »**,
+  the person's [routines](routines.md), from which a workout is started in one gesture.
+- **The history**, in the first tab: past workouts, latest first, 25 to a page with arrows to turn them.
   Each row gives the name, then on one line the day, how long it lasted and the « Bilan »'s
   totals ([closing a workout](#closing-a-workout)) — sets, volume, effort time, distance, each
   only when a set measured it — and on that same line, **a trophy and a count** in the records'
@@ -30,7 +32,9 @@ On `/workouts/:id`, the one in progress and a past one are **the same sheet**: e
 editable once finished.
 
 - **Its panel** carries its name, and lists every field: start, end (« En cours » while it runs),
-  duration — **ticking every half minute** while it runs — feeling and note. Its actions:
+  duration — **ticking every half minute** while it runs — feeling and note, and, for a workout
+  [started from a routine](routines.md#starting-a-workout-from-a-routine), a link to that routine
+  while it still exists. Its actions:
   the pencil opens name, feeling and note in a window; **« Refaire »** starts a new workout
   [from it](#starting-from-a-past-workout) (finished, and only while none is in progress); the bin
   **abandons** it (in progress) or **deletes** it (finished), after asking.
@@ -49,7 +53,8 @@ editable once finished.
   since. What it gave the last time is shown beside each set, not here. Its plus logs a set, its
   pencil edits its rest and its note; inside a superset, a bin removes it alone.
 - **Each set** is one line: its rank in a small frame, **in its type's colour** — the type's name
-  on hover — then its measures, in full white: « 10 reps · 60 kg », « 10 reps / côté » for a
+  on hover — then its measures, in full white: « 10 reps · 60 kg », « 5 reps · charge à saisir »
+  for a set still without its load, « 10 reps / côté » for a
   unilateral movement, durations as « 45 s » or « 1:30 », distances as « 800 m » or « 5,2 km ».
   An RPE follows on the same line, dimmed and unframed: « RPE 8,5 ».
   Under it, **the set of the same rank [the last time](#the-last-time)** — set 1 beside set 1,
@@ -127,8 +132,8 @@ as a stopwatch reads (« 1:30 »).
 | started | set when it is started, **never rewritten** |
 | finished | set when it is finished, **never rewritten** |
 
-It is **logged live**: started now — empty, or [from a past workout](#starting-from-a-past-workout)
-— filled set by set, then finished. Nothing is entered after the fact as a form. Everything stays editable once it is finished (sets,
+It is **logged live**: started now — empty, [from a past workout](#starting-from-a-past-workout),
+or [from a routine](routines.md#starting-a-workout-from-a-routine) — filled set by set, then finished. Nothing is entered after the fact as a form. Everything stays editable once it is finished (sets,
 movements, notes, feeling); only the two moments are fixed.
 
 - **One workout in progress at a time.** Starting a second is refused
@@ -170,7 +175,11 @@ A set carries **exactly the measures its movement tracks**
 | duration, in seconds | 1 to 86400 |
 | distance, in metres | 1 to 1000000 |
 
-Every measure the movement tracks is required (`reps_required`, `weight_required`…). A measure it
+Every measure the movement tracks is required (`reps_required`, `weight_required`…), **but the
+load, while the set is not done**: a set may wait for its load — one
+[started from a routine](routines.md#starting-a-workout-from-a-routine) before its movement had an
+estimated 1RM, for instance — and **is ticked only once it has one** (`weight_required`). A set
+added to a finished workout comes ticked, so it needs its load at once. A measure the movement
 does not track is refused (`weight_not_tracked`…): a weight on a push-up would be a number that
 nothing reads.
 
@@ -232,5 +241,5 @@ mark of workouts were **finished** that day. Deleting a finished workout recount
 
 ## Not here yet
 
-Workout templates and programs, a timer during a set (a plank, an interval), people's own
+Programs, a timer during a set (a plank, an interval), people's own
 movements, and statistics.
