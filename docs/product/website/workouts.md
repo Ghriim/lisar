@@ -69,7 +69,7 @@ editable once finished.
   **finishes** the workout and goes to the [closing page](#closing-a-workout). It stays disabled
   until the workout has a set and every set is ticked — what the API requires to finish it.
 - **While the workout runs**, each set also carries a check, **« Valider »**, to tick it once it
-  is done; a done set gets **a green left edge**, its measures still in full view, and its check
+  is done — disabled while the set waits for its load, which its pencil fills in; a done set gets **a green left edge**, its measures still in full view, and its check
   becomes **« Décocher »**, for a mis-tap. A movement whose sets are all done gets one
   too. A finished workout shows neither the checks nor the green: every set in it was done.
 
@@ -220,7 +220,8 @@ laid out like that one, and goes straight to its page.
   page says which movements were left out, once, on arrival. A set type retired since gives way
   to the default type.
 - **A set follows what its movement tracks now.** A measure the movement no longer tracks is
-  dropped; a set missing a measure it now tracks is left out.
+  dropped; a set missing a measure it now tracks is left out — but the load: a set without it
+  comes all the same, its load to be typed in before it is ticked.
 - **One workout in progress at a time** holds here too: doing one again is refused while one is
   in progress (`workout_already_in_progress`), and the action is not offered then. Only a finished
   workout can be done again — the one in progress is, by definition, the one in the way.

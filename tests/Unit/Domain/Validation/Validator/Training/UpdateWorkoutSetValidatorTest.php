@@ -14,6 +14,7 @@ use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetWeightPresentConstraint;
 use App\Domain\Validation\Validator\Training\UpdateWorkoutSetValidator;
 use App\Tests\CurrentUserTrait;
 use App\Tests\WorkoutTreeTrait;
@@ -93,14 +94,30 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
         }
     }
 
-    public function testItRejectsAMeasureMissingAndOneNotTracked(): void
+    /** The load may wait on a set still to do. A measure not tracked may not. */
+    public function testItLetsTheLoadWaitButRejectsAMeasureNotTracked(): void
     {
         try {
             $this->validate(new UpdateWorkoutSetDataInput(reps: 8, durationInSeconds: 30), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
-            self::assertSame([WorkoutSetMeasuresConstraint::WEIGHT_REQUIRED], $exception->violations['weightInKilograms']);
+            self::assertArrayNotHasKey('weightInKilograms', $exception->violations);
             self::assertSame([WorkoutSetMeasuresConstraint::DURATION_NOT_TRACKED], $exception->violations['durationInSeconds']);
+        }
+    }
+
+    /** A done set keeps its load through a correction. */
+    public function testItRejectsADoneSetCorrectedWithoutItsLoad(): void
+    {
+        $workout = $this->workoutOf($this->anyCurrentUser());
+        $set = $this->set($workout);
+        $set->isComplete = true;
+
+        try {
+            $this->validator->validate($this->anyCurrentUser(), $workout, $set, new UpdateWorkoutSetDataInput(reps: 8), null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['weightInKilograms' => [WorkoutSetWeightPresentConstraint::WEIGHT_REQUIRED]], $exception->violations);
         }
     }
 
@@ -122,7 +139,6 @@ final class UpdateWorkoutSetValidatorTest extends TestCase
         } catch (ValidationException $exception) {
             self::assertSame(['reps_invalid'], $exception->violations['reps']);
             self::assertSame(['rpe_invalid'], $exception->violations['rpe']);
-            self::assertSame([WorkoutSetMeasuresConstraint::WEIGHT_REQUIRED], $exception->violations['weightInKilograms']);
             self::assertSame([WorkoutSetTypeUsableConstraint::INACTIVE], $exception->violations['setTypeId']);
         }
     }

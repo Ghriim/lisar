@@ -120,20 +120,26 @@ final class WorkoutDataModelFactoryTest extends TestCase
         self::assertSame($this->default, $copy->orderedBlocks()[0]->orderedExercises()[0]->orderedSets()[0]->setType);
     }
 
-    /** The movement now tracks a weight, no longer a duration: one set still fits, one does not. */
+    /**
+     * The movement now tracks reps and a weight, no longer a duration: a set with both fits, one
+     * without its load comes to be loaded before it is ticked, one without its reps is left out.
+     */
     public function testASetFollowsWhatItsMovementTracksNow(): void
     {
         $movement = $this->movement('Plank', reps: true, weight: true);
         $exercise = $this->exercise($this->block(0), $movement, 0);
         $this->set($exercise, 0, reps: 10, weight: 20.0, duration: 30);
         $this->set($exercise, 1, reps: 10);
+        $this->set($exercise, 2, duration: 30);
 
         $copy = $this->factory->buildCopy($this->source, $this->now, $this->default);
 
         $sets = $copy->orderedBlocks()[0]->orderedExercises()[0]->orderedSets();
-        self::assertCount(1, $sets);
+        self::assertCount(2, $sets);
         self::assertSame(20.0, $sets[0]->weightInKilograms);
         self::assertNull($sets[0]->durationInSeconds);
+        self::assertSame(10, $sets[1]->reps);
+        self::assertNull($sets[1]->weightInKilograms);
     }
 
     public function testNothingIsLeftOutWhenEverythingIsOffered(): void

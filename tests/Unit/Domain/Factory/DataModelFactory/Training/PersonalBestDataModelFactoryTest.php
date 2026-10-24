@@ -56,8 +56,8 @@ final class PersonalBestDataModelFactoryTest extends TestCase
         self::assertSame($workout->startedAt, $this->row($rows, Kind::MAX_WEIGHT)?->achievedAt);
     }
 
-    /** A single is its own load; past ESTIMATE_MAX_REPS reps, Epley is not trusted. */
-    public function testTheEstimateReadsASingleAsItsLoadAndIgnoresLongSets(): void
+    /** A single is its own load; a long set gives an estimate all the same, rough as it is. */
+    public function testTheEstimateReadsASingleAsItsLoadAndCountsLongSets(): void
     {
         $bench = $this->movement(reps: true, weight: true);
         $workout = $this->workout();
@@ -66,7 +66,7 @@ final class PersonalBestDataModelFactoryTest extends TestCase
         $long = $this->factory->buildMovementProgression($this->owner, $bench, [$this->set($bench, $workout, reps: 15, weight: 60.0)]);
 
         self::assertSame(120.0, $this->current($single, Kind::ESTIMATED_ONE_REP_MAX));
-        self::assertNull($this->current($long, Kind::ESTIMATED_ONE_REP_MAX));
+        self::assertSame(90.0, $this->current($long, Kind::ESTIMATED_ONE_REP_MAX));
     }
 
     /** A row each time a record goes up; a tie leaves it with the first. */

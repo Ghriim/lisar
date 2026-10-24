@@ -10,6 +10,7 @@ use App\Domain\DTO\Event\Training\WorkoutSetUpdatedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetWeightPresentConstraint;
 use App\Domain\Validation\Validator\Training\CompleteWorkoutSetValidator;
 use App\Domain\Validation\Validator\Training\UncompleteWorkoutSetValidator;
 use App\Fixtures\Training\MovementFixtures;
@@ -52,6 +53,24 @@ final class CompleteWorkoutSetUseCaseTest extends KernelTestCase
 
         $output = $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId);
         self::assertFalse($output->blocks[0]->exercises[0]->sets[0]->isComplete);
+    }
+
+    /** A set waiting for its load is ticked once it has one. */
+    public function testASetWithoutItsLoadIsNotTicked(): void
+    {
+        $workout = $this->addSet($this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL), new AddWorkoutSetDataInput(reps: 5));
+        $setId = $workout->blocks[0]->exercises[0]->sets[0]->id;
+
+        try {
+            $this->useCase(CompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(CompleteWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['weightInKilograms' => [WorkoutSetWeightPresentConstraint::WEIGHT_REQUIRED]], $exception->violations);
+        }
+
+        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id);
+        self::assertFalse($reread->blocks[0]->exercises[0]->sets[0]->isComplete);
     }
 
     public function testAFinishedWorkoutHasNothingToTickOrUntick(): void

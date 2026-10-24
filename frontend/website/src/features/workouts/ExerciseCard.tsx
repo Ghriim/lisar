@@ -115,11 +115,12 @@ export function ExerciseCard({
                                             onClick={() => onToggleSet(set)}
                                         />
                                     ) : (
+                                        // A set waiting for its load is ticked once it has one: the pencil first.
                                         <IconButton
                                             icon={Check}
                                             label="Valider"
                                             subject={`${movement.name}, série ${index + 1}`}
-                                            disabled={busy}
+                                            disabled={busy || (movement.tracksWeight && set.weightInKilograms === null)}
                                             onClick={() => onToggleSet(set)}
                                         />
                                     ))}

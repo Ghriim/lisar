@@ -14,7 +14,7 @@ interface PersonalBestKindRegistry
     public const string MAX_WEIGHT = 'max_weight';
     /** Tiered by a number of reps: the heaviest load lifted for at least that many. */
     public const string MAX_WEIGHT_FOR_REPS = 'max_weight_for_reps';
-    /** Epley's estimate, over sets of ESTIMATE_MAX_REPS reps at most: beyond, it drifts. */
+    /** Epley's estimate, over every set: past ten reps it drifts, but a rough figure beats none. */
     public const string ESTIMATED_ONE_REP_MAX = 'estimated_one_rep_max';
     public const string MAX_SET_VOLUME = 'max_set_volume';
     public const string MAX_REPS = 'max_reps';
@@ -66,6 +66,5 @@ interface PersonalBestKindRegistry
         self::LONGEST_SESSION,
     ];
 
-    public const int ESTIMATE_MAX_REPS = 10;
     public const int PACE_MIN_DISTANCE = 1000;
 }

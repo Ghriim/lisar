@@ -21,12 +21,12 @@ final class WorkoutSetMeasuresConstraintTest extends TestCase
         self::assertSame([], WorkoutSetMeasuresConstraint::validate($this->movement(reps: true, weight: true), 8, 0.0, null, null));
     }
 
+    /** The load aside: a set still to do may wait for it. */
     public function testEachTrackedMeasureMissingIsRefused(): void
     {
         self::assertSame(
             [
                 'reps' => [WorkoutSetMeasuresConstraint::REPS_REQUIRED],
-                'weightInKilograms' => [WorkoutSetMeasuresConstraint::WEIGHT_REQUIRED],
                 'durationInSeconds' => [WorkoutSetMeasuresConstraint::DURATION_REQUIRED],
                 'distanceInMetres' => [WorkoutSetMeasuresConstraint::DISTANCE_REQUIRED],
             ],

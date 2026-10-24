@@ -77,9 +77,13 @@ export function formatRpe(rpe: number): string {
 
 /**
  * The measures of a set, joined: « 10 reps · 60 kg ». A unilateral movement's reps count per
- * side, and the line says so — that is the whole effect of the flag.
+ * side, and the line says so — that is the whole effect of the flag. A set still waiting for the
+ * load its movement tracks says so too: « 5 reps · charge à saisir ».
  */
-export function formatSetMeasures(set: WorkoutSet, movement: Pick<WorkoutMovement, 'isUnilateral'>): string {
+export function formatSetMeasures(
+    set: WorkoutSet,
+    movement: Pick<WorkoutMovement, 'isUnilateral'> & Partial<Pick<WorkoutMovement, 'tracksWeight'>>,
+): string {
     const parts: string[] = []
 
     if (set.reps !== null) {
@@ -87,6 +91,8 @@ export function formatSetMeasures(set: WorkoutSet, movement: Pick<WorkoutMovemen
     }
     if (set.weightInKilograms !== null) {
         parts.push(formatLoad(set.weightInKilograms))
+    } else if (movement.tracksWeight === true) {
+        parts.push('charge à saisir')
     }
     if (set.durationInSeconds !== null) {
         parts.push(formatDuration(set.durationInSeconds))

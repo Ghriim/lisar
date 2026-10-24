@@ -11,6 +11,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetWeightPresentConstraint;
 
 final readonly class CompleteWorkoutSetValidator
 {
@@ -34,6 +35,7 @@ final readonly class CompleteWorkoutSetValidator
 
         $violations = [];
         $violations = WorkoutInProgressConstraint::validate($workout, $violations);
+        $violations = WorkoutSetWeightPresentConstraint::validate($set->exercise->movement, $set->weightInKilograms, true, $violations);
 
         if (false === empty($violations)) {
             throw new ValidationException(self::ERROR_CODE, $violations);

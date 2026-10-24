@@ -8,11 +8,15 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Event\Training\WorkoutSetUpdatedEvent;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutSetDataInput;
+use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Training\WorkoutSetWeightPresentConstraint;
+use App\Domain\Validation\Validator\Training\UpdateWorkoutSetValidator;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\SetTypeFixtures;
 use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\Training\Admin\DeactivateSetTypeUseCase;
+use App\UseCase\Training\UncompleteWorkoutSetUseCase;
 use App\UseCase\Training\UpdateWorkoutSetUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -91,6 +95,25 @@ final class UpdateWorkoutSetUseCaseTest extends KernelTestCase
         );
 
         self::assertTrue($output->blocks[0]->exercises[0]->sets[0]->isComplete);
+    }
+
+    /** A done set keeps its load through a correction; one still to do may lose it. */
+    public function testADoneSetKeepsItsLoad(): void
+    {
+        $workout = $this->addDoneSet($this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL), new AddWorkoutSetDataInput(reps: 8, weightInKilograms: 60.0));
+        $setId = $workout->blocks[0]->exercises[0]->sets[0]->id;
+
+        try {
+            $this->useCase(UpdateWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId, new UpdateWorkoutSetDataInput(reps: 8));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(UpdateWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['weightInKilograms' => [WorkoutSetWeightPresentConstraint::WEIGHT_REQUIRED]], $exception->violations);
+        }
+
+        $this->useCase(UncompleteWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId);
+        $output = $this->useCase(UpdateWorkoutSetUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id, $setId, new UpdateWorkoutSetDataInput(reps: 8));
+        self::assertNull($output->blocks[0]->exercises[0]->sets[0]->weightInKilograms);
     }
 
     public function testCorrectingASetRaisesItsEvent(): void

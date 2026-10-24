@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Validation\Validator\Training;
 
+use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutInProgressConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetInWorkoutConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetWeightPresentConstraint;
 use App\Domain\Validation\Validator\Training\CompleteWorkoutSetValidator;
 use App\Tests\CurrentUserTrait;
 use App\Tests\WorkoutTreeTrait;
@@ -60,6 +62,18 @@ final class CompleteWorkoutSetValidatorTest extends TestCase
     {
         $workout = $this->workout(true);
         $this->assertRefused(['workout' => [WorkoutInProgressConstraint::FINISHED]], fn () => (new CompleteWorkoutSetValidator())->validate($this->anyCurrentUser(), $workout, $this->setIn($workout)));
+    }
+
+    /** A set waiting for its load is ticked once it has one. */
+    public function testItRefusesASetWithoutItsLoad(): void
+    {
+        $workout = $this->workout(false);
+        $bench = new MovementDataModel();
+        $bench->tracksReps = true;
+        $bench->tracksWeight = true;
+        $set = $this->setIn($workout, $this->exerciseIn($workout, $bench));
+
+        $this->assertRefused(['weightInKilograms' => [WorkoutSetWeightPresentConstraint::WEIGHT_REQUIRED]], fn () => (new CompleteWorkoutSetValidator())->validate($this->anyCurrentUser(), $workout, $set));
     }
 
     /** @param array<string, list<string>> $violations */

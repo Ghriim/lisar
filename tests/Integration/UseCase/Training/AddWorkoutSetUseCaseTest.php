@@ -11,6 +11,7 @@ use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetWeightPresentConstraint;
 use App\Domain\Validation\Validator\Training\AddWorkoutSetValidator;
 use App\Fixtures\Training\MovementFixtures;
 use App\Fixtures\Training\SetTypeFixtures;
@@ -71,12 +72,37 @@ final class AddWorkoutSetUseCaseTest extends KernelTestCase
         $workout = $this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL);
 
         try {
-            $this->addSet($workout, new AddWorkoutSetDataInput(reps: 8, distanceInMetres: 100));
+            $this->addSet($workout, new AddWorkoutSetDataInput(weightInKilograms: 60.0, distanceInMetres: 100));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(AddWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
-            self::assertSame([WorkoutSetMeasuresConstraint::WEIGHT_REQUIRED], $exception->violations['weightInKilograms']);
+            self::assertSame([WorkoutSetMeasuresConstraint::REPS_REQUIRED], $exception->violations['reps']);
             self::assertSame([WorkoutSetMeasuresConstraint::DISTANCE_NOT_TRACKED], $exception->violations['distanceInMetres']);
+        }
+    }
+
+    /** While the workout runs, a set may wait for its load: it is still to do. */
+    public function testASetStillToDoMayWaitForItsLoad(): void
+    {
+        $output = $this->addSet($this->addBlock($this->start(), MovementFixtures::BENCH_PRESS_BARBELL), new AddWorkoutSetDataInput(reps: 5));
+
+        $reread = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $output->id);
+        self::assertSame(5, $reread->blocks[0]->exercises[0]->sets[0]->reps);
+        self::assertNull($reread->blocks[0]->exercises[0]->sets[0]->weightInKilograms);
+    }
+
+    /** A set added to a finished workout comes ticked: it needs its load at once. */
+    public function testAFinishedWorkoutTakesNoSetWithoutItsLoad(): void
+    {
+        $workout = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
+        $output = $this->useCase(GetWorkoutUseCase::class)->execute($this->currentUser($this->idOf($this->alice)), $workout->id ?? 0);
+
+        try {
+            $this->addSet($output, new AddWorkoutSetDataInput(reps: 6));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(AddWorkoutSetValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame([WorkoutSetWeightPresentConstraint::WEIGHT_REQUIRED], $exception->violations['weightInKilograms']);
         }
     }
 

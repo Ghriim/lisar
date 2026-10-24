@@ -112,11 +112,9 @@ final readonly class PersonalBestDataModelFactory
                     $candidates[] = [PersonalBestKindRegistry::MAX_WEIGHT_FOR_REPS, (float) $tier, $weight];
                 }
             }
-            if ($reps <= PersonalBestKindRegistry::ESTIMATE_MAX_REPS) {
-                // Epley's formula, which reads a single rep as more than its own load: a single is the load.
-                $estimate = 1 === $reps ? $weight : $weight * (1 + $reps / 30);
-                $candidates[] = [PersonalBestKindRegistry::ESTIMATED_ONE_REP_MAX, null, $estimate];
-            }
+            // Epley's formula, which reads a single rep as more than its own load: a single is the load.
+            $estimate = 1 === $reps ? $weight : $weight * (1 + $reps / 30);
+            $candidates[] = [PersonalBestKindRegistry::ESTIMATED_ONE_REP_MAX, null, $estimate];
             $candidates[] = [PersonalBestKindRegistry::MAX_SET_VOLUME, null, $reps * $weight];
         }
 

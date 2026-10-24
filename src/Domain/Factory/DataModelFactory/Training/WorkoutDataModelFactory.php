@@ -24,7 +24,8 @@ final readonly class WorkoutDataModelFactory
      *
      * Only what is offered now is taken over: a movement retired since is left out, and a block
      * left empty with it. A set type retired since gives way to `$defaultSetType`. A set keeps only
-     * the measures its movement tracks now, and is left out when one it now tracks is missing.
+     * the measures its movement tracks now, and is left out when one it now tracks is missing —
+     * but the load, which a set still to do may wait for.
      */
     public function buildCopy(WorkoutDataModel $source, DateTimeImmutable $startedAt, SetTypeDataModel $defaultSetType): WorkoutDataModel
     {

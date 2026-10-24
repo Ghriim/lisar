@@ -14,6 +14,7 @@ use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutExerciseInWorkoutConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetMeasuresConstraint;
 use App\Domain\Validation\Constraint\Training\WorkoutSetTypeUsableConstraint;
+use App\Domain\Validation\Constraint\Training\WorkoutSetWeightPresentConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 
 /**
@@ -43,6 +44,8 @@ final readonly class AddWorkoutSetValidator extends AbstractBaseValidator
 
         $violations = $this->getViolations($input);
         $violations = WorkoutSetMeasuresConstraint::validate($exercise->movement, $input->reps, $input->weightInKilograms, $input->durationInSeconds, $input->distanceInMetres, $violations);
+        // A set added to a finished workout was done already: it comes ticked.
+        $violations = WorkoutSetWeightPresentConstraint::validate($exercise->movement, $input->weightInKilograms, false === $workout->isInProgress(), $violations);
         $violations = WorkoutSetTypeUsableConstraint::validate($input->setTypeId, $setType, null, $violations);
 
         if (false === empty($violations)) {
