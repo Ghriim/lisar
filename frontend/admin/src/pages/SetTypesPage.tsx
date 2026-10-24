@@ -102,7 +102,6 @@ export function SetTypesPage() {
                             <Row gap={8}>
                                 {setType.name}
                                 {setType.isDefaultType && <Tag colour="blue">défaut</Tag>}
-                                {!setType.countsForPersonalBests && <Tag colour="default">hors records</Tag>}
                             </Row>
                         ),
                     },
@@ -176,7 +175,6 @@ export function SetTypesPage() {
                                 name: values.name,
                                 colour: values.colour,
                                 isDefaultType: values.isDefaultType,
-                                ...(editing === null && { countsForPersonalBests: values.countsForPersonalBests }),
                             },
                         })
                     }
@@ -185,7 +183,6 @@ export function SetTypesPage() {
                         name: editing?.name ?? '',
                         colour: editing?.colour,
                         isDefaultType: editing?.isDefaultType ?? false,
-                        countsForPersonalBests: editing?.countsForPersonalBests ?? true,
                     }}
                 >
                     <TextField name="name" label="Nom" required autoFocus />
@@ -210,13 +207,6 @@ export function SetTypesPage() {
                         disabled={editing?.isDefaultType === true}
                         hint="Le donner à celui-ci le retire à celui qui l’avait. Il ne se retire jamais seul."
                     />
-                    {editing === null && (
-                        <SwitchField
-                            name="countsForPersonalBests"
-                            label="Compte pour les records"
-                            hint="Éteint, ses séries ne battent aucun record — un échauffement, par exemple. Il ne se change plus une fois le type créé."
-                        />
-                    )}
                 </FormModal>
             )}
         </Page>

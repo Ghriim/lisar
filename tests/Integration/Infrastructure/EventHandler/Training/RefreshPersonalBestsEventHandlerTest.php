@@ -58,7 +58,8 @@ final class RefreshPersonalBestsEventHandlerTest extends KernelTestCase
         self::assertContains(Kind::MAX_WEIGHT, array_map(static fn ($record) => $record->kind, $event->set->personalBests->toArray()));
         $record = $this->record($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT);
         self::assertSame(70.0, $record?->current->value);
-        self::assertSame([60.0, 70.0], array_map(static fn ($row) => $row->value, $record?->progression ?? []));
+        // The seeded warm-up's 40 kg first, then its working sets' 60 kg.
+        self::assertSame([40.0, 60.0, 70.0], array_map(static fn ($row) => $row->value, $record?->progression ?? []));
     }
 
     /** A set logged but not ticked is still to do: it beats nothing yet. */
@@ -73,8 +74,8 @@ final class RefreshPersonalBestsEventHandlerTest extends KernelTestCase
         self::assertSame(60.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
     }
 
-    /** A warm-up is light on purpose: however heavy, it sets no record. */
-    public function testASetOfATypeThatDoesNotCountBeatsNothing(): void
+    /** Whatever its type, a done set counts: a warm-up beats a record like any other set. */
+    public function testASetOfAnyTypeCounts(): void
     {
         $workout = $this->withHandlers(fn () => $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(
             reps: 5, weightInKilograms: 100.0, setTypeId: $this->setTypeId(SetTypeFixtures::WARM_UP),
@@ -83,8 +84,8 @@ final class RefreshPersonalBestsEventHandlerTest extends KernelTestCase
 
         $this->handle($event);
 
-        self::assertCount(0, $event->set->personalBests);
-        self::assertSame(60.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
+        self::assertContains(Kind::MAX_WEIGHT, array_map(static fn ($record) => $record->kind, $event->set->personalBests->toArray()));
+        self::assertSame(100.0, $this->current($this->board(), MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
     }
 
     public function testTheRecordsASetBeatsAreCountedOnItsWorkout(): void
@@ -162,7 +163,7 @@ final class RefreshPersonalBestsEventHandlerTest extends KernelTestCase
 
         $board = $this->board();
         self::assertSame(60.0, $this->current($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
-        self::assertSame(7.0, $this->session($board, Kind::MAX_SESSION_SETS)?->current->value);
+        self::assertSame(8.0, $this->session($board, Kind::MAX_SESSION_SETS)?->current->value);
     }
 
     /** Finishing gives a workout its length, and the length can be a record. */

@@ -40,7 +40,6 @@ final readonly class CreateSetTypeUseCase implements UseCaseInterface
         $setType->name = $input->name;
         $setType->colour = $input->colour;
         $setType->isDefaultType = $input->isDefaultType;
-        $setType->countsForPersonalBests = $input->countsForPersonalBests;
 
         if (true === $setType->isDefaultType) {
             $this->takeTheDefault();

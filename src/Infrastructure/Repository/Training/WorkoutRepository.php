@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repository\Training;
 
-use App\Domain\DTO\Aggregate\Training\WorkoutTally;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
@@ -221,7 +220,6 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->andWhere('workout.owner = :owner')
             ->andWhere('exercise.movement IN (:movements)')
             ->andWhere('workoutSet.isComplete = true')
-            ->andWhere('setType.countsForPersonalBests = true')
             ->setParameter('owner', $owner)
             ->setParameter('movements', $movements)
             ->orderBy('workout.startedAt', 'ASC')
@@ -234,41 +232,6 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->addOrderBy('workoutSet.id', 'ASC')
             ->getQuery()
             ->getResult();
-    }
-
-    /** @return list<WorkoutTally> */
-    public function findTalliesForOwner(UserDataModel $owner): array
-    {
-        $counts = 'workoutSet.isComplete = true AND setType.countsForPersonalBests = true';
-        $carriesLoad = $counts.' AND workoutSet.reps IS NOT NULL AND workoutSet.weightInKilograms IS NOT NULL';
-
-        /** @var list<array{0: WorkoutDataModel, setCount: string|int, loadedSetCount: string|int, volume: string|float|null}> $rows */
-        $rows = $this->createQueryBuilder('workout')
-            ->addSelect("SUM(CASE WHEN {$counts} THEN 1 ELSE 0 END) AS setCount")
-            ->addSelect("SUM(CASE WHEN {$carriesLoad} THEN 1 ELSE 0 END) AS loadedSetCount")
-            ->addSelect("SUM(CASE WHEN {$carriesLoad} THEN workoutSet.reps * workoutSet.weightInKilograms ELSE 0 END) AS volume")
-            ->leftJoin('workout.blocks', 'block')
-            ->leftJoin('block.exercises', 'exercise')
-            ->leftJoin('exercise.sets', 'workoutSet')
-            ->leftJoin('workoutSet.setType', 'setType')
-            ->andWhere('workout.owner = :owner')
-            ->setParameter('owner', $owner)
-            ->groupBy('workout.id')
-            ->orderBy('workout.startedAt', 'ASC')
-            ->addOrderBy('workout.id', 'ASC')
-            ->getQuery()
-            ->getResult();
-
-        $tallies = [];
-        foreach ($rows as $row) {
-            $tallies[] = new WorkoutTally(
-                $row[0],
-                (int) $row['setCount'],
-                0 === (int) $row['loadedSetCount'] ? null : (float) $row['volume'],
-            );
-        }
-
-        return $tallies;
     }
 
     /** A workout with everything its output reads, joined and selected. */

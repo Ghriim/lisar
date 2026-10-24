@@ -105,7 +105,7 @@ final class UpdateWorkoutSetUseCaseTest extends KernelTestCase
         $event = $this->assertEventRaised(WorkoutSetUpdatedEvent::class);
         self::assertSame($this->lastSet($workout)->id, $event->set->id);
         self::assertSame(10, $event->set->reps);
-        self::assertTrue($event->countedBefore);
+        self::assertTrue($event->wasCompleteBefore);
     }
 
     public function testUpdatingASetStaysWithinItsQueryBudget(): void

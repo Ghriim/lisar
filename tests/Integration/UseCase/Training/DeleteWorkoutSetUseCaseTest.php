@@ -83,7 +83,7 @@ final class DeleteWorkoutSetUseCaseTest extends KernelTestCase
         $event = $this->assertEventRaised(WorkoutSetDeletedEvent::class);
         self::assertSame($workout->id, $event->workout->id);
         self::assertSame($this->movementId(MovementFixtures::BENCH_PRESS_BARBELL), $event->movement->id);
-        self::assertTrue($event->counted);
+        self::assertTrue($event->wasComplete);
     }
 
     public function testRemovingASetStaysWithinItsQueryBudget(): void

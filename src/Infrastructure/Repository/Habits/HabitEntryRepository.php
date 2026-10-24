@@ -10,6 +10,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -44,6 +45,22 @@ final class HabitEntryRepository extends ServiceEntityRepository implements Habi
             ->andWhere('entry.day >= :since')
             ->setParameter('subscription', $subscription)
             ->setParameter('since', $since)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<HabitEntryDataModel> */
+    public function findForSubscriptionsOn(array $subscriptions, DateTimeImmutable $day): array
+    {
+        if ([] === $subscriptions) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('entry')
+            ->andWhere('entry.subscription IN (:subscriptions)')
+            ->andWhere('entry.day = :day')
+            ->setParameter('subscriptions', $subscriptions)
+            ->setParameter('day', $day, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
     }

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Factory\DataModelFactory\Training;
 
-use App\Domain\DTO\Aggregate\Training\WorkoutTally;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutBlockDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutSummaryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Factory\DataModelFactory\Training\PersonalBestDataModelFactory;
 use App\Domain\Registry\Training\PersonalBestKindRegistry as Kind;
@@ -184,9 +184,9 @@ final class PersonalBestDataModelFactoryTest extends TestCase
         $running = $this->workout();
 
         $rows = $this->factory->buildSessionProgression($this->owner, [
-            new WorkoutTally($short, 12, 3000.0),
-            new WorkoutTally($long, 10, null),
-            new WorkoutTally($running, 20, 2000.0),
+            $this->summary($short, 12, 3000.0),
+            $this->summary($long, 10, null),
+            $this->summary($running, 20, 2000.0),
         ]);
 
         self::assertSame(3000.0, $this->current($rows, Kind::MAX_SESSION_VOLUME));
@@ -194,6 +194,16 @@ final class PersonalBestDataModelFactoryTest extends TestCase
         // Only a finished workout has a length.
         self::assertSame(5400.0, $this->current($rows, Kind::LONGEST_SESSION));
         self::assertNull($this->row($rows, Kind::LONGEST_SESSION)?->movement);
+    }
+
+    private function summary(WorkoutDataModel $workout, int $setCount, ?float $volumeInKilograms): WorkoutSummaryDataModel
+    {
+        $summary = new WorkoutSummaryDataModel();
+        $summary->workout = $workout;
+        $summary->setCount = $setCount;
+        $summary->volumeInKilograms = $volumeInKilograms;
+
+        return $summary;
     }
 
     /**

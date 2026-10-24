@@ -25,4 +25,13 @@ interface HabitEntryProviderGateway
      * @return list<HabitEntryDataModel>
      */
     public function findForSubscriptionSince(HabitSubscriptionDataModel $subscription, DateTimeImmutable $since): array;
+
+    /**
+     * The entries of these subscriptions on one day — at most one each, those that have one.
+     *
+     * @param list<HabitSubscriptionDataModel> $subscriptions
+     *
+     * @return list<HabitEntryDataModel>
+     */
+    public function findForSubscriptionsOn(array $subscriptions, DateTimeImmutable $day): array;
 }

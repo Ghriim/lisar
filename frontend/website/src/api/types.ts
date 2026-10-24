@@ -174,8 +174,6 @@ export interface SetType {
     isActive: boolean
     /** The one a set takes when it is logged without one: the ordinary working set. */
     isDefaultType: boolean
-    /** Whether its sets can set a personal best. A warm-up does not. */
-    countsForPersonalBests: boolean
 }
 
 /** A movement as a workout picker offers it: only what a set needs to know about it. */

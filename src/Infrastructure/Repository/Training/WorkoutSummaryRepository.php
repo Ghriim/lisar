@@ -6,6 +6,7 @@ namespace App\Infrastructure\Repository\Training;
 
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSummaryDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Provider\Training\WorkoutSummaryProviderGateway;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -49,5 +50,19 @@ final class WorkoutSummaryRepository extends ServiceEntityRepository implements 
         }
 
         return $byWorkout;
+    }
+
+    /** @return list<WorkoutSummaryDataModel> */
+    public function findAllForOwner(UserDataModel $owner): array
+    {
+        return $this->createQueryBuilder('summary')
+            ->innerJoin('summary.workout', 'workout')
+            ->addSelect('workout')
+            ->andWhere('workout.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->orderBy('workout.startedAt', 'ASC')
+            ->addOrderBy('workout.id', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

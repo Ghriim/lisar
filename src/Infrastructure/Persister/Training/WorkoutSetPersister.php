@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persister\Training;
 
-use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
 use App\Domain\DTO\Event\Training\WorkoutSetCreatedEvent;
 use App\Domain\DTO\Event\Training\WorkoutSetDeletedEvent;
@@ -42,15 +41,12 @@ final class WorkoutSetPersister extends AbstractBaseMysqlPersister implements Wo
 
     public function update(WorkoutSetDataModel $workoutSet): WorkoutSetDataModel
     {
-        // Read before the flush forgets it: a set that counts neither before nor after moves no record.
-        $setTypeBefore = $this->originalValueOf($workoutSet, 'setType');
-        $countedBefore = true === $this->originalValueOf($workoutSet, 'isComplete')
-            && $setTypeBefore instanceof SetTypeDataModel
-            && true === $setTypeBefore->countsForPersonalBests;
+        // Read before the flush forgets it: a set done neither before nor after moves no record.
+        $wasCompleteBefore = true === $this->originalValueOf($workoutSet, 'isComplete');
 
-        $this->inTransaction(function () use ($workoutSet, $countedBefore): void {
+        $this->inTransaction(function () use ($workoutSet, $wasCompleteBefore): void {
             $this->persistUpdate($workoutSet);
-            $this->eventDispatcher->dispatch(new WorkoutSetUpdatedEvent($workoutSet, $countedBefore));
+            $this->eventDispatcher->dispatch(new WorkoutSetUpdatedEvent($workoutSet, $wasCompleteBefore));
         });
 
         return $workoutSet;
@@ -59,7 +55,7 @@ final class WorkoutSetPersister extends AbstractBaseMysqlPersister implements Wo
     public function delete(WorkoutSetDataModel $workoutSet): void
     {
         $exercise = $workoutSet->exercise;
-        $event = new WorkoutSetDeletedEvent($exercise->block->workout, $exercise->movement, $workoutSet->countsForPersonalBests());
+        $event = new WorkoutSetDeletedEvent($exercise->block->workout, $exercise->movement, $workoutSet->isComplete);
 
         $this->inTransaction(function () use ($workoutSet, $exercise, $event): void {
             $this->persistDelete($workoutSet);

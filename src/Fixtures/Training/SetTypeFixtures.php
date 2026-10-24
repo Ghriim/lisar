@@ -41,7 +41,6 @@ final class SetTypeFixtures extends Fixture
             $setType->name = $name;
             $setType->colour = $colour;
             $setType->isDefaultType = self::WORKING === $reference;
-            $setType->countsForPersonalBests = self::WARM_UP !== $reference;
 
             $this->setTypePersisterGateway->create($setType);
             $this->addReference($reference, $setType);

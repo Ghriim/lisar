@@ -78,10 +78,4 @@ class WorkoutSetDataModel implements DataModelInterface
     {
         $this->personalBests = new ArrayCollection();
     }
-
-    /** Whether it may set a personal best: done, and of a type that counts. */
-    public function countsForPersonalBests(): bool
-    {
-        return true === $this->isComplete && true === $this->setType->countsForPersonalBests;
-    }
 }

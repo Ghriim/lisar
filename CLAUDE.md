@@ -19,6 +19,11 @@ aucune fonction sur un DTO hormis son constructeur, `final readonly` par défaut
 
 Sa §13 est la checklist pour ajouter une feature, sa §15 la liste des anti-patterns.
 
+**Tout nouveau type de composant** (nouveau suffixe, nouveau dossier sous `Domain/DTO/` ou
+ailleurs, nouveau rôle de classe) **se valide explicitement avec l'utilisateur avant d'être
+écrit** : s'arrêter, expliquer pourquoi les types existants ne suffisent pas, proposer, attendre
+l'accord. Le catalogue de la §5 est fermé.
+
 Ce qui découle d'une écriture passe par un événement synchrone levé par le persister :
 `docs/dev/architecture/domain-events.md`.
 

@@ -17,8 +17,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * The personal bests board: every movement on offer with its records, and the records of whole
- * workouts. Alice's seeded workout benched 8 × 60 kg after a 10 × 40 kg warm-up, which counts for
- * nothing.
+ * workouts. Alice's seeded workout benched 8 × 60 kg after a 10 × 40 kg warm-up, which counts like
+ * any other set.
  */
 final class ListPersonalBestsUseCaseTest extends KernelTestCase
 {
@@ -40,13 +40,13 @@ final class ListPersonalBestsUseCaseTest extends KernelTestCase
 
         self::assertSame(60.0, $this->current($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT));
         self::assertSame(76.0, $this->current($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::ESTIMATED_ONE_REP_MAX));
-        self::assertSame(1380.0, $this->current($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WORKOUT_VOLUME));
+        self::assertSame(1780.0, $this->current($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WORKOUT_VOLUME));
         self::assertSame(15.0, $this->current($board, MovementFixtures::PUSH_UP, Kind::MAX_REPS));
         self::assertSame(40.0, $this->current($board, MovementFixtures::FARMER_WALK_DUMBBELL, Kind::MAX_DISTANCE_FOR_WEIGHT, 24.0));
-        // The warm-up's ten reps would have made a 10-rep record; it counts for nothing.
-        self::assertNull($this->record($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT_FOR_REPS, 10.0));
+        // The warm-up's ten reps make the 10-rep record.
+        self::assertSame(40.0, $this->current($board, MovementFixtures::BENCH_PRESS_BARBELL, Kind::MAX_WEIGHT_FOR_REPS, 10.0));
 
-        self::assertSame(7.0, $this->session($board, Kind::MAX_SESSION_SETS)?->current->value);
+        self::assertSame(8.0, $this->session($board, Kind::MAX_SESSION_SETS)?->current->value);
         self::assertSame(3600.0, $this->session($board, Kind::LONGEST_SESSION)?->current->value);
     }
 

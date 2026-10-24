@@ -50,7 +50,7 @@ final class DeleteWorkoutBlockUseCaseTest extends KernelTestCase
             array_map(static fn ($movement) => $movement->id, $event->movements),
         );
         // No set logged in it: there is no record to hand back.
-        self::assertFalse($event->heldCountingSets);
+        self::assertFalse($event->heldCompleteSets);
     }
 
     public function testRemovingABlockStaysWithinItsQueryBudget(): void

@@ -93,15 +93,14 @@ class WorkoutDataModel implements DataModelInterface
 
     /**
      * Reps times load, over the done sets carrying both; null when none does. A unilateral set
-     * counts its reps per side, so it counts twice.
+     * counts as logged: a side's reps.
      */
     public function volumeInKilograms(): ?float
     {
         $volume = null;
         foreach ($this->completeSets() as $set) {
             if (null !== $set->reps && null !== $set->weightInKilograms) {
-                $sides = true === $set->exercise->movement->isUnilateral ? 2 : 1;
-                $volume = ($volume ?? 0.0) + $set->reps * $set->weightInKilograms * $sides;
+                $volume = ($volume ?? 0.0) + $set->reps * $set->weightInKilograms;
             }
         }
 

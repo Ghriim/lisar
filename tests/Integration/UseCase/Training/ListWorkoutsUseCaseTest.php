@@ -9,7 +9,6 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\DTO\Input\Training\ListWorkoutsDataInput;
 use App\Fixtures\Training\MovementFixtures;
-use App\Fixtures\Training\SetTypeFixtures;
 use App\Fixtures\Training\WorkoutFixtures;
 use App\Tests\Integration\QueryCountTrait;
 use App\UseCase\Training\FinishWorkoutUseCase;
@@ -65,8 +64,8 @@ final class ListWorkoutsUseCaseTest extends KernelTestCase
         $seeded = $this->getReference(WorkoutFixtures::ALICE_FINISHED, WorkoutDataModel::class);
         $stats = $this->useCase(GetWorkoutStatsUseCase::class)->execute($this->currentUser($this->aliceId), $seeded->id ?? 0);
 
-        // A warm-up, finished at once: no set record, no session record.
-        $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 20.0, setTypeId: $this->setTypeId(SetTypeFixtures::WARM_UP)));
+        // One light set, finished at once: no set record, no session record.
+        $workout = $this->addSet($this->benchWorkout(), new AddWorkoutSetDataInput(reps: 5, weightInKilograms: 20.0));
         $this->complete($workout, $this->lastSet($workout));
         $this->useCase(FinishWorkoutUseCase::class)->execute($this->currentUser($this->aliceId), $workout->id);
 

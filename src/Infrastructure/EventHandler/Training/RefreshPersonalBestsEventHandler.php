@@ -7,6 +7,7 @@ namespace App\Infrastructure\EventHandler\Training;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutSummaryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Event\EventInterface;
 use App\Domain\DTO\Event\Training\WorkoutBlockDeletedEvent;
@@ -17,6 +18,7 @@ use App\Domain\DTO\Event\Training\WorkoutSetDeletedEvent;
 use App\Domain\DTO\Event\Training\WorkoutSetUpdatedEvent;
 use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Domain\Factory\DataModelFactory\Training\PersonalBestDataModelFactory;
+use App\Domain\Factory\DataModelFactory\Training\WorkoutSummaryDataModelFactory;
 use App\Domain\Gateway\Persister\Training\PersonalBestPersisterGateway;
 use App\Domain\Gateway\Persister\Training\WorkoutSummaryPersisterGateway;
 use App\Domain\Gateway\Provider\Training\PersonalBestProviderGateway;
@@ -30,9 +32,12 @@ use LogicException;
  * owner, and those of the owner's whole workouts. Rebuilt from the sets rather than adjusted, so
  * a set unticked, corrected or removed hands its records back to whoever held them before.
  *
- * A write that cannot move one is let go without a query: only a set that counts — done, of a
- * type that counts — before or after the write makes a record, and only finishing gives a workout
- * its length. The events say which.
+ * A write that cannot move one is let go without a query: only a set done before or after the
+ * write makes a record, and only finishing gives a workout its length. The events say which.
+ *
+ * The records of whole workouts are read off the workouts' summaries. The summary of the workout
+ * written to is worked out again here, in memory, from what the request holds: its own handler
+ * runs on the same events, and neither may count on running first.
  *
  * Then recounts, on their summaries, the records of every workout whose rows the rebuild wrote —
  * not only the one written to: a record beaten again hands the row of an older workout back, or
@@ -47,6 +52,7 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         private PersonalBestDataModelFactory $personalBestDataModelFactory,
         private WorkoutSummaryProviderGateway $workoutSummaryProviderGateway,
         private WorkoutSummaryPersisterGateway $workoutSummaryPersisterGateway,
+        private WorkoutSummaryDataModelFactory $workoutSummaryDataModelFactory,
     ) {
     }
 
@@ -72,12 +78,13 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
 
         [$owner, $movements, $emptied] = $touched;
         $movements = $this->eachOnce($movements);
+        $summaries = $this->summariesOf($owner, $this->workoutOf($event));
 
         // What stands now, the records of whole workouts and those of the movements touched, in
         // one read; then only what differs from the rebuild is written, in one flush.
         $written = $this->personalBestPersisterGateway->replace(
             $this->personalBestProviderGateway->findPersonalBestsForRefreshEvent($owner, $movements),
-            [...$this->rebuildMovements($owner, $movements), ...$this->rebuildSessions($owner)],
+            [...$this->rebuildMovements($owner, $movements), ...$this->personalBestDataModelFactory->buildSessionProgression($owner, $summaries)],
         );
 
         $workoutsById = [];
@@ -89,7 +96,7 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         }
 
         if ([] !== $workoutsById) {
-            $this->recount(array_values($workoutsById));
+            $this->recount(array_values($workoutsById), $summaries);
         }
     }
 
@@ -105,18 +112,17 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
     private function touched(EventInterface $event): ?array
     {
         return match (true) {
-            $event instanceof WorkoutSetCreatedEvent => true === $event->set->countsForPersonalBests()
+            $event instanceof WorkoutSetCreatedEvent => true === $event->set->isComplete
                 ? [$event->set->exercise->block->workout->owner, [$event->set->exercise->movement], []]
                 : null,
-            $event instanceof WorkoutSetUpdatedEvent => true === $event->countedBefore || true === $event->set->countsForPersonalBests()
+            $event instanceof WorkoutSetUpdatedEvent => true === $event->wasCompleteBefore || true === $event->set->isComplete
                 ? [$event->set->exercise->block->workout->owner, [$event->set->exercise->movement], []]
                 : null,
-            $event instanceof WorkoutSetDeletedEvent => true === $event->counted ? [$event->workout->owner, [$event->movement], [$event->workout]] : null,
-            $event instanceof WorkoutExerciseDeletedEvent => true === $event->heldCountingSets ? [$event->workout->owner, [$event->movement], [$event->workout]] : null,
-            $event instanceof WorkoutBlockDeletedEvent => true === $event->heldCountingSets ? [$event->workout->owner, $event->movements, [$event->workout]] : null,
-            // A finished workout held its length, even without a set that counts. Its summary went
-            // with it.
-            $event instanceof WorkoutDeletedEvent => true === $event->heldCountingSets || null !== $event->finishedAt ? [$event->owner, $event->movements, []] : null,
+            $event instanceof WorkoutSetDeletedEvent => true === $event->wasComplete ? [$event->workout->owner, [$event->movement], [$event->workout]] : null,
+            $event instanceof WorkoutExerciseDeletedEvent => true === $event->heldCompleteSets ? [$event->workout->owner, [$event->movement], [$event->workout]] : null,
+            $event instanceof WorkoutBlockDeletedEvent => true === $event->heldCompleteSets ? [$event->workout->owner, $event->movements, [$event->workout]] : null,
+            // A finished workout held its length, even without a done set. Its summary went with it.
+            $event instanceof WorkoutDeletedEvent => true === $event->heldCompleteSets || null !== $event->finishedAt ? [$event->owner, $event->movements, []] : null,
             // Finishing gives a workout its length; nothing else about it moves a record.
             $event instanceof WorkoutUpdatedEvent => true === $event->finishes ? [$event->workout->owner, [], []] : null,
             default => throw new LogicException(sprintf('%s does not handle %s.', self::class, $event::class)),
@@ -169,23 +175,56 @@ final readonly class RefreshPersonalBestsEventHandler implements EventHandlerInt
         return $rebuilt;
     }
 
-    /** @return list<PersonalBestDataModel> */
-    private function rebuildSessions(UserDataModel $owner): array
+    /** The workout whose sets the write moved, still standing; null when none is. */
+    private function workoutOf(EventInterface $event): ?WorkoutDataModel
     {
-        return $this->personalBestDataModelFactory->buildSessionProgression(
-            $owner,
-            $this->workoutProviderGateway->findTalliesForOwner($owner),
-        );
+        return match (true) {
+            $event instanceof WorkoutSetCreatedEvent, $event instanceof WorkoutSetUpdatedEvent => $event->set->exercise->block->workout,
+            $event instanceof WorkoutSetDeletedEvent, $event instanceof WorkoutExerciseDeletedEvent, $event instanceof WorkoutBlockDeletedEvent => $event->workout,
+            default => null,
+        };
     }
 
-    /** @param list<WorkoutDataModel> $workouts */
-    private function recount(array $workouts): void
+    /**
+     * The owner's summaries, oldest workout first, that of the workout written to worked out
+     * again from what the request holds.
+     *
+     * @return list<WorkoutSummaryDataModel>
+     */
+    private function summariesOf(UserDataModel $owner, ?WorkoutDataModel $written): array
+    {
+        $summaries = $this->workoutSummaryProviderGateway->findAllForOwner($owner);
+
+        foreach ($summaries as $summary) {
+            if ($summary->workout === $written) {
+                $this->workoutSummaryDataModelFactory->refresh($summary);
+            }
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * @param list<WorkoutDataModel>        $workouts
+     * @param list<WorkoutSummaryDataModel> $summaries the owner's, already read
+     */
+    private function recount(array $workouts, array $summaries): void
     {
         $counts = $this->personalBestProviderGateway->countByWorkout($workouts);
 
+        $summariesByWorkoutId = [];
+        foreach ($summaries as $summary) {
+            $summariesByWorkoutId[(int) $summary->workout->id] = $summary;
+        }
+
         $moved = [];
-        foreach ($this->workoutSummaryProviderGateway->findAllForWorkouts($workouts) as $workoutId => $summary) {
-            $count = $counts[$workoutId] ?? 0;
+        foreach ($workouts as $workout) {
+            $summary = $summariesByWorkoutId[(int) $workout->id] ?? null;
+            if (null === $summary) {
+                continue;
+            }
+
+            $count = $counts[(int) $workout->id] ?? 0;
             if ($count !== $summary->personalBestCount) {
                 $summary->personalBestCount = $count;
                 $moved[] = $summary;

@@ -97,7 +97,7 @@ to its page.
 - **« Séance terminée »**: the same form as the pencil — name, feeling, note. « Enregistrer »
   saves and goes to the workout's page; « Annuler » goes there without saving.
 - **« Bilan »** under it, the same card as on a finished workout's page:
-  - **sets**, always; **volume** (reps × load, a unilateral set counting both sides) when a set
+  - **sets**, always; **volume** (reps × load, a unilateral set counting as logged, a side's) when a set
     carries both; **time under effort** when a set has a duration; **distance** when one has a
     distance. A total no set measures is not shown — it is not zero, it does not exist. Only done
     sets count, and the totals are kept with the workout as its sets are ticked, corrected or

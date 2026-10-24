@@ -340,6 +340,12 @@ classes.
 | Value formatter | `<Name>DataTransformer` | `DateDataTransformer` |
 | Tagged-service locator | `<Name>Resolver` / `<Name>Finder` | `PaymentHttpClientResolver` |
 
+**This catalogue is closed.** A new kind of component — a new suffix, a new folder under
+`Domain/DTO/` or elsewhere, a new role a class plays — is **validated explicitly with the project
+owner before it is written**, never introduced on the way to something else. When the existing
+kinds do not fit, stop, say why, and propose the new kind; once agreed, it gets its line here and
+its section in §6 before any code uses it.
+
 **Verb vocabulary for use cases** — stay inside this list so intent is greppable:
 `Get…` (one, by identity), `List…` (many), `Create…`, `Register…` (create through a public,
 unauthenticated sign-up — as opposed to `Create…`, which an authenticated actor performs),
@@ -372,12 +378,12 @@ event), `Fetch…` (call a third party and persist the result).
 
 ### 6.0 A DTO carries data, nothing else
 
-Everything under `Domain/DTO/` — data models, DataInputs, DataOutputs, events, aggregates — is a
+Everything under `Domain/DTO/` — data models, DataInputs, DataOutputs, events — is a
 **shape**. **The only function a DTO may declare is its constructor.** No getter, no setter, no
 query helper, no computed accessor, no static named constructor, public or private: a method on
 a DTO is a rule hidden in a bag of data, untested on its own and copied everywhere the bag goes.
 
-The constructor itself only initialises: it promotes properties (DataInput, events, aggregates)
+The constructor itself only initialises: it promotes properties (DataInput, events)
 or sets the collections a data model starts with. It holds no rule — it does not derive a value
 from another, does not validate, does not build a child.
 
@@ -551,14 +557,13 @@ Both are managed by the same identity map: the child fetched is the very instanc
 already holds, so what the use case changes on it shows in the parent's output.
 
 **No query in a loop.** A gateway call inside a `foreach` — or inside a private method the loop
-calls — is one query per item: the count grows with the data, unseen until it hurts. Three
+calls — is one query per item: the count grows with the data, unseen until it hurts. Two
 shapes come up, and each has its answer:
 
 | In the loop | Instead |
 | --- | --- |
 | a `findOneById()` per id of a list the input carries | one `findAllByIds($ids)` (`findAllOfferedByIds`), then a table by id to walk the input in its own order: the database hands rows back in none, once per id |
-| a `findOne…()` per item of a list just fetched — the entry of each subscription | a **join** in the query that fetched the list. With no collection on that side to fetch-join, the child is joined as a second root (`LEFT JOIN X entry WITH …`, `addSelect('entry')`): the rows come back flat, each parent followed by its child or `null`, and the gateway hands them on as an aggregate (`HabitSubscriptionDay`). Never a collection added to fetch-join it filtered: Doctrine would keep that partial collection as the whole one for the rest of the request |
-| the same query per item — the records of each movement touched, the last time of each movement | one query taking the whole list (`IN (:movements)`), sorted out per item in memory; a « latest per item » is a `NOT EXISTS` on a later row, not a `LIMIT 1` per item |
+| the same query per item of a list — the entry of each subscription, the records of each movement touched, the last time of each movement | one query taking the whole list (`IN (:subscriptions)`, `IN (:movements)`), then a table by item id in memory: the count stays the same whatever the size of the list, and an item with nothing is simply absent from the table. A « latest per item » is a `NOT EXISTS` on a later row, not a `LIMIT 1` per item. Never a collection added to fetch-join it filtered: Doctrine would keep that partial collection as the whole one for the rest of the request |
 
 A list that is empty gets no query: the gateway answers `[]` before building one.
 
@@ -2294,8 +2299,8 @@ Rejected in review, every time:
 - A validator that fails fast instead of accumulating.
 - A constraint that queries the database.
 - `new \DateTimeImmutable()` instead of the clock (`Psr\Clock\ClockInterface`, `DayClock`).
-- Any method but the constructor on a DTO — data model, DataInput, DataOutput, event,
-  aggregate (§6.0); a constructor that does more than initialise.
+- Any method but the constructor on a DTO — data model, DataInput, DataOutput, event (§6.0); a
+  constructor that does more than initialise.
 - A use case without its own validator, or a use case calling a Constraint itself.
 - A use case a controller calls without `UserDataModel $currentUser` first, or with an id
   of the caller beside it (`$ownerId`, `$actingUserId`); a validator not taking it first.
@@ -2329,6 +2334,8 @@ Rejected in review, every time:
 - A YAML fixture file, or any fixture library beyond `doctrine/doctrine-fixtures-bundle`.
 - The word "entity" for a persisted class — it is a **data model**, in `Domain/DTO/DataModel/`.
 - A new pattern introduced next to an existing one without deprecating the old one.
+- A new kind of component — suffix, folder, role — written without the project owner's explicit
+  go-ahead (§5).
 - A reaction to a write coded inside a persister or a use case instead of an event handler
   ([domain-events.md](domain-events.md)).
 - A `Types::DECIMAL` or `Types::SMALLFLOAT` column, or a decimal left for the column to round

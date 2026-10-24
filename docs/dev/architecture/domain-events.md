@@ -43,10 +43,10 @@ listen to one event; none may count on running before another.
 - **An event that only matters for some changes says so**: it carries what changed, read from
   Doctrine's original data before the flush (`AbstractBaseMysqlPersister::originalValueOf()`),
   or from what is deleted before it goes, and the handler skips the rest without a query.
-  `WorkoutSetUpdatedEvent` says whether the set counted before (`countedBefore`), the deletions
-  whether what went held a set that counts, `WorkoutUpdatedEvent` whether the write finishes
-  the workout (`finishes`): a set that counts neither before nor after, a finished workout
-  renamed, move no record and no habit.
+  `WorkoutSetUpdatedEvent` says whether the set was done before (`wasCompleteBefore`), the
+  deletions whether what went held a done set, `WorkoutUpdatedEvent` whether the write finishes
+  the workout (`finishes`): a set done neither before nor after, a finished workout renamed, move
+  no record and no habit.
 
 ## Testing
 
@@ -75,6 +75,12 @@ and how many personal bests it holds, so the history and the bilan read them ins
 them out. One per workout: `RefreshWorkoutSummaryEventHandler` creates it on
 `WorkoutCreatedEvent`, and works the totals out again (`WorkoutSummaryDataModelFactory`) each
 time a set, a movement or a block of the workout moves.
+
+The records of whole workouts are read off the summaries: their sets and volume are the bilan's
+own. Two handlers of one event cannot count on their order, so `RefreshPersonalBestsEventHandler`
+does not wait for the summary of the workout written to: it works it out again itself, in memory,
+from what the request holds (`WorkoutSummaryDataModelFactory::refresh`) — the same sum off the
+same tree, whichever handler runs first.
 
 The record count is not its to keep. Two handlers of one event cannot count on their order, and
 a rebuild moves the rows of other workouts than the one written to — a record taken back by an

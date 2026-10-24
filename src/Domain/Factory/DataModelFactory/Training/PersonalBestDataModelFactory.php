@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Factory\DataModelFactory\Training;
 
-use App\Domain\DTO\Aggregate\Training\WorkoutTally;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
+use App\Domain\DTO\DataModel\Training\WorkoutSummaryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Registry\Training\PersonalBestKindRegistry;
 use App\Domain\Registry\Training\PersonalBestTierRegistry;
@@ -62,23 +62,23 @@ final readonly class PersonalBestDataModelFactory
     }
 
     /**
-     * @param list<WorkoutTally> $tallies the owner's workouts, oldest first
+     * @param list<WorkoutSummaryDataModel> $summaries the summaries of the owner's workouts, oldest first
      *
      * @return list<PersonalBestDataModel>
      */
-    public function buildSessionProgression(UserDataModel $owner, array $tallies): array
+    public function buildSessionProgression(UserDataModel $owner, array $summaries): array
     {
         /** @var array<string, float> $best */
         $best = [];
         $rows = [];
 
-        foreach ($tallies as $tally) {
-            $workout = $tally->workout;
+        foreach ($summaries as $summary) {
+            $workout = $summary->workout;
 
-            if (null !== $tally->volumeInKilograms) {
-                $this->offer($best, $rows, $owner, null, PersonalBestKindRegistry::MAX_SESSION_VOLUME, null, $tally->volumeInKilograms, $workout, null);
+            if (null !== $summary->volumeInKilograms) {
+                $this->offer($best, $rows, $owner, null, PersonalBestKindRegistry::MAX_SESSION_VOLUME, null, $summary->volumeInKilograms, $workout, null);
             }
-            $this->offer($best, $rows, $owner, null, PersonalBestKindRegistry::MAX_SESSION_SETS, null, $tally->setCount, $workout, null);
+            $this->offer($best, $rows, $owner, null, PersonalBestKindRegistry::MAX_SESSION_SETS, null, $summary->setCount, $workout, null);
 
             if (null !== $workout->finishedAt) {
                 $seconds = $workout->finishedAt->getTimestamp() - $workout->startedAt->getTimestamp();

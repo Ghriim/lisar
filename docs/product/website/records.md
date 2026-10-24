@@ -5,12 +5,11 @@ movement. They are kept by the server as sets are ticked; nothing here is entere
 
 ## What counts
 
-**Only a set ticked as done, of a [set type](../admin/set-types.md) that counts for records.**
-Every type counts unless the back-office switched it off — the warm-up is off as seeded: a light
-set on purpose is no record. A set logged but not ticked yet is still to do, and beats nothing.
+**Every set ticked as done, whatever its [set type](../admin/set-types.md)** — a warm-up counts
+like any other set. A set logged but not ticked yet is still to do, and beats nothing.
 
 A record is **strictly beaten**: a tie leaves it with whoever set it first. Nothing of nothing is
-a record — an empty bar, a workout without a set that counts.
+a record — an empty bar, a workout without a done set.
 
 A **unilateral** movement is read like any other: its reps and loads as logged, a side's.
 
@@ -36,8 +35,8 @@ movement is configured for them.
 - **The pace** counts only sets of **1 km at least**: a 100 m sprint would win it otherwise.
 
 **Across movements**, a whole workout has three records of its own: the biggest volume, the most
-sets that count, and **the longest workout, from its start to its finish** — only a finished
-workout has one.
+done sets, and **the longest workout, from its start to its finish** — only a finished
+workout has one. The volume and the sets are the very figures of the workout's « Bilan ».
 
 ## When it moves
 

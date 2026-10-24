@@ -41,11 +41,11 @@ final class WorkoutExercisePersister extends AbstractBaseMysqlPersister implemen
     public function delete(WorkoutExerciseDataModel $workoutExercise): void
     {
         $block = $workoutExercise->block;
-        $heldCountingSets = false;
+        $heldCompleteSets = false;
         foreach ($workoutExercise->sets as $set) {
-            $heldCountingSets = $heldCountingSets || $set->countsForPersonalBests();
+            $heldCompleteSets = $heldCompleteSets || $set->isComplete;
         }
-        $event = new WorkoutExerciseDeletedEvent($block->workout, $workoutExercise->movement, $heldCountingSets);
+        $event = new WorkoutExerciseDeletedEvent($block->workout, $workoutExercise->movement, $heldCompleteSets);
 
         $this->inTransaction(function () use ($workoutExercise, $block, $event): void {
             $this->persistDelete($workoutExercise);

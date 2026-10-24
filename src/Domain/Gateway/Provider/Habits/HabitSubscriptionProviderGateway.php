@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Gateway\Provider\Habits;
 
-use App\Domain\DTO\Aggregate\Habits\HabitSubscriptionDay;
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
 use App\Domain\DTO\DataModel\Habits\HabitSubscriptionDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
-use DateTimeImmutable;
 
 interface HabitSubscriptionProviderGateway
 {
@@ -24,10 +22,10 @@ interface HabitSubscriptionProviderGateway
     public function findActiveForOwner(UserDataModel $owner): array;
 
     /**
-     * The person's active subscriptions fed by one tracker — the ones a tracker write re-evaluates —
-     * each with its entry for that day, joined in the same query.
+     * The person's active subscriptions fed by one tracker — the ones a tracker write re-evaluates.
+     * The habit is joined, ready to read.
      *
-     * @return list<HabitSubscriptionDay>
+     * @return list<HabitSubscriptionDataModel>
      */
-    public function findActiveForOwnerAndTrackerWithEntryOn(UserDataModel $owner, string $trackerKind, DateTimeImmutable $day): array;
+    public function findActiveForOwnerAndTracker(UserDataModel $owner, string $trackerKind): array;
 }

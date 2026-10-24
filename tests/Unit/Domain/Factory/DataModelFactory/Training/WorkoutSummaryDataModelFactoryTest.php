@@ -56,15 +56,15 @@ final class WorkoutSummaryDataModelFactoryTest extends TestCase
         self::assertSame(480.0, $summary->volumeInKilograms);
     }
 
-    /** Reps count per side on a unilateral movement: its volume counts twice. */
-    public function testAUnilateralSetCountsBothSides(): void
+    /** A unilateral set counts as logged, a side's reps: its volume is not doubled. */
+    public function testAUnilateralSetCountsAsLogged(): void
     {
         $workout = $this->workout();
         $lunge = $this->movement(1, 'Lunge');
         $lunge->isUnilateral = true;
         $this->doneSet($this->exercise($this->block($workout, 1, 0), 1, 0, $lunge), 1, reps: 10)->weightInKilograms = 20.0;
 
-        self::assertSame(400.0, (new WorkoutSummaryDataModelFactory())->build($workout)->volumeInKilograms);
+        self::assertSame(200.0, (new WorkoutSummaryDataModelFactory())->build($workout)->volumeInKilograms);
     }
 
     public function testDurationsAndDistancesAddUp(): void

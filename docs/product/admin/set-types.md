@@ -11,7 +11,6 @@ to failure. Reference data an administrator maintains; people do not create set 
 | colour | required, **one of a fixed palette**, nothing preselected on a creation |
 | active | inactive: no longer offered to new sets |
 | default | **exactly one type carries it**: the one a set takes when it is logged without one |
-| counts for records | whether its sets can beat a [personal best](../website/records.md); **on** on a creation, **set on the creation only** |
 
 **A set always carries a type.** A set logged or corrected without one takes the default — the
 ordinary working set, `Travail` as seeded.
@@ -23,7 +22,8 @@ answers the code, never a shade: each front end paints its own, so every type si
 theme. A colour outside the palette is refused with `colour_unknown`. Two types may share a
 colour.
 
-No icon, no "counts in the volume" flag in this first version.
+No icon, no "counts in the volume" or "counts for records" flag: a type only labels a set, every
+done set counts, whatever its type.
 
 ## Managing it
 
@@ -42,16 +42,10 @@ window creates or edits a row.
   type cannot take it (`default_set_type_inactive`). The default is marked « défaut » in the list,
   and is **neither deactivated nor deleted** (`set_type_is_the_default`): neither action is offered
   on its row.
-- **« Compte pour les records »** is a second switch, **on the creation only**. Switched off, the
-  type's sets beat no record — a warm-up is light on purpose; the list marks such a type « hors
-  records ». It is **not offered on an edit, and an update ignores it**: switching it would
-  rebuild the records of every set carrying the type, anyone's — in practice only the warm-up is
-  concerned, and it is settled from the start.
 
 The list is **not paginated**: a handful of rows.
 
 ## Seeded
 
-Five types, all active: `Travail` (blue, **the default**), `Échauffement` (orange, **not counting
-for records**), `Dropset` (purple), `Échec` (red), `Back-off` (blue). `Travail` is also created by the migration that
+Five types, all active: `Travail` (blue, **the default**), `Échauffement` (orange), `Dropset` (purple), `Échec` (red), `Back-off` (blue). `Travail` is also created by the migration that
 brought the default in, and every set logged without a type until then was given it.

@@ -90,7 +90,7 @@ final class CompleteWorkoutSetUseCaseTest extends KernelTestCase
         self::assertSame($this->lastSet($workout)->id, $event->set->id);
         self::assertTrue($event->set->isComplete);
         // To do until now: it did not count, it does.
-        self::assertFalse($event->countedBefore);
+        self::assertFalse($event->wasCompleteBefore);
 
         // Ticked already: nothing moves, nothing is said.
         $this->forgetRaisedEvents();

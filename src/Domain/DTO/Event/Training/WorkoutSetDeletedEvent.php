@@ -14,8 +14,8 @@ final readonly class WorkoutSetDeletedEvent implements EventInterface
     public function __construct(
         public WorkoutDataModel $workout,
         public MovementDataModel $movement,
-        /** Whether it counted for the personal bests: done, of a type that counts. */
-        public bool $counted,
+        /** Whether it was done. */
+        public bool $wasComplete,
     ) {
     }
 }

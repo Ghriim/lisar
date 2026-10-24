@@ -53,15 +53,15 @@ final class WorkoutPersister extends AbstractBaseMysqlPersister implements Worko
 
     public function delete(WorkoutDataModel $workout): void
     {
-        $heldCountingSets = false;
+        $heldCompleteSets = false;
         foreach ($workout->blocks as $block) {
             foreach ($block->exercises as $exercise) {
                 foreach ($exercise->sets as $set) {
-                    $heldCountingSets = $heldCountingSets || $set->countsForPersonalBests();
+                    $heldCompleteSets = $heldCompleteSets || $set->isComplete;
                 }
             }
         }
-        $event = new WorkoutDeletedEvent($workout->owner, $workout->movements(), $workout->finishedAt, $heldCountingSets);
+        $event = new WorkoutDeletedEvent($workout->owner, $workout->movements(), $workout->finishedAt, $heldCompleteSets);
 
         $this->inTransaction(function () use ($workout, $event): void {
             $this->persistDelete($workout);

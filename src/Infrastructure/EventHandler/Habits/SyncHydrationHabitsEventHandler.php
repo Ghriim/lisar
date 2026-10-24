@@ -10,6 +10,7 @@ use App\Domain\DTO\Event\Tracking\HydrationEntryDeletedEvent;
 use App\Domain\DTO\Event\Tracking\HydrationEntryUpdatedEvent;
 use App\Domain\Factory\DataModelFactory\Habits\HabitEntryDataModelFactory;
 use App\Domain\Gateway\Persister\Habits\HabitEntryPersisterGateway;
+use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
 use App\Domain\Registry\Habits\HabitTrackerRegistry;
 use App\Domain\Tracking\DayClock;
@@ -20,11 +21,12 @@ final readonly class SyncHydrationHabitsEventHandler extends AbstractTrackerHabi
 {
     public function __construct(
         HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
+        HabitEntryProviderGateway $habitEntryProviderGateway,
         HabitEntryPersisterGateway $habitEntryPersisterGateway,
         HabitEntryDataModelFactory $habitEntryDataModelFactory,
         DayClock $clock,
     ) {
-        parent::__construct($habitSubscriptionProviderGateway, $habitEntryPersisterGateway, $habitEntryDataModelFactory, $clock);
+        parent::__construct($habitSubscriptionProviderGateway, $habitEntryProviderGateway, $habitEntryPersisterGateway, $habitEntryDataModelFactory, $clock);
     }
 
     public static function getSupportedEvents(): array

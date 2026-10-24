@@ -7,6 +7,7 @@ namespace App\Infrastructure\EventHandler\Habits;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Factory\DataModelFactory\Habits\HabitEntryDataModelFactory;
 use App\Domain\Gateway\Persister\Habits\HabitEntryPersisterGateway;
+use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
 use App\Domain\Tracking\DayClock;
 use App\Infrastructure\EventHandler\EventHandlerInterface;
@@ -23,6 +24,7 @@ abstract readonly class AbstractTrackerHabitsEventHandler implements EventHandle
 {
     public function __construct(
         private HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
+        private HabitEntryProviderGateway $habitEntryProviderGateway,
         private HabitEntryPersisterGateway $habitEntryPersisterGateway,
         private HabitEntryDataModelFactory $habitEntryDataModelFactory,
         protected DayClock $clock,
@@ -32,9 +34,16 @@ abstract readonly class AbstractTrackerHabitsEventHandler implements EventHandle
     /** "The owner's figure for `$trackerKind` is now `$value` on `$day`." */
     protected function keep(UserDataModel $owner, string $trackerKind, int $value, DateTimeImmutable $day): void
     {
-        foreach ($this->habitSubscriptionProviderGateway->findActiveForOwnerAndTrackerWithEntryOn($owner, $trackerKind, $day) as $subscriptionDay) {
-            $existing = $subscriptionDay->entry;
-            $entry = $this->habitEntryDataModelFactory->buildTrackerEntry($subscriptionDay->subscription, $existing, $trackerKind, $value, $day, $this->clock->now());
+        $subscriptions = $this->habitSubscriptionProviderGateway->findActiveForOwnerAndTracker($owner, $trackerKind);
+
+        $entriesBySubscriptionId = [];
+        foreach ($this->habitEntryProviderGateway->findForSubscriptionsOn($subscriptions, $day) as $entry) {
+            $entriesBySubscriptionId[(int) $entry->subscription->id] = $entry;
+        }
+
+        foreach ($subscriptions as $subscription) {
+            $existing = $entriesBySubscriptionId[(int) $subscription->id] ?? null;
+            $entry = $this->habitEntryDataModelFactory->buildTrackerEntry($subscription, $existing, $trackerKind, $value, $day, $this->clock->now());
 
             if (null === $entry) {
                 continue;

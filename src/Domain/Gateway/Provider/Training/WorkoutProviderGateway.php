@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Gateway\Provider\Training;
 
-use App\Domain\DTO\Aggregate\Training\WorkoutTally;
 use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\SetTypeDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
@@ -55,8 +54,8 @@ interface WorkoutProviderGateway
     public function countSetsForSetType(SetTypeDataModel $setType): int;
 
     /**
-     * The owner's sets of those movements that count for personal bests — done, of a type that
-     * counts — in the order they were done: by workout, then block, movement and set. The
+     * The owner's sets of those movements that count for personal bests — the done ones — in the
+     * order they were done: by workout, then block, movement and set. The
      * movements come mixed: whoever reads them per movement sorts them out, the order holds.
      *
      * @param list<MovementDataModel> $movements
@@ -64,11 +63,4 @@ interface WorkoutProviderGateway
      * @return list<WorkoutSetDataModel>
      */
     public function findSetsCountingForPersonalBests(UserDataModel $owner, array $movements): array;
-
-    /**
-     * Each of the owner's workouts with what its sets that count add up to, oldest first.
-     *
-     * @return list<WorkoutTally>
-     */
-    public function findTalliesForOwner(UserDataModel $owner): array;
 }
