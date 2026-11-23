@@ -1,5 +1,8 @@
 import { request, setAccessToken } from './client'
 import type {
+    TrainingPlanning,
+    TrainingPlanningEntry,
+    TrainingPlanningEntryPayload,
     Routine,
     RoutineSetPayload,
     RoutineSummary,
@@ -399,4 +402,22 @@ export function updateRoutineSet(id: number, setId: number, payload: RoutineSetP
 
 export function deleteRoutineSet(id: number, setId: number): Promise<Routine> {
     return request<Routine>(`/api/routines/${id}/sets/${setId}`, { method: 'DELETE' })
+}
+
+/** The training entries, and the slots they give over those days, both included: six weeks at most. */
+export function fetchTrainingPlanning(from: string, to: string): Promise<TrainingPlanning> {
+    return request<TrainingPlanning>(`/api/planning/training?from=${from}&to=${to}`)
+}
+
+export function createTrainingPlanningEntry(payload: TrainingPlanningEntryPayload): Promise<TrainingPlanningEntry> {
+    return request<TrainingPlanningEntry>('/api/planning/training', { method: 'POST', body: payload })
+}
+
+/** Replaces it whole: the dates to come follow it. */
+export function updateTrainingPlanningEntry(id: number, payload: TrainingPlanningEntryPayload): Promise<TrainingPlanningEntry> {
+    return request<TrainingPlanningEntry>(`/api/planning/training/${id}`, { method: 'PUT', body: payload })
+}
+
+export function deleteTrainingPlanningEntry(id: number): Promise<void> {
+    return request<void>(`/api/planning/training/${id}`, { method: 'DELETE' })
 }

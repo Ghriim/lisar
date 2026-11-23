@@ -429,3 +429,50 @@ export interface RoutineSetPayload {
     reps: number | null
     percentageOfOneRepMax: number | null
 }
+
+/** When a planning entry falls: only the fields its rule reads are filled. */
+export interface PlanningSchedule {
+    /** once, weekly, monthly_weekday or monthly_day. */
+    rule: string
+    /** A calendar day, "YYYY-MM-DD". */
+    startDate: string
+    endDate: string | null
+    /** ISO weekdays, 1 for Monday. */
+    weekdays: number[]
+    weekInterval: number
+    /** 1 to 5, or -1 for the last. */
+    monthWeeks: number[]
+    monthDays: number[]
+    /** "HH:MM", or null within the day. */
+    startTime: string | null
+    durationInMinutes: number | null
+}
+
+/** A routine planned on a rule of dates. */
+export interface TrainingPlanningEntry {
+    id: number
+    routineId: number
+    routineName: string
+    schedule: PlanningSchedule
+}
+
+/** One date of a training entry. */
+export interface TrainingPlanningSlot {
+    entryId: number
+    /** "YYYY-MM-DD". */
+    day: string
+    /** to_come, kept or missed. */
+    state: string
+    workoutId: number | null
+}
+
+export interface TrainingPlanning {
+    entries: TrainingPlanningEntry[]
+    /** By day, then by start time. */
+    slots: TrainingPlanningSlot[]
+}
+
+export interface TrainingPlanningEntryPayload {
+    routineId: number
+    schedule: PlanningSchedule
+}

@@ -75,8 +75,19 @@ Each date carries its kind's icon, its name and its state:
 | habit | **to come** · **kept** · **missed** — plus **kept, unplanned** for a habit kept on a day no entry asked for |
 
 **The plus** at the top of the page creates an entry: it asks the kind — training, task, habit —
-then what it ties, then the rule and the time. A click on a date opens its entry, to change it or
-delete it after asking.
+then what it ties, then the rule and the time. **The eye on a date** opens its entry — every field,
+filled in or not — to change it or delete it after asking. Today's training slot not kept yet also
+carries **« Démarrer »**.
+
+The form asks the rule first, and then only the fields that rule reads: the days of the week and
+« une semaine sur N » for a weekly rule, the days and their rank in the month for a monthly one,
+the days of the month for the other. The start date opens on today; nothing else is chosen for the
+person. A duration is asked only once a start time is given.
+
+Narrower than a laptop, the seven columns stack, one day under the other, each listing its dates
+in order rather than on an hour grid.
+
+**So far only training entries exist**: the plus goes straight to them, without asking the kind.
 
 ## A training entry
 

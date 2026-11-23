@@ -1,4 +1,4 @@
-import { ChartColumn, Dumbbell, House, ListChecks, Mail, Settings, Trophy, Users } from 'lucide-react'
+import { CalendarDays, ChartColumn, Dumbbell, House, ListChecks, Mail, Settings, Trophy, Users } from 'lucide-react'
 import { useState, useSyncExternalStore } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
@@ -7,6 +7,7 @@ import { PageShell, SideNav, type NavItem } from '../components'
 const PRIMARY: NavItem[] = [
     { to: '/', label: 'Dashboard', icon: House },
     { to: '/todo', label: 'Todo', icon: ListChecks },
+    { to: '/planning', label: 'Planning', icon: CalendarDays },
     { to: '/workouts', label: 'Workouts', icon: Dumbbell, alsoUnder: ['/routines'] },
     { to: '/records', label: 'Records', icon: Trophy },
     { to: '/statistiques', label: 'Statistiques', icon: ChartColumn },

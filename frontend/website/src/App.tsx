@@ -5,6 +5,7 @@ import { SignedInLayout } from './layout/SignedInLayout'
 import { ComingSoonPage } from './pages/ComingSoonPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { PlanningPage } from './pages/PlanningPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { RoutinePage } from './pages/RoutinePage'
 import { TodoPage } from './pages/TodoPage'
@@ -37,6 +38,7 @@ export function App() {
             <Route element={<SignedInLayout />}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/todo" element={<TodoPage />} />
+                <Route path="/planning" element={<PlanningPage />} />
                 <Route path="/workouts" element={<WorkoutsPage />} />
                 <Route path="/workouts/:id" element={<WorkoutPage />} />
                 <Route path="/workouts/:id/complete" element={<WorkoutCompletePage />} />

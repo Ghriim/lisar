@@ -9,26 +9,30 @@ once it is stale.
 
 Updated on 2026-11-23.
 
-- Domains delivered, back and front: user accounts and sessions, todo list (tasks, categories),
-  trackers (hydration, weight, sleep, steps), habits, workouts (movements, equipments, muscles,
-  set types, blocks/exercises/sets, rest, copy of a workout, summary stored in the database,
-  personal bests). Each website and admin screen has its page under `docs/product/`.
-- **Current stream: routines** (`docs/product/website/routines.md`) — the blueprint of a workout,
-  each set prescribed as reps and a share of the estimated 1RM.
-  - **Back-end done**: schema, editing use cases (list, create, read, rename, delete, blocks,
-    movements, sets, reorder), `POST /api/routines/{id}/start` (a workout laid out like the
-    routine, loads worked out by `PrescribedLoad`, linked through `workout.routine_id`, exposed
-    as `routineId` on a workout), `POST /api/routines/{id}/copy` (« Copie de … »).
-  - **Front-end done**: the « Routines » tab of the card on `/workouts`, the `/routines/:id`
-    page (`frontend/website/src/features/routines/`), the « Routine » link on a workout started
-    from one. Type-checked and built; not yet tried by hand in a browser.
+- Domains delivered, back and front: user accounts and sessions, todo list, trackers (hydration,
+  weight, sleep, steps), habits, workouts, routines (`docs/product/website/routines.md`) and
+  personal bests. Each website and admin screen has its page under `docs/product/`.
+- Routines, website side, built and type-checked but **not yet tried by hand in a browser**.
+- **Current stream: planning** (`docs/product/website/planning.md`) — three kinds of planning
+  entry, training, task and habit, one data model each, sharing one schedule shape.
+  1. **Done**: the date engine `Domain/Planning/PlanningRule` (once, weekly every N weeks, N-th
+     weekday of the month, fixed day of the month).
+  2. **Done**: training entries, back and front — `TrainingPlanningEntryDataModel`,
+     `/api/planning/training`, the `/planning` week page (`components/WeekCalendar`,
+     `features/planning/`). A slot is kept by a workout of its routine started that day, read
+     from the workouts, never stored. Not yet tried by hand in a browser.
+  3. **Next**: habit entries — a run counting planned days only, a day kept unplanned as a bonus.
+  4. Then task entries — a quest created the day of each date (a once at once); how the daily
+     creation runs (scheduled command, or on first read of the day) is still to decide.
+- The schedule fields are repeated on each entry data model (no Embeddable: that would be a new
+  kind of component, not approved). `PlanningScheduleDataInput` / `PlanningScheduleDataOutput`
+  are the shared shapes.
 
 ## Next steps
 
-1. Try the routine screens by hand, and adjust.
-2. Then, to settle with the user: task planning (announced, no product page yet), the
-   gamification itself (the "RPG" in *Life Is A RPG*), filters on `/todo`, routines shared from
-   the back-office (listed under « Not here yet » in `routines.md`).
+1. Habit entries, then task entries, as above.
+2. Then, to settle with the user: the gamification (the "RPG" in *Life Is A RPG*), filters on
+   `/todo`, routines shared from the back-office, filtering the planning by kind.
 
 ## Context Claude needs that the repository does not hold
 

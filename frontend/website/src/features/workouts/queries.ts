@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '../../api/endpoints'
 import type { Workout, WorkoutBlockExercisePayload, WorkoutDetailsPayload, WorkoutSetPayload } from '../../api/types'
+import { PLANNING } from '../planning/queries'
 
 /** Every workout query answers to this key, so a write can reach all of them at once. */
 const WORKOUTS = ['workouts'] as const
@@ -128,10 +129,15 @@ export function useCopyWorkout() {
 /** Starting a workout from a routine answers the same: the new workout, with what it left out. */
 export function useStartWorkoutFromRoutine() {
     const store = useStoreWorkout()
+    const queryClient = useQueryClient()
 
     return useMutation({
         mutationFn: (routineId: number) => api.startWorkoutFromRoutine(routineId),
-        onSuccess: (copy) => store(copy.workout),
+        // It may keep a planned slot: the planning is re-read.
+        onSuccess: async (copy) => {
+            await store(copy.workout)
+            await queryClient.invalidateQueries({ queryKey: PLANNING })
+        },
     })
 }
 
@@ -162,6 +168,8 @@ export function useDeleteWorkout() {
                 queryClient.invalidateQueries({ queryKey: ['habits'] }),
                 // Its records go with it, and hand back to the previous holders.
                 queryClient.invalidateQueries({ queryKey: PERSONAL_BESTS }),
+                // A planned slot it kept is no longer kept.
+                queryClient.invalidateQueries({ queryKey: PLANNING }),
                 queryClient.invalidateQueries({ queryKey: [...WORKOUTS, 'stats'] }),
             ])
             queryClient.removeQueries({ queryKey: [...WORKOUTS, 'stats', workout.id] })
