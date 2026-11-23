@@ -34,6 +34,14 @@ interface WorkoutProviderGateway
 
     public function countFinishedForOwner(UserDataModel $owner): int;
 
+    /**
+     * The owner's workouts started from a routine in [`$from`, `$to`), the earliest first: what
+     * keeps a planned slot. Neither their blocks nor their routine are read — only its id.
+     *
+     * @return list<WorkoutDataModel>
+     */
+    public function findStartedFromRoutineForOwnerBetween(UserDataModel $owner, DateTimeImmutable $from, DateTimeImmutable $to): array;
+
     /** How many of the owner's workouts were finished in [`$from`, `$to`). */
     public function countFinishedForOwnerBetween(UserDataModel $owner, DateTimeImmutable $from, DateTimeImmutable $to): int;
 

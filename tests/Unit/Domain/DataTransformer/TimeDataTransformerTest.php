@@ -48,4 +48,12 @@ final class TimeDataTransformerTest extends TestCase
         yield 'a word' => ['matin'];
         yield 'a dot instead of a colon' => ['07.00'];
     }
+
+    public function testMinutesComeBackAsATimeOfDay(): void
+    {
+        self::assertSame('00:00', TimeDataTransformer::minutesToTimeString(0));
+        self::assertSame('09:05', TimeDataTransformer::minutesToTimeString(545));
+        self::assertSame('23:59', TimeDataTransformer::minutesToTimeString(1439));
+        self::assertNull(TimeDataTransformer::minutesToTimeString(null));
+    }
 }

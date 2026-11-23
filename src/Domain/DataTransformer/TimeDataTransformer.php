@@ -34,4 +34,14 @@ final readonly class TimeDataTransformer
 
         return ((int) $hours * self::MINUTES_PER_HOUR) + (int) $minutes;
     }
+
+    /** The other way round: "09:05" for 545. Null stays null. */
+    public static function minutesToTimeString(?int $minutes): ?string
+    {
+        if (null === $minutes) {
+            return null;
+        }
+
+        return sprintf('%02d:%02d', intdiv($minutes, self::MINUTES_PER_HOUR), $minutes % self::MINUTES_PER_HOUR);
+    }
 }

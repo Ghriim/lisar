@@ -104,6 +104,23 @@ final class WorkoutRepository extends ServiceEntityRepository implements Workout
             ->getSingleScalarResult();
     }
 
+    /** @return list<WorkoutDataModel> */
+    public function findStartedFromRoutineForOwnerBetween(UserDataModel $owner, DateTimeImmutable $from, DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('workout')
+            ->andWhere('workout.owner = :owner')
+            ->andWhere('workout.routine IS NOT NULL')
+            ->andWhere('workout.startedAt >= :from')
+            ->andWhere('workout.startedAt < :to')
+            ->setParameter('owner', $owner)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('workout.startedAt', 'ASC')
+            ->addOrderBy('workout.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function countFinishedForOwnerBetween(UserDataModel $owner, DateTimeImmutable $from, DateTimeImmutable $to): int
     {
         return (int) $this->finished($owner)
