@@ -6,6 +6,7 @@ import { ComingSoonPage } from './pages/ComingSoonPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { RoutinePage } from './pages/RoutinePage'
 import { TodoPage } from './pages/TodoPage'
 import { WorkoutCompletePage } from './pages/WorkoutCompletePage'
 import { WorkoutPage } from './pages/WorkoutPage'
@@ -39,6 +40,7 @@ export function App() {
                 <Route path="/workouts" element={<WorkoutsPage />} />
                 <Route path="/workouts/:id" element={<WorkoutPage />} />
                 <Route path="/workouts/:id/complete" element={<WorkoutCompletePage />} />
+                <Route path="/routines/:id" element={<RoutinePage />} />
                 <Route path="/records" element={<RecordsPage />} />
                 <Route path="/statistiques" element={<ComingSoonPage title="Statistiques" />} />
                 <Route path="/messages" element={<ComingSoonPage title="Messages" />} />

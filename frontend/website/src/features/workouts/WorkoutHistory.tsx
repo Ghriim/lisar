@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Eye, Repeat, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { WorkoutSummary } from '../../api/types'
-import { Alert, Chip, DataList, IconButton, ListItem, Row, SystemPanel } from '../../components'
+import { Alert, Chip, DataList, IconButton, ListItem, Row } from '../../components'
 import { useWorkoutHistory } from './queries'
 import { useCopyWorkoutAction } from './useCopyWorkoutAction'
 import { formatDistance, formatDuration, formatElapsed, formatLoad, formatShortDay, workoutName } from './workoutFormat'
@@ -10,7 +10,10 @@ import { formatDistance, formatDuration, formatElapsed, formatLoad, formatShortD
 /** A row names this many movements; the rest are counted. */
 const SHOWN_MOVEMENTS = 5
 
-/** Past workouts, the latest first, a page at a time. The one in progress joins when it ends. */
+/**
+ * Past workouts, the latest first, a page at a time. The one in progress joins when it ends. The
+ * content of the « Historique » tab: the card around it is the page's.
+ */
 export function WorkoutHistory() {
     const [page, setPage] = useState(1)
     const history = useWorkoutHistory(page)
@@ -20,7 +23,7 @@ export function WorkoutHistory() {
     const pageCount = history.data === undefined ? 1 : Math.max(1, Math.ceil(history.data.total / history.data.perPage))
 
     return (
-        <SystemPanel title="Historique">
+        <>
             {copy.error !== null && <Alert>{copy.error}</Alert>}
 
             <DataList<WorkoutSummary>
@@ -58,7 +61,7 @@ export function WorkoutHistory() {
                     />
                 </Row>
             )}
-        </SystemPanel>
+        </>
     )
 }
 

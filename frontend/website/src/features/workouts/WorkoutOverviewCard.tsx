@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { Workout } from '../../api/types'
-import { Alert, DefinitionList, Row, SystemPanel } from '../../components'
+import { Alert, DefinitionList, LinkChip, Row, SystemPanel, type Definition } from '../../components'
 import { feelingFor } from './workoutFeelings'
 import { formatElapsed, formatHour, formatLongDay, workoutName } from './workoutFormat'
 
@@ -57,12 +57,25 @@ export function WorkoutOverviewCard({ workout, actions, error = null }: WorkoutO
                             ),
                     },
                     { label: 'Note', placeholder: 'Aucune note', value: workout.note },
+                    ...routineLink(workout.routineId),
                 ]}
             />
 
             {error !== null && <Alert>{error}</Alert>}
         </SystemPanel>
     )
+}
+
+/**
+ * A workout started from a routine links back to it while that routine exists. One started any
+ * other way never had one: the field is not listed, rather than listed empty.
+ */
+function routineLink(routineId: number | null): Definition[] {
+    if (routineId === null) {
+        return []
+    }
+
+    return [{ label: 'Routine', placeholder: '—', value: <LinkChip to={`/routines/${routineId}`}>Ouvrir la routine</LinkChip> }]
 }
 
 /** The time now, ticking every half minute while a workout runs, so its duration keeps up. */

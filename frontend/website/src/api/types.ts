@@ -298,10 +298,12 @@ export interface Workout {
     startedAt: string
     finishedAt: string | null
     isInProgress: boolean
+    /** The routine it was started from, while that routine exists. */
+    routineId: number | null
     blocks: WorkoutBlock[]
 }
 
-/** A workout started from a past one, and what it could not take over. */
+/** A workout started from a past one or from a routine, and what it could not take over. */
 export interface WorkoutCopy {
     workout: Workout
     /** The movements left out because they are no longer offered, each once. */
@@ -379,4 +381,51 @@ export interface WorkoutDetailsPayload {
     name: string | null
     note: string | null
     feeling: number | null
+}
+
+/** A routine as its list shows it. */
+export interface RoutineSummary {
+    id: number
+    name: string
+    /** A movement that comes twice counts twice. */
+    movementCount: number
+}
+
+/** One set as a routine prescribes it: reps, and a share of the estimated 1RM for a loaded movement. */
+export interface RoutineSet {
+    id: number
+    reps: number | null
+    /** 1 to 100, by halves. Null for a movement without a load. */
+    percentageOfOneRepMax: number | null
+    /**
+     * The load a workout started now would give it. Null without a share, or without an
+     * estimated 1RM yet.
+     */
+    estimatedLoadInKilograms: number | null
+}
+
+export interface RoutineExercise {
+    id: number
+    movement: WorkoutMovement
+    note: string | null
+    restInSeconds: number | null
+    sets: RoutineSet[]
+}
+
+export interface RoutineBlock {
+    id: number
+    exercises: RoutineExercise[]
+}
+
+/** The blueprint of a workout, whole. */
+export interface Routine {
+    id: number
+    name: string
+    blocks: RoutineBlock[]
+}
+
+/** Replaces a prescribed set whole. */
+export interface RoutineSetPayload {
+    reps: number | null
+    percentageOfOneRepMax: number | null
 }

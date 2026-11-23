@@ -19,13 +19,13 @@ Updated on 2026-11-23.
     movements, sets, reorder), `POST /api/routines/{id}/start` (a workout laid out like the
     routine, loads worked out by `PrescribedLoad`, linked through `workout.routine_id`, exposed
     as `routineId` on a workout), `POST /api/routines/{id}/copy` (« Copie de … »).
-  - **Front-end not started**: the « Routines » tab on `/workouts`, the `/routines/:id` page, the
-    link from a workout to its routine, and the wording of `routine_empty` and
-    `movement_not_supported_in_routine` in `frontend/website/src/api/violations.ts`.
+  - **Front-end done**: the « Routines » tab of the card on `/workouts`, the `/routines/:id`
+    page (`frontend/website/src/features/routines/`), the « Routine » link on a workout started
+    from one. Type-checked and built; not yet tried by hand in a browser.
 
 ## Next steps
 
-1. The website screens for routines, above.
+1. Try the routine screens by hand, and adjust.
 2. Then, to settle with the user: task planning (announced, no product page yet), the
    gamification itself (the "RPG" in *Life Is A RPG*), filters on `/todo`, routines shared from
    the back-office (listed under « Not here yet » in `routines.md`).

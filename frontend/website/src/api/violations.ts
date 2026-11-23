@@ -50,7 +50,7 @@ const MESSAGES: Record<string, string> = {
     workout_empty: 'Une séance se termine avec au moins une série.',
     workout_has_incomplete_sets: 'Une série n’est pas encore validée : valide-la ou supprime-la.',
     workout_finished: 'La séance est terminée : ses séries sont toutes faites.',
-    name_too_long: 'Cent vingt-huit caractères au maximum.',
+    name_too_long: 'Ce nom est trop long.',
     note_too_long: 'Cinq mille caractères au maximum.',
     feeling_invalid: 'Ressenti attendu entre 1 et 5.',
     exercises_required: 'Choisis au moins un mouvement.',
@@ -73,6 +73,16 @@ const MESSAGES: Record<string, string> = {
     rpe_invalid: 'RPE attendu entre 1 et 10, par demi-points.',
     set_type_unknown: 'Ce type de série n’existe pas.',
     set_type_inactive: 'Ce type de série n’est plus proposé.',
+    name_required: 'Un nom est nécessaire.',
+    routine_block_not_found: 'Ce bloc n’est pas dans cette routine.',
+    routine_exercise_not_found: 'Ce mouvement n’est pas dans cette routine.',
+    routine_set_not_found: 'Cette série n’est pas dans cette routine.',
+    routine_empty: 'Cette routine ne donne aucune série à faire.',
+    movement_not_supported_in_routine: 'Une routine ne prescrit pas encore ce mouvement.',
+    movement_ids_duplicated: 'Un mouvement ne figure qu’une fois par bloc.',
+    percentage_required: 'La part du 1RM est nécessaire.',
+    percentage_not_tracked: 'Ce mouvement ne porte pas de charge.',
+    percentage_invalid: 'Entre 1 et 100 %, par demi-points.',
 }
 
 export function humanise(code: string): string {

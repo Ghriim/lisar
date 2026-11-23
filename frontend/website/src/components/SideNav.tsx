@@ -1,10 +1,12 @@
 import { LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 
 export interface NavItem {
     to: string
     label: string
     icon: LucideIcon
+    /** Other paths the item stands for, and lights up under: a screen reached only from its own. */
+    alsoUnder?: string[]
 }
 
 interface SideNavProps {
@@ -66,11 +68,20 @@ export function SideNav({ primary, secondary, collapsed, onToggle, onSignOut }: 
     )
 }
 
-function SideNavLink({ item: { to, label, icon: Icon } }: { item: NavItem }) {
+function SideNavLink({ item: { to, label, icon: Icon, alsoUnder = [] } }: { item: NavItem }) {
+    const { pathname } = useLocation()
+    const isUnderAnother = alsoUnder.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+
     return (
         <li>
             {/* `end` on the root only, or the dashboard would light up under every other page. */}
-            <NavLink to={to} end={to === '/'} className="side-nav-item side-nav-tip" data-tooltip={label} aria-label={label}>
+            <NavLink
+                to={to}
+                end={to === '/'}
+                className={({ isActive }) => `side-nav-item side-nav-tip${isActive || isUnderAnother ? ' active' : ''}`}
+                data-tooltip={label}
+                aria-label={label}
+            >
                 <Icon size={18} strokeWidth={2} aria-hidden />
                 <span className="side-nav-label">{label}</span>
             </NavLink>

@@ -24,6 +24,8 @@ interface MovementPickerProps {
     restFieldOf: (index: number) => string
     onSubmit: (exercises: WorkoutBlockExercisePayload[]) => void
     onCancel: () => void
+    /** Which of the movements on offer this picker shows: all of them unless said otherwise. */
+    accepts?: (movement: WorkoutMovementChoice) => boolean
 }
 
 /**
@@ -31,14 +33,14 @@ interface MovementPickerProps {
  * the order they were picked — which the line above the chips says back. Each one picked gets a
  * rest of its own, empty until someone types one: none means no timer after its sets.
  */
-export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, onCancel }: MovementPickerProps) {
+export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, onCancel, accepts }: MovementPickerProps) {
     const movements = useWorkoutMovements()
     const [search, setSearch] = useState('')
     const [picked, setPicked] = useState<number[]>([])
     const [rests, setRests] = useState<Record<number, string>>({})
     const violations = useViolations(failure)
 
-    const all = movements.data ?? []
+    const all = (movements.data ?? []).filter((movement) => accepts === undefined || accepts(movement))
     const byId = new Map(all.map((movement) => [movement.id, movement]))
     const families = groupByFamily(all.filter((movement) => matches(movement, search)))
 

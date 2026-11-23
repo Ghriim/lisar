@@ -15,6 +15,7 @@ import {
     usePreviousPerformances,
     useReorderWorkoutBlocks,
     useUncompleteWorkoutSet,
+    useUpdateWorkoutExercise,
 } from './queries'
 import { SetForm } from './SetForm'
 import type { RestTimer } from './useRestTimer'
@@ -54,6 +55,7 @@ export function WorkoutExercisesCard({ workout, restTimer }: { workout: Workout;
     const removeSet = useDeleteWorkoutSet()
     const completeSet = useCompleteWorkoutSet()
     const uncompleteSet = useUncompleteWorkoutSet()
+    const updateExercise = useUpdateWorkoutExercise()
 
     const actions = [reorder, removeBlock, removeExercise, removeSet, completeSet, uncompleteSet]
     const busy = actions.some((one) => one.isPending)
@@ -201,7 +203,13 @@ export function WorkoutExercisesCard({ workout, restTimer }: { workout: Workout;
 
             {panel?.kind === 'details' && (
                 <Modal title={`Modifier le mouvement · ${panel.exercise.movement.name}`} onClose={close}>
-                    <ExerciseDetailsForm workoutId={workout.id} exercise={panel.exercise} onDone={close} />
+                    <ExerciseDetailsForm
+                        exercise={panel.exercise}
+                        save={(details) => updateExercise.mutateAsync({ id: workout.id, exerciseId: panel.exercise.id, ...details })}
+                        pending={updateExercise.isPending}
+                        failure={updateExercise.error}
+                        onDone={close}
+                    />
                 </Modal>
             )}
 

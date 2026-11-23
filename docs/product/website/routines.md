@@ -16,22 +16,24 @@ The history card on `/workouts` carries two tabs: **« Historique »**, open by 
 - **« Routines »** lists the person's own routines, **by name**, accents and case aside. It is
   **not paginated**: a person keeps a handful of routines.
 - Each row gives the name and how many movements it holds, and its actions: **« Démarrer »**
-  (the play icon), the eye to open it, **« Dupliquer »**, and the bin, which deletes it after
-  asking.
+  (the play icon), the eye to open it, **« Dupliquer »** (the copy icon), and the bin, which deletes
+  it after asking.
 - **« Démarrer »** is offered only while no workout is in progress, as « Refaire » is.
-- **« Nouvelle routine »**, at the top of the tab, opens a window asking its name; « Créer »
-  creates it, empty, and goes to its page.
+- **The plus at the top of the card** (« Créer une routine »), shown while the tab is open, opens
+  the « Nouvelle routine » window asking its name; « Créer » creates it, empty, and goes to its page.
 
 ## A routine, on screen
 
 On `/routines/:id`, laid out like [a workout](workouts.md#the-workout-on-screen):
 
-- **Its panel** carries its name. Its actions: the pencil renames it, **« Démarrer »** starts a
-  workout from it, **« Dupliquer »** copies it, the bin deletes it after asking.
+- **Its panel** carries its name, and a line saying that each load is worked out at the start. Its
+  actions: the pencil renames it, **« Démarrer »** (the play icon, offered only while no workout
+  is in progress) starts a workout from it, **« Dupliquer »** copies it, the bin deletes it after
+  asking — saying that the workouts it started stay.
 - **« Exercices »** lists the blocks in order, « Bloc 2 » or « Bloc 2 · superset », with the same
   gestures as on a workout: arrows to reorder, a plus to add a movement (up to 6), a bin to remove,
   asking first when what goes holds sets. Adding opens the same picker, with one « Repos » field
-  per movement picked.
+  per movement picked; it offers only the movements a routine can prescribe.
 - **Each movement** shows its note, its rest as a chip, and a « Retiré » chip if it was retired
   since. Its plus adds a set, its pencil edits its rest and its note.
 - **Each set** is one line: its rank, then what it prescribes — « 5 reps · 80 % » — and **the load

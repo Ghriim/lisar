@@ -1,5 +1,8 @@
 import { request, setAccessToken } from './client'
 import type {
+    Routine,
+    RoutineSetPayload,
+    RoutineSummary,
     Category,
     CreateTaskPayload,
     Habit,
@@ -320,4 +323,80 @@ export function uncompleteWorkoutSet(id: number, setId: number): Promise<Workout
 
 export function deleteWorkoutSet(id: number, setId: number): Promise<Workout> {
     return request<Workout>(`/api/workouts/${id}/sets/${setId}`, { method: 'DELETE' })
+}
+
+/*
+ * Routines. Every write inside one — its name, a block, a movement, a set — answers the whole
+ * routine, each set with the load it would give today.
+ */
+
+export function fetchRoutines(): Promise<RoutineSummary[]> {
+    return request<RoutineSummary[]>('/api/routines')
+}
+
+export function fetchRoutine(id: number): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}`)
+}
+
+export function createRoutine(name: string): Promise<Routine> {
+    return request<Routine>('/api/routines', { method: 'POST', body: { name } })
+}
+
+export function updateRoutine(id: number, name: string): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}`, { method: 'PUT', body: { name } })
+}
+
+/** The workouts it started stay, without their link to it. */
+export function deleteRoutine(id: number): Promise<void> {
+    return request<void>(`/api/routines/${id}`, { method: 'DELETE' })
+}
+
+/** A new routine, « Copie de … », holding everything that one holds. */
+export function copyRoutine(id: number): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/copy`, { method: 'POST' })
+}
+
+/** A new workout, now, laid out like the routine, each load worked out from the day's 1RMs. */
+export function startWorkoutFromRoutine(id: number): Promise<WorkoutCopy> {
+    return request<WorkoutCopy>(`/api/routines/${id}/start`, { method: 'POST' })
+}
+
+export function addRoutineBlock(id: number, exercises: WorkoutBlockExercisePayload[]): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/blocks`, { method: 'POST', body: { exercises } })
+}
+
+export function reorderRoutineBlocks(id: number, blockIds: number[]): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/blocks/order`, { method: 'PUT', body: { blockIds } })
+}
+
+export function deleteRoutineBlock(id: number, blockId: number): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/blocks/${blockId}`, { method: 'DELETE' })
+}
+
+export function addRoutineExercise(id: number, blockId: number, exercise: WorkoutBlockExercisePayload): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/blocks/${blockId}/exercises`, { method: 'POST', body: exercise })
+}
+
+export function updateRoutineExercise(
+    id: number,
+    exerciseId: number,
+    payload: { note: string | null; restInSeconds: number | null },
+): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/exercises/${exerciseId}`, { method: 'PUT', body: payload })
+}
+
+export function deleteRoutineExercise(id: number, exerciseId: number): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/exercises/${exerciseId}`, { method: 'DELETE' })
+}
+
+export function addRoutineSet(id: number, exerciseId: number, payload: RoutineSetPayload): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/exercises/${exerciseId}/sets`, { method: 'POST', body: payload })
+}
+
+export function updateRoutineSet(id: number, setId: number, payload: RoutineSetPayload): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/sets/${setId}`, { method: 'PUT', body: payload })
+}
+
+export function deleteRoutineSet(id: number, setId: number): Promise<Routine> {
+    return request<Routine>(`/api/routines/${id}/sets/${setId}`, { method: 'DELETE' })
 }

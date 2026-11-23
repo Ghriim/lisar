@@ -125,6 +125,16 @@ export function useCopyWorkout() {
     })
 }
 
+/** Starting a workout from a routine answers the same: the new workout, with what it left out. */
+export function useStartWorkoutFromRoutine() {
+    const store = useStoreWorkout()
+
+    return useMutation({
+        mutationFn: (routineId: number) => api.startWorkoutFromRoutine(routineId),
+        onSuccess: (copy) => store(copy.workout),
+    })
+}
+
 export function useUpdateWorkout() {
     return useWorkoutMutation(({ id, ...payload }: { id: number } & WorkoutDetailsPayload) =>
         api.updateWorkout(id, payload),
