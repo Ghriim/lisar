@@ -31,6 +31,12 @@ final class IsOwnerConstraintTest extends TestCase
         );
     }
 
+    /** Owned by no one — a routine shared from the back-office — is no caller's to act on. */
+    public function testWhatNobodyOwnsIsNotAllowed(): void
+    {
+        self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], IsOwnerConstraint::validate($this->currentUser(1), null));
+    }
+
     public function testItKeepsWhatWasAlreadyFound(): void
     {
         self::assertSame(

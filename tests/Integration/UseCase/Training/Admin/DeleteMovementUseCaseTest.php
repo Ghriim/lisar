@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Training\Admin;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Input\Training\AddRoutineBlockDataInput;
+use App\Domain\DTO\Input\Training\AddRoutineBlockExerciseDataInput;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockDataInput;
 use App\Domain\DTO\Input\Training\AddWorkoutBlockExerciseDataInput;
+use App\Domain\DTO\Input\Training\CreateRoutineDataInput;
 use App\Domain\DTO\Input\Training\StartWorkoutDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
@@ -18,8 +21,10 @@ use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
+use App\UseCase\Training\AddRoutineBlockUseCase;
 use App\UseCase\Training\AddWorkoutBlockUseCase;
 use App\UseCase\Training\Admin\DeleteMovementUseCase;
+use App\UseCase\Training\CreateRoutineUseCase;
 use App\UseCase\Training\StartWorkoutUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -67,6 +72,25 @@ final class DeleteMovementUseCaseTest extends KernelTestCase
 
         $workout = self::getContainer()->get(StartWorkoutUseCase::class)->execute($this->currentUser($aliceId), new StartWorkoutDataInput());
         self::getContainer()->get(AddWorkoutBlockUseCase::class)->execute($this->currentUser($aliceId), $workout->id, new AddWorkoutBlockDataInput([new AddWorkoutBlockExerciseDataInput($id)]));
+
+        try {
+            self::getContainer()->get(DeleteMovementUseCase::class)->execute($this->currentAdmin(), $id);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(DeleteMovementValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame([MovementUnusedConstraint::IN_USE], $exception->violations['id']);
+        }
+    }
+
+    /** A movement a routine prescribes stays there: deleting it is refused, anyone's routine. */
+    public function testItRefusesToDeleteAMovementARoutinePrescribes(): void
+    {
+        $this->loadFixtures(MovementFixtures::class, UserFixtures::class);
+        $id = $this->movement(MovementFixtures::PUSH_UP)->id ?? 0;
+        $aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
+
+        $routine = self::getContainer()->get(CreateRoutineUseCase::class)->execute($this->currentUser($aliceId), new CreateRoutineDataInput('Push'));
+        self::getContainer()->get(AddRoutineBlockUseCase::class)->execute($this->currentUser($aliceId), $routine->id, new AddRoutineBlockDataInput([new AddRoutineBlockExerciseDataInput($id)]));
 
         try {
             self::getContainer()->get(DeleteMovementUseCase::class)->execute($this->currentAdmin(), $id);

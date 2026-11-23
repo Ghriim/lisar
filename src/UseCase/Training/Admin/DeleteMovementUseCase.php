@@ -9,6 +9,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Persister\Training\MovementPersisterGateway;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
+use App\Domain\Gateway\Provider\Training\RoutineProviderGateway;
 use App\Domain\Gateway\Provider\Training\WorkoutProviderGateway;
 use App\Domain\Validation\Validator\Training\DeleteMovementValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -25,6 +26,7 @@ final readonly class DeleteMovementUseCase implements UseCaseInterface
         private MovementProviderGateway $movementProviderGateway,
         private MovementPersisterGateway $movementPersisterGateway,
         private WorkoutProviderGateway $workoutProviderGateway,
+        private RoutineProviderGateway $routineProviderGateway,
     ) {
     }
 
@@ -39,7 +41,10 @@ final readonly class DeleteMovementUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(MovementDataModel::class);
         }
 
-        $this->validator->validate($currentUser, $this->workoutProviderGateway->countExercisesForMovement($movement));
+        $this->validator->validate(
+            $currentUser,
+            $this->workoutProviderGateway->countExercisesForMovement($movement) + $this->routineProviderGateway->countExercisesForMovement($movement),
+        );
 
         $this->movementPersisterGateway->delete($movement);
     }

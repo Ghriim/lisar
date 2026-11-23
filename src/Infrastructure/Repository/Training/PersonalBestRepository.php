@@ -8,6 +8,7 @@ use App\Domain\DTO\DataModel\Training\PersonalBestDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Provider\Training\PersonalBestProviderGateway;
+use App\Domain\Registry\Training\PersonalBestKindRegistry;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -95,5 +96,33 @@ final class PersonalBestRepository extends ServiceEntityRepository implements Pe
             ->addSelect('movement', 'movementFamily', 'workout', 'workoutSet')
             ->orderBy('personalBest.achievedAt', 'ASC')
             ->addOrderBy('personalBest.id', 'ASC');
+    }
+
+    /** @return array<int, float> */
+    public function findEstimatedOneRepMaxesForOwner(UserDataModel $owner, array $movements): array
+    {
+        if ([] === $movements) {
+            return [];
+        }
+
+        /** @var list<array{movementId: int|string, value: float|string}> $rows */
+        $rows = $this->createQueryBuilder('personalBest')
+            ->select('IDENTITY(personalBest.movement) AS movementId', 'MAX(personalBest.value) AS value')
+            ->andWhere('personalBest.owner = :owner')
+            ->andWhere('personalBest.movement IN (:movements)')
+            ->andWhere('personalBest.kind = :kind')
+            ->setParameter('owner', $owner)
+            ->setParameter('movements', $movements)
+            ->setParameter('kind', PersonalBestKindRegistry::ESTIMATED_ONE_REP_MAX)
+            ->groupBy('personalBest.movement')
+            ->getQuery()
+            ->getArrayResult();
+
+        $values = [];
+        foreach ($rows as $row) {
+            $values[(int) $row['movementId']] = (float) $row['value'];
+        }
+
+        return $values;
     }
 }

@@ -32,6 +32,8 @@ final class MovementFixtures extends Fixture implements DependentFixtureInterfac
     public const string BENCH_PRESS_BARBELL = 'movement-bench-press-barbell';
     public const string PUSH_UP = 'movement-push-up';
     public const string FARMER_WALK_DUMBBELL = 'movement-farmer-walk-dumbbell';
+    public const string BENCH_PRESS_DUMBBELL = 'movement-bench-press-dumbbell';
+    public const string ONE_ARM_ROW_DUMBBELL = 'movement-one-arm-row-dumbbell';
 
     /** family, name, primary muscle, secondary muscles, equipments, measure */
     private const array MOVEMENTS = [
@@ -109,6 +111,8 @@ final class MovementFixtures extends Fixture implements DependentFixtureInterfac
         'Bench press (barbell)' => self::BENCH_PRESS_BARBELL,
         'Push-up' => self::PUSH_UP,
         'Farmer walk (dumbbell)' => self::FARMER_WALK_DUMBBELL,
+        'Bench press (dumbbell)' => self::BENCH_PRESS_DUMBBELL,
+        'One-arm row (dumbbell)' => self::ONE_ARM_ROW_DUMBBELL,
     ];
 
     public function __construct(

@@ -51,9 +51,10 @@ The list says when a row holds something retired: a red "Famille désactivée" t
 and a red tag for a retired muscle or equipment.
 
 - **Deactivating** a movement is one click, and one click back; it asks nothing.
-- **Deleting** is final and asks first, and **is refused while a workout has logged the movement**
-  (`movement_in_use`) — anyone's workout. Deactivating is the way to retire it: the history keeps
-  it, new workouts no longer offer it.
+- **Deleting** is final and asks first, and **is refused while a workout has logged the movement
+  or a [routine](../website/routines.md) prescribes it** (`movement_in_use`) — anyone's.
+  Deactivating is the way to retire it: the history and the routines keep it, new workouts no
+  longer offer it.
 
 ## A family
 

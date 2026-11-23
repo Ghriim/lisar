@@ -44,4 +44,14 @@ interface PersonalBestProviderGateway
      * @return array<int, int>
      */
     public function countByWorkout(array $workouts): array;
+
+    /**
+     * The owner's current estimated 1RM of each of those movements, by movement id: the best
+     * ever, since a row is written only when it beats the last. A movement without one is absent.
+     *
+     * @param list<MovementDataModel> $movements
+     *
+     * @return array<int, float>
+     */
+    public function findEstimatedOneRepMaxesForOwner(UserDataModel $owner, array $movements): array;
 }
