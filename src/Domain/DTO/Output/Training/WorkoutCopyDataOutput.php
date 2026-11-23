@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\DTO\Output\Training;
 
 /**
- * A workout started from a past one: the new workout, whole, and what it could not take over.
+ * A workout started from a past one or from a routine: the new workout, whole, and what it could
+ * not take over.
  */
 final class WorkoutCopyDataOutput
 {

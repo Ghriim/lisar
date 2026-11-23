@@ -29,6 +29,8 @@ final readonly class WorkoutOutputFactory
     {
         $output = $this->mapper->map($workout, WorkoutDataOutput::class);
         $output->isInProgress = $workout->isInProgress();
+        // Its id is on the workout's row: reading it loads nothing.
+        $output->routineId = $workout->routine?->id;
 
         foreach ($workout->orderedBlocks() as $block) {
             $output->blocks[] = $this->buildBlock($block);

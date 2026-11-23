@@ -44,6 +44,12 @@ class WorkoutDataModel implements DataModelInterface
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
     public ?int $feeling = null;
 
+    // The routine it was started from, while that routine exists: deleting the routine keeps the
+    // workout and loses only this link. A blueprint, not a frame — nothing else reads it.
+    #[ORM\ManyToOne(targetEntity: RoutineDataModel::class)]
+    #[ORM\JoinColumn(name: 'routine_id', nullable: true, onDelete: 'SET NULL')]
+    public ?RoutineDataModel $routine = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     public DateTimeImmutable $startedAt;
 

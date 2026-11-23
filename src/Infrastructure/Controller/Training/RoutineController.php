@@ -14,11 +14,13 @@ use App\Domain\DTO\Input\Training\UpdateRoutineExerciseDataInput;
 use App\Domain\DTO\Input\Training\UpdateRoutineSetDataInput;
 use App\Domain\DTO\Output\Training\RoutineDataOutput;
 use App\Domain\DTO\Output\Training\RoutineSummaryDataOutput;
+use App\Domain\DTO\Output\Training\WorkoutCopyDataOutput;
 use App\Infrastructure\Controller\AbstractBaseController;
 use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Training\AddRoutineBlockUseCase;
 use App\UseCase\Training\AddRoutineExerciseUseCase;
 use App\UseCase\Training\AddRoutineSetUseCase;
+use App\UseCase\Training\CopyRoutineUseCase;
 use App\UseCase\Training\CreateRoutineUseCase;
 use App\UseCase\Training\DeleteRoutineBlockUseCase;
 use App\UseCase\Training\DeleteRoutineExerciseUseCase;
@@ -27,6 +29,7 @@ use App\UseCase\Training\DeleteRoutineUseCase;
 use App\UseCase\Training\GetRoutineUseCase;
 use App\UseCase\Training\ListRoutinesUseCase;
 use App\UseCase\Training\ReorderRoutineBlocksUseCase;
+use App\UseCase\Training\StartWorkoutFromRoutineUseCase;
 use App\UseCase\Training\UpdateRoutineExerciseUseCase;
 use App\UseCase\Training\UpdateRoutineSetUseCase;
 use App\UseCase\Training\UpdateRoutineUseCase;
@@ -101,6 +104,29 @@ final class RoutineController extends AbstractBaseController
         $useCase->execute($this->getCurrentUser(), $id);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/api/routines/{id}/copy', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
+    #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: Response::HTTP_CREATED, description: 'A new routine, « Copie de … », holding everything that one holds.', content: new OA\JsonContent(ref: new Model(type: RoutineDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such routine on this account.')]
+    public function copyRoutine(
+        int $id,
+        CopyRoutineUseCase $useCase,
+    ): JsonResponse {
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id), Response::HTTP_CREATED);
+    }
+
+    #[Route('/api/routines/{id}/start', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
+    #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: Response::HTTP_CREATED, description: 'A workout started now, laid out like the routine, each load worked out from the estimated 1RMs of the day; with the movements left out because no longer offered.', content: new OA\JsonContent(ref: new Model(type: WorkoutCopyDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such routine on this account.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A workout is in progress, or the routine gives no set.')]
+    public function startWorkoutFromRoutine(
+        int $id,
+        StartWorkoutFromRoutineUseCase $useCase,
+    ): JsonResponse {
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id), Response::HTTP_CREATED);
     }
 
     #[Route('/api/routines/{id}/blocks', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]

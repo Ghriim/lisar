@@ -13,11 +13,16 @@ use App\Domain\DTO\DataModel\Training\WorkoutExerciseDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutSetDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Factory\DataModelFactory\Training\WorkoutDataModelFactory;
+use App\Domain\Training\PrescribedLoad;
+use App\Domain\Training\RoutineTree;
+use App\Tests\RoutineTreeTrait;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class WorkoutDataModelFactoryTest extends TestCase
 {
+    use RoutineTreeTrait;
+
     private WorkoutDataModelFactory $factory;
     private MovementFamilyDataModel $family;
     private WorkoutDataModel $source;
@@ -28,7 +33,7 @@ final class WorkoutDataModelFactoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->factory = new WorkoutDataModelFactory();
+        $this->factory = new WorkoutDataModelFactory(new RoutineTree(), new PrescribedLoad());
         $this->family = new MovementFamilyDataModel();
         $this->now = new DateTimeImmutable('2026-10-07T18:00:00+00:00');
         $this->default = new SetTypeDataModel();
@@ -147,6 +152,92 @@ final class WorkoutDataModelFactoryTest extends TestCase
         $this->exercise($this->block(0), $this->movement('Squat'), 0);
 
         self::assertSame([], $this->factory->movementsLeftOut($this->source));
+    }
+
+    public function testItLaysAWorkoutOutLikeTheRoutineWithItsLoadsWorkedOut(): void
+    {
+        $routine = $this->routineOf($this->source->owner);
+        $second = $this->routineBlockIn($routine, position: 4);
+        $first = $this->routineBlockIn($routine, position: 1);
+        $bench = $this->routineExerciseIn($first, $this->offered($this->barbellMovement(1)));
+        $bench->note = 'Prise serrée';
+        $bench->restInSeconds = 150;
+        $this->routineSetIn($bench, position: 1, reps: 3, percentage: 90.0);
+        $this->routineSetIn($bench, position: 0, reps: 5, percentage: 70.0);
+        $this->routineSetIn($this->routineExerciseIn($second, $this->offered($this->bodyweightMovement(2))), reps: 12, percentage: null);
+
+        $owner = new UserDataModel();
+        $day = new DateTimeImmutable('2026-10-24T20:00:00+02:00');
+        $workout = $this->factory->buildFromRoutine($routine, $owner, $this->now, $day, $this->default, [1 => 730 / 7]);
+
+        self::assertSame($owner, $workout->owner);
+        self::assertSame($routine, $workout->routine);
+        self::assertSame('Push · 24/10/2026', $workout->name);
+        self::assertSame($this->now, $workout->startedAt);
+        self::assertTrue($workout->isInProgress());
+        self::assertSame([['Bench press (barbell)'], ['Push-up']], $this->layout($workout));
+
+        $exercise = $workout->orderedBlocks()[0]->orderedExercises()[0];
+        self::assertSame('Prise serrée', $exercise->note);
+        self::assertSame(150, $exercise->restInSeconds);
+        $sets = $exercise->orderedSets();
+        self::assertSame([5, 3], array_map(static fn (WorkoutSetDataModel $set) => $set->reps, $sets));
+        // 70 % and 90 % of 104.2857…, rounded down to the kilogram.
+        self::assertSame([73.0, 93.0], array_map(static fn (WorkoutSetDataModel $set) => $set->weightInKilograms, $sets));
+        self::assertSame($this->default, $sets[0]->setType);
+        self::assertFalse($sets[0]->isComplete);
+
+        $pushUp = $workout->orderedBlocks()[1]->orderedExercises()[0]->orderedSets()[0];
+        self::assertSame(12, $pushUp->reps);
+        self::assertNull($pushUp->weightInKilograms);
+    }
+
+    /** No estimated 1RM yet: the sets wait for their load, typed in before each is ticked. */
+    public function testAMovementWithoutAnEstimatedOneRepMaxGivesSetsWithoutALoad(): void
+    {
+        $routine = $this->routineOf($this->source->owner);
+        $this->routineSetIn($this->routineExerciseIn($this->routineBlockIn($routine), $this->offered($this->barbellMovement(1))), reps: 5, percentage: 80.0);
+
+        $workout = $this->factory->buildFromRoutine($routine, $this->source->owner, $this->now, $this->now, $this->default, []);
+
+        $set = $workout->orderedBlocks()[0]->orderedExercises()[0]->orderedSets()[0];
+        self::assertSame(5, $set->reps);
+        self::assertNull($set->weightInKilograms);
+    }
+
+    public function testAStartLeavesOutWhatIsNoLongerOfferedAndTheBlockItEmpties(): void
+    {
+        $retired = $this->offered($this->barbellMovement(1));
+        $retired->isActive = false;
+        $routine = $this->routineOf($this->source->owner);
+        $this->routineSetIn($this->routineExerciseIn($this->routineBlockIn($routine, 0), $retired));
+        $superset = $this->routineBlockIn($routine, 1);
+        $this->routineSetIn($this->routineExerciseIn($superset, $retired, 0));
+        $this->routineSetIn($this->routineExerciseIn($superset, $this->offered($this->bodyweightMovement(2)), 1), percentage: null);
+
+        $workout = $this->factory->buildFromRoutine($routine, $this->source->owner, $this->now, $this->now, $this->default, [1 => 100.0]);
+
+        self::assertSame([['Push-up']], $this->layout($workout));
+        // Said once, though it came twice.
+        self::assertSame([$retired], $this->factory->movementsLeftOutOfRoutine($routine));
+    }
+
+    public function testARoutineWithoutASetGivesAWorkoutWithoutASet(): void
+    {
+        $routine = $this->routineOf($this->source->owner);
+        $this->routineExerciseIn($this->routineBlockIn($routine), $this->offered($this->barbellMovement(1)));
+
+        $workout = $this->factory->buildFromRoutine($routine, $this->source->owner, $this->now, $this->now, $this->default, []);
+
+        self::assertSame(0, $workout->countSets());
+        self::assertSame([], $this->factory->movementsLeftOutOfRoutine($routine));
+    }
+
+    private function offered(MovementDataModel $movement): MovementDataModel
+    {
+        $movement->movementFamily = $this->family;
+
+        return $movement;
     }
 
     /** @return list<list<string>> */

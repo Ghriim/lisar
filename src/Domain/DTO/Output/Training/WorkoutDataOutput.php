@@ -30,6 +30,10 @@ final class WorkoutDataOutput
     #[Map(if: false)]
     public bool $isInProgress;
 
+    /** The routine it was started from, while that routine exists; null otherwise. */
+    #[Map(if: false)]
+    public ?int $routineId = null;
+
     /** @var list<WorkoutBlockDataOutput> */
     #[Map(if: false)]
     public array $blocks = [];

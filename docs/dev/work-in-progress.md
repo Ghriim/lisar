@@ -7,32 +7,28 @@ once it is stale.
 
 ## Where things stand
 
-- Branch `main`, clean, in sync with `origin/main` (last commit `af7c3a4 Optimization of personal best`).
+Updated on 2026-11-23.
+
 - Domains delivered, back and front: user accounts and sessions, todo list (tasks, categories),
   trackers (hydration, weight, sleep, steps), habits, workouts (movements, equipments, muscles,
   set types, blocks/exercises/sets, rest, copy of a workout, summary stored in the database,
   personal bests). Each website and admin screen has its page under `docs/product/`.
-- **Last stream of work (2026-10-14 → 2026-10-16): performance pass.**
-  - Validation rules refactored: one validator per use case, calling its constraints one by one
-    (`IsOwnerConstraint`, `IsAdminConstraint`, `…InWorkoutConstraint`…).
-  - Priorities and tags removed from the todo list (migrations `Version20261015*`).
-  - Query budgets: every one of the 111 use cases has an integration test asserting
-    `assertQueryCountAtMost` / `assertQueryCountDoesNotGrow` (`tests/Integration/QueryCountTrait.php`,
-    `config/packages/query_count.yaml`). Integration tests record events instead of running their
-    handlers (`config/packages/event_recording.yaml`).
-  - Timestamps moved to a Doctrine listener (`src/Infrastructure/Persister/TimestampListener.php`).
-  - Personal bests refreshed incrementally from the workout events (`RefreshPersonalBestsEventHandler`).
-  - The pass looks complete; nothing was left half-done in the working tree.
+- **Current stream: routines** (`docs/product/website/routines.md`) — the blueprint of a workout,
+  each set prescribed as reps and a share of the estimated 1RM.
+  - **Back-end done**: schema, editing use cases (list, create, read, rename, delete, blocks,
+    movements, sets, reorder), `POST /api/routines/{id}/start` (a workout laid out like the
+    routine, loads worked out by `PrescribedLoad`, linked through `workout.routine_id`, exposed
+    as `routineId` on a workout), `POST /api/routines/{id}/copy` (« Copie de … »).
+  - **Front-end not started**: the « Routines » tab on `/workouts`, the `/routines/:id` page, the
+    link from a workout to its routine, and the wording of `routine_empty` and
+    `movement_not_supported_in_routine` in `frontend/website/src/api/violations.ts`.
 
 ## Next steps
 
-Not decided yet — to settle with the user at the start of the next session. Candidates from the
-announced scope:
-
-- **Task planning** — announced in the original scope, no product page yet.
-- **The gamification itself** (the "RPG" in *Life Is A RPG*): nothing yet rewards what the person
-  does across domains.
-- Filters on `/todo` (announced in `docs/product/website/tasks.md`).
+1. The website screens for routines, above.
+2. Then, to settle with the user: task planning (announced, no product page yet), the
+   gamification itself (the "RPG" in *Life Is A RPG*), filters on `/todo`, routines shared from
+   the back-office (listed under « Not here yet » in `routines.md`).
 
 ## Context Claude needs that the repository does not hold
 
