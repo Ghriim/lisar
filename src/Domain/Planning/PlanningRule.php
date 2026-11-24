@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Planning;
 
+use App\Domain\DTO\DataModel\Planning\HabitPlanningEntryDataModel;
+use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
+use App\Domain\DTO\DataModel\Planning\TrainingPlanningEntryDataModel;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
 use DateTimeImmutable;
 
@@ -66,6 +69,27 @@ final readonly class PlanningRule
         }
 
         return $dates;
+    }
+
+    /**
+     * The days a planning entry falls on from `$from` to `$to`, both included: its own schedule
+     * handed to datesBetween().
+     *
+     * @return list<DateTimeImmutable>
+     */
+    public function datesOf(TrainingPlanningEntryDataModel|HabitPlanningEntryDataModel|TaskPlanningEntryDataModel $entry, DateTimeImmutable $from, DateTimeImmutable $to): array
+    {
+        return $this->datesBetween(
+            $entry->rule,
+            $entry->startDate,
+            $entry->endDate,
+            $entry->weekdays,
+            $entry->weekInterval,
+            $entry->monthWeeks,
+            $entry->monthDays,
+            $from,
+            $to,
+        );
     }
 
     /** That calendar day at midnight, in the timezone of `$zoned`. */

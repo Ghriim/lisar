@@ -67,6 +67,8 @@ budget; one test checks the table below against the container. The how is in
 | `WorkoutUpdatedEvent` · `WorkoutDeletedEvent` | `WorkoutPersister` | `RefreshPersonalBestsEventHandler`, `SyncWorkoutHabitsEventHandler` |
 | `HydrationEntryCreatedEvent` · `HydrationEntryUpdatedEvent` · `HydrationEntryDeletedEvent` | `HydrationEntryPersister` | `SyncHydrationHabitsEventHandler` |
 | `StepDayCreatedEvent` · `StepDayUpdatedEvent` | `StepDayPersister` | `SyncStepHabitsEventHandler` |
+| `HabitSubscriptionUpdatedEvent` | `HabitSubscriptionPersister::update` | `DeleteHabitPlanningEntriesEventHandler` |
+| `TaskPlanningEntryCreatedEvent` · `TaskPlanningEntryUpdatedEvent` · `TaskPlanningEntryDeletedEvent` | `TaskPlanningEntryPersister` | `SyncPlannedTasksEventHandler` |
 
 ### A workout's summary
 
@@ -107,3 +109,29 @@ tracker knows nothing of habits: it writes, and its persister says so.
 what the write left in memory as much as what it left in the database: `HydrationEntryPersister`
 adds a new entry to its day's `entries`, and takes a removed one out, before the hydration
 handler reads the day's total off them.
+
+### A dropped habit's planning
+
+Unsubscribing deactivates the subscription rather than deleting it, so its planning entries do not
+go through the database's cascade. `HabitSubscriptionPersister::update` says whether the write is
+the one dropping the habit (`deactivates`, read from the original data), and
+`DeleteHabitPlanningEntriesEventHandler` deletes that subscription's entries in one statement:
+taken back up, the habit counts every day again. Taking it back up raises the same event, with
+`deactivates` false, and changes nothing.
+
+### The tasks a task entry makes
+
+A task entry makes ordinary tasks, linked back to it and to their date (`task.planning_entry_id`,
+`task.planned_date`, unique together). `SyncPlannedTasksEventHandler` makes what is due now when an
+entry is created — a single date's task, today's for a recurring rule; on a change, it deletes the
+entry's tasks to come (made ahead, not done) and makes what is due now again; on a delete, it
+deletes the tasks to come. Which dates those are is `TaskPlanningCalendar`'s rule.
+
+The foreign key is `ON DELETE SET NULL`: deleting the entry keeps its tasks. Once the entry is gone
+they no longer point at it, so `TaskPlanningEntryDeletedEvent` carries the open tasks read before
+the delete, and the persister unhooks the tasks the request had loaded, the way the database did,
+before it dispatches.
+
+The tasks of the following days are not made by an event: the daily run
+(`CreatePlannedTasksCommand`, scheduled with `#[AsCronTask]`) makes them through `TaskPersister`,
+which raises nothing.

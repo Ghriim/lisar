@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Infrastructure\EventHandler;
 
+use App\Domain\DTO\Event\Habits\HabitSubscriptionUpdatedEvent;
+use App\Domain\DTO\Event\Planning\TaskPlanningEntryCreatedEvent;
+use App\Domain\DTO\Event\Planning\TaskPlanningEntryDeletedEvent;
+use App\Domain\DTO\Event\Planning\TaskPlanningEntryUpdatedEvent;
 use App\Domain\DTO\Event\Tracking\HydrationEntryCreatedEvent;
 use App\Domain\DTO\Event\Tracking\HydrationEntryDeletedEvent;
 use App\Domain\DTO\Event\Tracking\HydrationEntryUpdatedEvent;
@@ -20,6 +24,8 @@ use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Infrastructure\EventHandler\Habits\SyncHydrationHabitsEventHandler;
 use App\Infrastructure\EventHandler\Habits\SyncStepHabitsEventHandler;
 use App\Infrastructure\EventHandler\Habits\SyncWorkoutHabitsEventHandler;
+use App\Infrastructure\EventHandler\Planning\DeleteHabitPlanningEntriesEventHandler;
+use App\Infrastructure\EventHandler\Planning\SyncPlannedTasksEventHandler;
 use App\Infrastructure\EventHandler\SynchronousEventDispatcher;
 use App\Infrastructure\EventHandler\Training\RefreshPersonalBestsEventHandler;
 use App\Infrastructure\EventHandler\Training\RefreshWorkoutSummaryEventHandler;
@@ -49,11 +55,15 @@ final class SynchronousEventDispatcherTest extends KernelTestCase
         $records = RefreshPersonalBestsEventHandler::class;
         $summary = RefreshWorkoutSummaryEventHandler::class;
         $expected = [
+            HabitSubscriptionUpdatedEvent::class => [DeleteHabitPlanningEntriesEventHandler::class],
             HydrationEntryCreatedEvent::class => [SyncHydrationHabitsEventHandler::class],
             HydrationEntryDeletedEvent::class => [SyncHydrationHabitsEventHandler::class],
             HydrationEntryUpdatedEvent::class => [SyncHydrationHabitsEventHandler::class],
             StepDayCreatedEvent::class => [SyncStepHabitsEventHandler::class],
             StepDayUpdatedEvent::class => [SyncStepHabitsEventHandler::class],
+            TaskPlanningEntryCreatedEvent::class => [SyncPlannedTasksEventHandler::class],
+            TaskPlanningEntryDeletedEvent::class => [SyncPlannedTasksEventHandler::class],
+            TaskPlanningEntryUpdatedEvent::class => [SyncPlannedTasksEventHandler::class],
             WorkoutBlockDeletedEvent::class => [$records, $summary],
             WorkoutCreatedEvent::class => [$summary],
             WorkoutDeletedEvent::class => [SyncWorkoutHabitsEventHandler::class, $records],

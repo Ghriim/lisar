@@ -14,4 +14,13 @@ interface PlanningOccurrenceStateRegistry
 
     /** A past day that went by without being kept. */
     public const string MISSED = 'missed';
+
+    /** A habit kept on a day none of its entries asks for: a bonus, outside the planning. */
+    public const string KEPT_UNPLANNED = 'kept_unplanned';
+
+    /** A task entry's date whose task was made, and is not done — overdue once its day is past. */
+    public const string OPEN = 'open';
+
+    /** A task entry's date whose task was made, and done. */
+    public const string DONE = 'done';
 }

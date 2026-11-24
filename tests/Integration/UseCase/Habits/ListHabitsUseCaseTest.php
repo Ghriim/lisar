@@ -8,6 +8,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Factory\OutputFactory\Habits\HabitOutputFactory;
 use App\Fixtures\Habits\HabitFixtures;
 use App\Fixtures\Habits\HabitSubscriptionFixtures;
+use App\Fixtures\Planning\HabitPlanningEntryFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
@@ -15,6 +16,7 @@ use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Habits\CompleteHabitUseCase;
 use App\UseCase\Habits\ListHabitsUseCase;
 use App\UseCase\Habits\SubscribeHabitUseCase;
+use DateTimeImmutable;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /** The panel's list: the habits one keeps, each with its week. */
@@ -55,6 +57,20 @@ final class ListHabitsUseCaseTest extends KernelTestCase
         self::assertSame('Marcher 5000 pas', $habits[1]->name);
         self::assertCount(HabitOutputFactory::WINDOW_IN_DAYS, $habits[0]->days);
         self::assertFalse($habits[0]->isCompletedToday);
+    }
+
+    /** Reading is planned on Mondays, Wednesdays and Fridays: the other days are not; the walk, with no entry, counts every day. */
+    public function testOnlyThePlannedDaysOfAPlannedHabitCount(): void
+    {
+        $this->loadFixtures(HabitPlanningEntryFixtures::class);
+        $alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
+
+        [$reading, $walk] = $this->list->execute($this->currentUser($this->idOf($alice)));
+
+        foreach ($reading->days as $day) {
+            self::assertSame(in_array((int) (new DateTimeImmutable($day->day))->format('N'), [1, 3, 5], true), $day->isPlanned, $day->day);
+        }
+        self::assertSame(array_fill(0, HabitOutputFactory::WINDOW_IN_DAYS, true), array_map(static fn ($day) => $day->isPlanned, $walk->days));
     }
 
     public function testSomeoneWhoKeepsNoHabitHasAnEmptyList(): void

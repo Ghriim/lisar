@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Validation\Validator\Planning;
+
+use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Input\Planning\SaveTaskPlanningEntryDataInput;
+use App\Domain\Exception\ValidationException;
+use App\Domain\Validation\Constraint\Planning\PlanningScheduleConstraint;
+use App\Domain\Validation\Constraint\Todo\CategoryUsableConstraint;
+use App\Domain\Validation\Validator\AbstractBaseValidator;
+
+/**
+ * `$category` is the category the input asks for, already loaded, if any.
+ *
+ * @extends AbstractBaseValidator<SaveTaskPlanningEntryDataInput>
+ */
+final readonly class CreateTaskPlanningEntryValidator extends AbstractBaseValidator
+{
+    public const string ERROR_CODE = 'create_task_planning_entry_invalid';
+
+    /**
+     * @throws ValidationException
+     */
+    public function validate(UserDataModel $currentUser, SaveTaskPlanningEntryDataInput $input, ?CategoryDataModel $category): void
+    {
+        $violations = $this->getViolations($input);
+        $violations = CategoryUsableConstraint::validate($input->categoryId, $category, $currentUser, $violations);
+        $violations = PlanningScheduleConstraint::validate($input->schedule, 'schedule', $violations);
+
+        if (false === empty($violations)) {
+            throw new ValidationException(self::ERROR_CODE, $violations);
+        }
+    }
+}

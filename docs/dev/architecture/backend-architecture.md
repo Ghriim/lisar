@@ -26,6 +26,7 @@ domain (`Account` / `Subscription` / `Plan`) — replace it with yours.
 | HTTP out | `symfony/http-client` |
 | Mapping data model → output DTO | `symfony/object-mapper` (`#[Map]` attributes), always behind an OutputFactory |
 | Input validation | `symfony/validator` (attributes on DataInputs) + hand-written domain constraints |
+| Scheduled jobs (cron) | `symfony/scheduler` on `symfony/messenger` — no system crontab |
 | Event contracts | JSON Schema (`opis/json-schema`) |
 | Fixtures | `doctrine/doctrine-fixtures-bundle` — plain PHP fixture classes, no YAML DSL |
 | Tests | PHPUnit 13, two suites, `dama/doctrine-test-bundle` for isolation |
@@ -284,6 +285,7 @@ same names everywhere:
 | `Training/` | workouts and their reference data: movements, families, muscles, groups, equipment, set types |
 | `Tracking/` | the trackers, one sub-folder each: `Hydration/`, `Sleep/`, `Step/`, `Weight/` |
 | `Habits/` | the habit catalogue, subscriptions, entries |
+| `Planning/` | planning entries, one data model per kind (training, habit), and the date engine they share |
 | `Todo/` | tasks and their categories; priorities are a registry |
 | `User/` | accounts, identities, sessions, admin comments |
 
@@ -1394,6 +1396,12 @@ Rules: `final`, `#[AsCommand]` (never a static `$defaultName`), arguments in keb
 return `Command::SUCCESS` / `Command::FAILURE`, all business logic in the use case. A command may
 loop over data models fetched from a gateway and call the use case once per item — that iteration is
 the command's job. Developer-only commands go under `Command/Dev/`.
+
+**Scheduled jobs.** A recurring job is a console command like any other, carrying
+`#[AsCronTask('<cron expression>')]` from `symfony/scheduler` next to `#[AsCommand]`. The Scheduler
+dispatches it through Messenger (`RunCommandMessage`), consumed by a worker running
+`messenger:consume scheduler_default`. No system crontab, no hand-written Message, MessageHandler
+or Schedule class: the command stays runnable by hand, and the business logic stays in its use case.
 
 ### 6.15 Outbound integrations (pluggable third parties)
 

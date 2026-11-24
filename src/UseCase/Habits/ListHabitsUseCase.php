@@ -9,6 +9,8 @@ use App\Domain\DTO\Output\Habits\HabitDataOutput;
 use App\Domain\Factory\OutputFactory\Habits\HabitOutputFactory;
 use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
+use App\Domain\Gateway\Provider\Planning\HabitPlanningEntryProviderGateway;
+use App\Domain\Planning\HabitPlanningCalendar;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Habits\ListHabitsValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
@@ -16,13 +18,15 @@ use App\UseCase\UseCaseInterface;
 
 use function sprintf;
 
-/** The person's kept habits, each with its last seven days. It writes nothing. */
+/** The person's kept habits, each with its last seven days and which of them its planning asks for. It writes nothing. */
 final readonly class ListHabitsUseCase implements UseCaseInterface
 {
     public function __construct(
         private ListHabitsValidator $validator,
         private HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
         private HabitEntryProviderGateway $habitEntryProviderGateway,
+        private HabitPlanningEntryProviderGateway $habitPlanningEntryProviderGateway,
+        private HabitPlanningCalendar $planningCalendar,
         private HabitOutputFactory $outputFactory,
         private DayClock $clock,
     ) {
@@ -43,6 +47,8 @@ final readonly class ListHabitsUseCase implements UseCaseInterface
         $subscriptions = $this->habitSubscriptionProviderGateway->findActiveForOwner($currentUser);
         $entries = $this->habitEntryProviderGateway->findForOwnerSince($currentUser, $since);
 
-        return $this->outputFactory->buildMany($subscriptions, $entries, $today);
+        $plannedDays = $this->planningCalendar->plannedDaysBetween($this->habitPlanningEntryProviderGateway->findAllForOwner($currentUser), $since, $today);
+
+        return $this->outputFactory->buildMany($subscriptions, $entries, $plannedDays, $today);
     }
 }

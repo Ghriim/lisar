@@ -15,7 +15,8 @@ use function sprintf;
 /**
  * A subscribed habit's line: its name and icon from the subscription's habit, and the last seven
  * days drawn from that subscription's entries. A day with no entry, or an entry not kept, is an
- * empty circle; a kept one is a checked circle.
+ * empty circle; a kept one is a checked circle. A planned habit's days its planning does not ask
+ * for are marked so, to be drawn dimmed.
  */
 final readonly class HabitOutputFactory
 {
@@ -25,33 +26,36 @@ final readonly class HabitOutputFactory
     /**
      * @param list<HabitSubscriptionDataModel> $subscriptions
      * @param list<HabitEntryDataModel>        $entries       every entry of those subscriptions since the window opened
+     * @param array<int, array<string, true>>  $plannedDays   subscription id => its planned days over the window; a subscription absent counts every day
      *
      * @return list<HabitDataOutput>
      */
-    public function buildMany(array $subscriptions, array $entries, DateTimeImmutable $today): array
+    public function buildMany(array $subscriptions, array $entries, array $plannedDays, DateTimeImmutable $today): array
     {
         $completed = $this->completionBySubscription($entries);
 
         $outputs = [];
         foreach ($subscriptions as $subscription) {
-            $outputs[] = $this->build($subscription, $completed[$subscription->id] ?? [], $today);
+            $outputs[] = $this->build($subscription, $completed[$subscription->id] ?? [], $plannedDays[$subscription->id] ?? null, $today);
         }
 
         return $outputs;
     }
 
     /**
-     * @param list<HabitEntryDataModel> $entries this subscription's entries since the window opened
+     * @param list<HabitEntryDataModel> $entries     this subscription's entries since the window opened
+     * @param array<string, true>|null  $plannedDays its planned days over the window; null when it counts every day
      */
-    public function buildOne(HabitSubscriptionDataModel $subscription, array $entries, DateTimeImmutable $today): HabitDataOutput
+    public function buildOne(HabitSubscriptionDataModel $subscription, array $entries, ?array $plannedDays, DateTimeImmutable $today): HabitDataOutput
     {
-        return $this->build($subscription, $this->completionBySubscription($entries)[$subscription->id] ?? [], $today);
+        return $this->build($subscription, $this->completionBySubscription($entries)[$subscription->id] ?? [], $plannedDays, $today);
     }
 
     /**
-     * @param array<string, bool> $completedByDay day (YYYY-MM-DD) => kept
+     * @param array<string, bool>      $completedByDay day (YYYY-MM-DD) => kept
+     * @param array<string, true>|null $plannedDays    null when it counts every day
      */
-    private function build(HabitSubscriptionDataModel $subscription, array $completedByDay, DateTimeImmutable $today): HabitDataOutput
+    private function build(HabitSubscriptionDataModel $subscription, array $completedByDay, ?array $plannedDays, DateTimeImmutable $today): HabitDataOutput
     {
         $days = [];
         $isCompletedToday = false;
@@ -63,6 +67,7 @@ final readonly class HabitOutputFactory
             $mark = new HabitDayDataOutput();
             $mark->day = $key;
             $mark->isCompleted = $kept;
+            $mark->isPlanned = null === $plannedDays || isset($plannedDays[$key]);
             $days[] = $mark;
 
             if (0 === $offset) {

@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Factory\OutputFactory\Planning;
 
 use App\Domain\DataTransformer\DateDataTransformer;
-use App\Domain\DataTransformer\TimeDataTransformer;
 use App\Domain\DTO\DataModel\Planning\TrainingPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
-use App\Domain\DTO\Output\Planning\PlanningScheduleDataOutput;
 use App\Domain\DTO\Output\Planning\TrainingPlanningDataOutput;
 use App\Domain\DTO\Output\Planning\TrainingPlanningEntryDataOutput;
 use App\Domain\DTO\Output\Planning\TrainingPlanningSlotDataOutput;
@@ -16,6 +14,11 @@ use DateTimeImmutable;
 
 final readonly class TrainingPlanningOutputFactory
 {
+    public function __construct(
+        private PlanningScheduleOutputFactory $scheduleOutputFactory,
+    ) {
+    }
+
     /**
      * @param list<TrainingPlanningEntryDataModel>                                                                                      $entries
      * @param list<array{entry: TrainingPlanningEntryDataModel, day: DateTimeImmutable, state: string, workout: WorkoutDataModel|null}> $slots
@@ -44,17 +47,7 @@ final readonly class TrainingPlanningOutputFactory
         $output->routineId = (int) $entry->routine->id;
         $output->routineName = $entry->routine->name;
 
-        $schedule = new PlanningScheduleDataOutput();
-        $schedule->rule = $entry->rule;
-        $schedule->startDate = (string) DateDataTransformer::dateToDayString($entry->startDate);
-        $schedule->endDate = DateDataTransformer::dateToDayString($entry->endDate);
-        $schedule->weekdays = $entry->weekdays;
-        $schedule->weekInterval = $entry->weekInterval;
-        $schedule->monthWeeks = $entry->monthWeeks;
-        $schedule->monthDays = $entry->monthDays;
-        $schedule->startTime = TimeDataTransformer::minutesToTimeString($entry->startTimeInMinutes);
-        $schedule->durationInMinutes = $entry->durationInMinutes;
-        $output->schedule = $schedule;
+        $output->schedule = $this->scheduleOutputFactory->buildOne($entry);
 
         return $output;
     }

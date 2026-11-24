@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\DTO\DataModel\Todo;
 
 use App\Domain\DTO\DataModel\DataModelInterface;
+use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -17,6 +18,8 @@ use Doctrine\ORM\Mapping as ORM;
  * date, priority and category, and cannot have subtasks of its own.
  */
 #[ORM\Table(name: 'task')]
+// One task per date of a planning entry: what makes creating them safe to run twice.
+#[ORM\UniqueConstraint(name: 'task_planning_entry_date', columns: ['planning_entry_id', 'planned_date'])]
 #[ORM\Entity]
 class TaskDataModel implements DataModelInterface
 {
@@ -55,6 +58,17 @@ class TaskDataModel implements DataModelInterface
     /** @var Collection<int, TaskDataModel> */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
     public Collection $subtasks;
+
+    // Set on a task made by a planning entry. SET NULL: deleting the entry keeps the tasks
+    // already made — what fell stays — and only unhooks them from the planning.
+    #[ORM\ManyToOne(targetEntity: TaskPlanningEntryDataModel::class)]
+    #[ORM\JoinColumn(name: 'planning_entry_id', nullable: true, onDelete: 'SET NULL')]
+    public ?TaskPlanningEntryDataModel $planningEntry = null;
+
+    // The date of the entry the task was made for. Kept apart from the due date, which the
+    // person may move: the planning still knows which date the task answers.
+    #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
+    public ?DateTimeImmutable $plannedDate = null;
 
     // The single source of truth for "done": a task is done when it was closed, by hand.
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]

@@ -38,6 +38,21 @@ final class HabitEntryRepository extends ServiceEntityRepository implements Habi
     }
 
     /** @return list<HabitEntryDataModel> */
+    public function findForOwnerBetween(UserDataModel $owner, DateTimeImmutable $from, DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('entry')
+            ->innerJoin('entry.subscription', 'subscription')
+            ->addSelect('subscription')
+            ->andWhere('subscription.owner = :owner')
+            ->andWhere('entry.day BETWEEN :from AND :to')
+            ->setParameter('owner', $owner)
+            ->setParameter('from', $from, Types::DATE_IMMUTABLE)
+            ->setParameter('to', $to, Types::DATE_IMMUTABLE)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<HabitEntryDataModel> */
     public function findForSubscriptionSince(HabitSubscriptionDataModel $subscription, DateTimeImmutable $since): array
     {
         return $this->createQueryBuilder('entry')

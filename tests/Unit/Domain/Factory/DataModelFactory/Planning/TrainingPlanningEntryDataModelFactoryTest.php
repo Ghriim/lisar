@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\Factory\DataModelFactory\Planning;
 
 use App\Domain\DTO\Input\Planning\PlanningScheduleDataInput;
+use App\Domain\Factory\DataModelFactory\Planning\PlanningEntryDataModelFactory;
 use App\Domain\Factory\DataModelFactory\Planning\TrainingPlanningEntryDataModelFactory;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
 use App\Tests\CurrentUserTrait;
@@ -21,7 +22,7 @@ final class TrainingPlanningEntryDataModelFactoryTest extends TestCase
         $owner = $this->anyCurrentUser();
         $routine = $this->routineOf($owner);
 
-        $entry = (new TrainingPlanningEntryDataModelFactory())->build($owner, $routine, new PlanningScheduleDataInput(
+        $entry = (new TrainingPlanningEntryDataModelFactory(new PlanningEntryDataModelFactory()))->build($owner, $routine, new PlanningScheduleDataInput(
             rule: PlanningRuleRegistry::MONTHLY_WEEKDAY,
             startDate: '2026-11-02',
             endDate: '2027-02-28',
@@ -50,7 +51,7 @@ final class TrainingPlanningEntryDataModelFactoryTest extends TestCase
     {
         $owner = $this->anyCurrentUser();
 
-        $entry = (new TrainingPlanningEntryDataModelFactory())->build($owner, $this->routineOf($owner), new PlanningScheduleDataInput(
+        $entry = (new TrainingPlanningEntryDataModelFactory(new PlanningEntryDataModelFactory()))->build($owner, $this->routineOf($owner), new PlanningScheduleDataInput(
             rule: PlanningRuleRegistry::ONCE,
             startDate: '2026-11-28',
             endDate: '2026-12-31',
@@ -69,7 +70,7 @@ final class TrainingPlanningEntryDataModelFactoryTest extends TestCase
     public function testApplyingReplacesTheScheduleWhole(): void
     {
         $owner = $this->anyCurrentUser();
-        $factory = new TrainingPlanningEntryDataModelFactory();
+        $factory = new TrainingPlanningEntryDataModelFactory(new PlanningEntryDataModelFactory());
         $entry = $factory->build($owner, $this->routineOf($owner), new PlanningScheduleDataInput(PlanningRuleRegistry::WEEKLY, '2026-11-02', weekdays: [2], weekInterval: 2, startTime: '07:00'));
 
         $other = $this->routineOf($owner);

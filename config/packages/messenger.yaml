@@ -1,0 +1,8 @@
+# Messenger carries the scheduled jobs and nothing else for now: a console command carrying
+# #[AsCronTask] is put on the `scheduler_default` transport by symfony/scheduler, and the `worker`
+# container consumes it (backend-architecture.md §6.14). No asynchronous transport: what follows
+# from a write runs synchronously, through the domain events.
+framework:
+    messenger:
+        transports:
+            sync: 'sync://'

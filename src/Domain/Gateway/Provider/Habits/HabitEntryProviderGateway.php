@@ -20,6 +20,14 @@ interface HabitEntryProviderGateway
     public function findForOwnerSince(UserDataModel $owner, DateTimeImmutable $since): array;
 
     /**
+     * Every entry from `$from` to `$to`, both included, across the person's subscriptions — what
+     * the planning reads a habit's dates off. The subscription is joined.
+     *
+     * @return list<HabitEntryDataModel>
+     */
+    public function findForOwnerBetween(UserDataModel $owner, DateTimeImmutable $from, DateTimeImmutable $to): array;
+
+    /**
      * One subscription's entries from `$since` onward — the marks a single-habit answer needs.
      *
      * @return list<HabitEntryDataModel>

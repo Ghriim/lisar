@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Habits;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Habits\HabitSubscriptionUpdatedEvent;
 use App\Fixtures\Habits\HabitFixtures;
 use App\Fixtures\Habits\HabitSubscriptionFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Habits\UnsubscribeHabitUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -20,6 +22,7 @@ final class UnsubscribeHabitUseCaseTest extends KernelTestCase
     use HabitTestTrait;
     use LoadFixturesTrait;
     use QueryCountTrait;
+    use RecordedEventsTrait;
     use SignedInUserTrait;
 
     private UnsubscribeHabitUseCase $unsubscribe;
@@ -34,6 +37,16 @@ final class UnsubscribeHabitUseCaseTest extends KernelTestCase
         $this->loadFixtures(HabitSubscriptionFixtures::class);
 
         $this->alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
+    }
+
+    /** The write that drops it says so: its planning entries follow (DeleteHabitPlanningEntriesEventHandler). */
+    public function testItRaisesTheSubscriptionDropped(): void
+    {
+        $this->unsubscribe->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::READING));
+
+        $event = $this->assertEventRaised(HabitSubscriptionUpdatedEvent::class);
+        self::assertTrue($event->deactivates);
+        self::assertFalse($event->subscription->isActive);
     }
 
     public function testUnsubscribingFromAHabitStaysWithinItsQueryBudget(): void

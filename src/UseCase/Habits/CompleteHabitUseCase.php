@@ -15,6 +15,8 @@ use App\Domain\Gateway\Persister\Habits\HabitEntryPersisterGateway;
 use App\Domain\Gateway\Provider\Habits\HabitEntryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitSubscriptionProviderGateway;
+use App\Domain\Gateway\Provider\Planning\HabitPlanningEntryProviderGateway;
+use App\Domain\Planning\HabitPlanningCalendar;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Tracking\DayClock;
 use App\Domain\Validation\Validator\Habits\CompleteHabitValidator;
@@ -39,6 +41,8 @@ final readonly class CompleteHabitUseCase implements UseCaseInterface
         private HabitSubscriptionProviderGateway $habitSubscriptionProviderGateway,
         private HabitEntryProviderGateway $habitEntryProviderGateway,
         private HabitEntryPersisterGateway $habitEntryPersisterGateway,
+        private HabitPlanningEntryProviderGateway $habitPlanningEntryProviderGateway,
+        private HabitPlanningCalendar $planningCalendar,
         private HabitOutputFactory $outputFactory,
         private DayClock $clock,
     ) {
@@ -91,7 +95,10 @@ final readonly class CompleteHabitUseCase implements UseCaseInterface
             $this->habitEntryPersisterGateway->update($entry);
         }
 
-        return $this->outputFactory->buildOne($subscription, $entries, $today);
+        $planningEntries = $this->habitPlanningEntryProviderGateway->findForSubscription($subscription);
+        $plannedDays = $this->planningCalendar->plannedDaysBetween($planningEntries, $since, $today)[$subscription->id] ?? null;
+
+        return $this->outputFactory->buildOne($subscription, $entries, $plannedDays, $today);
     }
 
     /**

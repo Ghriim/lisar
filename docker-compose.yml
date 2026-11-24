@@ -15,6 +15,27 @@ services:
         volumes:
             - .:/var/www/app:cached
 
+    # Runs the scheduled jobs: every console command carrying #[AsCronTask] (symfony/scheduler).
+    # The time limit makes it restart regularly, so it never runs on stale code for long.
+    worker:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+            args:
+                UID: ${UID:-1000}
+                GID: ${GID:-1000}
+        depends_on:
+            mysql:
+                condition: service_healthy
+        environment:
+            APP_ENV: dev
+            DATABASE_URL: "mysql://lisar:lisar@mysql:3306/lisar?serverVersion=8.4.0&charset=utf8mb4"
+        user: app
+        command: ["php", "bin/console", "messenger:consume", "scheduler_default", "--time-limit=3600"]
+        restart: unless-stopped
+        volumes:
+            - .:/var/www/app:cached
+
     nginx:
         image: nginx:1.27-alpine
         depends_on:

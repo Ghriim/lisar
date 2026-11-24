@@ -42,7 +42,7 @@ final readonly class TrainingPlanningCalendar
 
         $slots = [];
         foreach ($entries as $order => $entry) {
-            foreach ($this->datesOf($entry, $from, $to) as $day) {
+            foreach ($this->planningRule->datesOf($entry, $from, $to) as $day) {
                 $slots[] = ['entry' => $entry, 'day' => $day, 'order' => $order];
             }
         }
@@ -67,22 +67,6 @@ final readonly class TrainingPlanningCalendar
         }
 
         return $result;
-    }
-
-    /** @return list<DateTimeImmutable> */
-    private function datesOf(TrainingPlanningEntryDataModel $entry, DateTimeImmutable $from, DateTimeImmutable $to): array
-    {
-        return $this->planningRule->datesBetween(
-            $entry->rule,
-            $entry->startDate,
-            $entry->endDate,
-            $entry->weekdays,
-            $entry->weekInterval,
-            $entry->monthWeeks,
-            $entry->monthDays,
-            $from,
-            $to,
-        );
     }
 
     /**
