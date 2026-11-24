@@ -4,7 +4,7 @@ import { Modal } from './Modal'
 
 interface ConfirmDialogProps {
     title: string
-    /** What will happen, plainly. Deleting a quest takes its sub-quests with it, and says so. */
+    /** What will happen, plainly. Deleting a task takes its subtasks with it, and says so. */
     question: string
     /** The verb that goes through with it. */
     confirmLabel: string

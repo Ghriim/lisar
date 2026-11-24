@@ -4,7 +4,7 @@ import { HydrationWidget } from '../features/hydration/HydrationWidget'
 import { useHydrationToday } from '../features/hydration/queries'
 import { SleepWidget } from '../features/sleep/SleepWidget'
 import { StepWidget } from '../features/steps/StepWidget'
-import { QuestLog } from '../features/tasks/QuestLog'
+import { TaskList } from '../features/tasks/TaskList'
 import { WeightWidget } from '../features/weight/WeightWidget'
 
 export function DashboardPage() {
@@ -27,7 +27,7 @@ export function DashboardPage() {
             </div>
 
             <div className="main-columns">
-                <QuestLog />
+                <TaskList />
                 <HabitPanel />
             </div>
         </>

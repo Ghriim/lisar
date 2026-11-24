@@ -1,6 +1,6 @@
-import { QuestLog } from '../features/tasks/QuestLog'
+import { TaskList } from '../features/tasks/TaskList'
 
-/** The quest log on its own. Filters will land here, not on the dashboard. */
+/** The task list on its own. Filters will land here, not on the dashboard. */
 export function TodoPage() {
-    return <QuestLog />
+    return <TaskList />
 }

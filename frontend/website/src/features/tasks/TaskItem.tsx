@@ -8,7 +8,7 @@ import { formatDay, isOverdue, priorityDisplay, stateDisplay } from './taskDispl
 
 interface TaskItemProps {
     task: Task
-    /** Opens the quest in the window that holds everything else one can do to it. */
+    /** Opens the task in the window that holds everything else one can do to it. */
     onView: (task: Task) => void
 }
 

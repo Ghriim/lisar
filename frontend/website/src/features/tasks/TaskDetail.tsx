@@ -21,27 +21,27 @@ import { formatDay, isOverdue, priorityDisplay, stateDisplay } from './taskDispl
 
 interface TaskDetailProps {
     task: Task
-    /** Turns this same window into the form, for the quest or for one of its sub-quests. */
+    /** Turns this same window into the form, for the task or for one of its subtasks. */
     onEdit: (task: Task) => void
     onAddSubtask: () => void
-    /** Called once the quest itself is gone, so whoever opened this window can close it. */
+    /** Called once the task itself is gone, so whoever opened this window can close it. */
     onDeleted: () => void
 }
 
 /**
- * A quest, read rather than edited. It is where the actions that used to crowd every row now
+ * A task, read rather than edited. It is where the actions that used to crowd every row now
  * live: the list keeps only what is done constantly — ticking off, and opening this.
  */
 export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: TaskDetailProps) {
     // The row that opened this window is a snapshot; anything done from here — ticking a
-    // sub-quest off, deleting one — has to show at once. So the window re-reads the quest, and
+    // subtask off, deleting one — has to show at once. So the window re-reads the task, and
     // starts from the snapshot so nothing flickers.
     const { data: task } = useTask(opened.id, opened)
 
     const complete = useCompleteTask()
     const reopen = useReopenTask()
     const remove = useDeleteTask()
-    /** The quest a confirmation is pending on: this one, or one of its sub-quests. */
+    /** The task a confirmation is pending on: this one, or one of its subtasks. */
     const [confirming, setConfirming] = useState<Task | null>(null)
 
     const state = stateDisplay(task.state)
@@ -134,7 +134,7 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
                 {task.parentId === null && (
                     <IconButton
                         icon={Plus}
-                        label="Ajouter une sous-quête"
+                        label="Ajouter une sous-tâche"
                         subject={task.title}
                         onClick={onAddSubtask}
                     />
@@ -153,10 +153,10 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
             {subtaskCount > 0 && (
                 <DataList<Task>
                     groups={[
-                        { label: `Sous-quêtes (${doneSubtaskCount}/${subtaskCount})`, items: task.subtasks },
+                        { label: `Sous-tâches (${doneSubtaskCount}/${subtaskCount})`, items: task.subtasks },
                     ]}
                     keyOf={(subtask) => subtask.id}
-                    emptyText="Aucune sous-quête."
+                    emptyText="Aucune sous-tâche."
                     renderItem={(subtask) => (
                         <SubtaskRow
                             subtask={subtask}
@@ -169,7 +169,7 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
 
             {confirming !== null && (
                 <ConfirmDialog
-                    title="Supprimer la quête"
+                    title="Supprimer la tâche"
                     question={questionFor(confirming)}
                     confirmLabel="Supprimer"
                     onCancel={() => setConfirming(null)}
@@ -177,7 +177,7 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
                         const target = confirming
                         setConfirming(null)
                         remove.mutate(target.id, {
-                            // Deleting the quest this window is about leaves nothing to show.
+                            // Deleting the task this window is about leaves nothing to show.
                             onSuccess: target.id === task.id ? onDeleted : undefined,
                         })
                     }}
@@ -193,7 +193,7 @@ interface SubtaskRowProps {
     onDelete: () => void
 }
 
-/** A sub-quest carries the same actions as its parent, minus the one that would nest further. */
+/** A subtask carries the same actions as its parent, minus the one that would nest further. */
 function SubtaskRow({ subtask, onEdit, onDelete }: SubtaskRowProps) {
     const complete = useCompleteTask()
     const reopen = useReopenTask()
@@ -244,7 +244,7 @@ function SubtaskRow({ subtask, onEdit, onDelete }: SubtaskRowProps) {
 
 function questionFor(task: Task): string {
     if (task.subtasks.length > 0) {
-        return `« ${task.title} » et ses ${task.subtasks.length} sous-quêtes seront supprimées. C’est définitif.`
+        return `« ${task.title} » et ses ${task.subtasks.length} sous-tâches seront supprimées. C’est définitif.`
     }
 
     return `« ${task.title} » sera supprimée. C’est définitif.`

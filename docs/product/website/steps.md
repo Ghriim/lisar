@@ -10,7 +10,7 @@ the window where the number is set: a pencil to correct a count already recorded
 the first of the day.
 
 That is all it shows. Like the others, the point of the widget is to be glanceable and to stay out
-of the way of the quest log it sits next to.
+of the way of the task list it sits next to.
 
 ## The window
 

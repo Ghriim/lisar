@@ -54,7 +54,7 @@
     font-size: 15px;
     word-break: break-word;
 }
-/* The quest log: the list, its rows, and the shapes that carry a task's state. */
+/* The task list: the list, its rows, and the shapes that carry a task's state. */
 
 .app-shell {
     max-width: 1200px;
@@ -169,7 +169,7 @@
     word-break: break-word;
 }
 
-/* How far a task has got through its sub-quests, in the terms the System counts in. */
+/* How far a task has got through its subtasks, in the terms the System counts in. */
 .list-item-note {
     color: var(--text-faint);
     font-family: var(--font-system);
@@ -198,7 +198,7 @@
     align-items: flex-start;
     gap: 6px;
 }
-/* The quest log: the list, its rows, and the shapes that carry a task's state. */
+/* The task list: the list, its rows, and the shapes that carry a task's state. */
 
 .app-shell {
     max-width: 1200px;
@@ -313,7 +313,7 @@
     word-break: break-word;
 }
 
-/* How far a task has got through its sub-quests, in the terms the System counts in. */
+/* How far a task has got through its subtasks, in the terms the System counts in. */
 .list-item-note {
     color: var(--text-faint);
     font-family: var(--font-system);

@@ -14,7 +14,7 @@ import { useCategories, useCreateTask, useUpdateTask } from './queries'
 import { priorityDisplay } from './taskDisplay'
 
 interface TaskComposerProps {
-    /** Set when writing a subtask: the quest it hangs from. */
+    /** Set when writing a subtask: the task it hangs from. */
     parent: Task | null
     /** Set when editing rather than creating. */
     editing: Task | null
@@ -30,7 +30,7 @@ interface FormState {
 }
 
 /**
- * What a new quest starts as: no category, no rank. The only default anywhere is the
+ * What a new task starts as: no category, no rank. The only default anywhere is the
  * priority, and it is the server that applies it — Normale, once the form is submitted without
  * one.
  */

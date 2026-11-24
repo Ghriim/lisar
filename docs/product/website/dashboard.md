@@ -6,9 +6,9 @@
 
 - in a row at the top, the tracker widgets — [hydration](hydration.md), [steps](steps.md),
   [sleep](sleep.md), [weight](weight.md);
-- below them, the [quest log](tasks.md) and, beside it, the [habits](habits.md) panel.
+- below them, the [task list](tasks.md) and, beside it, the [habits](habits.md) panel.
 
-The quest log here is the same one as on `/todo`, with every window it opens.
+The task list here is the same one as on `/todo`, with every window it opens.
 
 ## When the day turns
 

@@ -5,7 +5,7 @@ import { HydrationPanel } from './HydrationPanel'
 import { useHydrationToday } from './queries'
 
 /**
- * A glass of water and where the day stands, on the quest log. Drinking is noted in passing,
+ * A glass of water and where the day stands, on the task list. Drinking is noted in passing,
  * several times a day: a click anywhere on the widget opens the window where everything happens.
  */
 export function HydrationWidget() {

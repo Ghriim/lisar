@@ -12,7 +12,7 @@ import { groupByCategory } from './taskDisplay'
 /**
  * What the window above the list is currently for. Closed means there is no window.
  *
- * Reading a quest and editing it are the same window in two states: the eye opens it read-only,
+ * Reading a task and editing it are the same window in two states: the eye opens it read-only,
  * and its pencil turns it into the form without ever closing.
  */
 type Panel =
@@ -24,10 +24,10 @@ type Panel =
 type View = 'open' | 'done'
 
 /**
- * The quest log, with every window it opens. Shown on the dashboard and, alone, on the todo
+ * The task list, with every window it opens. Shown on the dashboard and, alone, on the todo
  * page — one component, so the two can never drift apart.
  */
-export function QuestLog() {
+export function TaskList() {
     const [view, setView] = useState<View>('open')
     const [panel, setPanel] = useState<Panel>(null)
     const [managingCategories, setManagingCategories] = useState(false)
@@ -40,7 +40,7 @@ export function QuestLog() {
     return (
         <>
             <SystemPanel
-                title="Journal de quêtes"
+                title="Liste des tâches"
                 actions={
                     <Row style={{ gap: 6 }}>
                         <IconButton
@@ -50,7 +50,7 @@ export function QuestLog() {
                         />
                         <IconButton
                             icon={Plus}
-                            label="Créer une quête"
+                            label="Créer une tâche"
                             onClick={() => setPanel({ mode: 'create', parent: null })}
                         />
                     </Row>
@@ -70,7 +70,7 @@ export function QuestLog() {
                     keyOf={(task) => task.id}
                     loading={tasks.isPending}
                     error={tasks.isError ? 'Le System ne répond pas. Réessaie dans un instant.' : null}
-                    emptyText={view === 'done' ? 'Aucune quête terminée.' : 'Aucune quête en cours.'}
+                    emptyText={view === 'done' ? 'Aucune tâche terminée.' : 'Aucune tâche en cours.'}
                     renderItem={(task) => (
                         <TaskItem task={task} onView={(target) => setPanel({ mode: 'view', task: target })} />
                     )}
@@ -107,14 +107,14 @@ export function QuestLog() {
 
 function panelTitle(panel: NonNullable<Panel>): string {
     if (panel.mode === 'view') {
-        // Generic on purpose: the quest's own title is the first field inside the window, and
+        // Generic on purpose: the task's own title is the first field inside the window, and
         // saying it twice in the same box says it once too often.
-        return 'Détails de la quête'
+        return 'Détails de la tâche'
     }
 
     if (panel.mode === 'edit') {
-        return 'Modifier la quête'
+        return 'Modifier la tâche'
     }
 
-    return panel.parent === null ? 'Nouvelle quête' : `Sous-quête de « ${panel.parent.title} »`
+    return panel.parent === null ? 'Nouvelle tâche' : `Sous-tâche de « ${panel.parent.title} »`
 }

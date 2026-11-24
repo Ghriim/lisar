@@ -9,7 +9,7 @@ A glass of water and the day's progress — what has been drunk against the day'
 one icon opens the window where everything else happens.
 
 That is all it shows. The point of the widget is to be glanceable and to stay out of the way of
-the quest log it sits next to.
+the task list it sits next to.
 
 ## The window
 

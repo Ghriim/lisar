@@ -6,8 +6,8 @@ one of them lives in its own README.
 ## 1. Buttons
 
 - **A button is labelled with a verb, and with the verb alone.** `Créer`, `Enregistrer`,
-  `Annuler`, `Se déconnecter` — never `Nouvelle quête`, never `Déconnexion`, never
-  `Accepter la quête`. A button is an action, and its label is that action.
+  `Annuler`, `Se déconnecter` — never `Nouvelle tâche`, never `Déconnexion`, never
+  `Accepter la tâche`. A button is an action, and its label is that action.
 - **A pending button keeps its verb** and adds an ellipsis: `Entrer` becomes `Entrer…`, not
   `Connexion…`. The label must not change identity halfway through a click.
 ## 1.1 An icon says what it does, before it is clicked
@@ -84,14 +84,14 @@ Every form ends with the same block, `FormActions`:
 
 ## 3. Modals, and what cannot be undone
 
-**An action that cannot be undone asks first.** Deleting a quest takes its sub-quests with it
+**An action that cannot be undone asks first.** Deleting a task takes its subtasks with it
 and says so in the question; deleting a category says it is final. The website asks with
 `ConfirmDialog`, the back-office with `ConfirmButton`; both word their buttons the same way.
 
 The line is **what cannot be recreated in one gesture**, not what writes to the database.
 Removing a hydration entry logged by mistake asks nothing: it is re-added with a single tap, and
-a confirmation on every mis-tap would make correcting one worse than making it. A quest, its
-sub-quests and a category are not retyped in a gesture, so they ask.
+a confirmation on every mis-tap would make correcting one worse than making it. A task, its
+subtasks and a category are not retyped in a gesture, so they ask.
 
 
 A form that is not the point of the screen opens in a modal, never inline: the screen shows its
@@ -163,7 +163,7 @@ prop or the System gains a colour, one file changes.
 Some components exist because a *shape* recurs, not a widget: `DataList` and `ListItem` on the
 website draw any list of things — a row with an accent, a title, a progress note, a line of
 chips, an action cluster, and children it folds away. They know nothing about tasks, and their
-CSS says so: `.list-item`, not `.task`. The quest log and the category manager are both built
+CSS says so: `.list-item`, not `.task`. The task list and the category manager are both built
 on them, which is what proves it.
 
 Two components carry a rule in their type rather than in a comment:

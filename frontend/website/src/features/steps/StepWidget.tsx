@@ -5,7 +5,7 @@ import { useStepsToday } from './queries'
 import { StepPanel } from './StepPanel'
 
 /**
- * The day's steps against the day's goal, on the quest log. A running total, glanced at: a click
+ * The day's steps against the day's goal, on the task list. A running total, glanced at: a click
  * anywhere on the widget opens the window where the number is set.
  */
 export function StepWidget() {
