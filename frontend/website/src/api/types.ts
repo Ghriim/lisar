@@ -139,6 +139,8 @@ export interface HabitDay {
     /** A calendar day, YYYY-MM-DD. */
     day: string
     isCompleted: boolean
+    /** Whether the habit's planning asks for the day: every day for a habit without any entry. */
+    isPlanned: boolean
 }
 
 /** A subscribed habit, as its line on the panel. */
@@ -474,5 +476,68 @@ export interface TrainingPlanning {
 
 export interface TrainingPlanningEntryPayload {
     routineId: number
+    schedule: PlanningSchedule
+}
+
+/** The days a subscribed habit counts, on a rule of dates. */
+export interface HabitPlanningEntry {
+    id: number
+    habitId: number
+    habitName: string
+    habitIcon: string
+    schedule: PlanningSchedule
+}
+
+/** One date of a habit entry — or a day the habit was kept unplanned, with no entry. */
+export interface HabitPlanningSlot {
+    entryId: number | null
+    habitId: number
+    /** "YYYY-MM-DD". */
+    day: string
+    /** to_come, kept, missed or kept_unplanned. */
+    state: string
+}
+
+export interface HabitPlanning {
+    entries: HabitPlanningEntry[]
+    /** By day, the planned dates by start time, then the days kept unplanned. */
+    slots: HabitPlanningSlot[]
+}
+
+export interface HabitPlanningEntryPayload {
+    habitId: number
+    schedule: PlanningSchedule
+}
+
+/** A task model planned on a rule of dates: each date makes its own task. */
+export interface TaskPlanningEntry {
+    id: number
+    title: string
+    description: string | null
+    category: Category | null
+    schedule: PlanningSchedule
+}
+
+/** One date of a task entry. */
+export interface TaskPlanningSlot {
+    entryId: number
+    /** The task made for that date; null while it is to come. */
+    taskId: number | null
+    /** "YYYY-MM-DD". */
+    day: string
+    /** to_come, open or done — an open task of a day gone by is overdue. */
+    state: string
+}
+
+export interface TaskPlanning {
+    entries: TaskPlanningEntry[]
+    /** By day, then by start time. */
+    slots: TaskPlanningSlot[]
+}
+
+export interface TaskPlanningEntryPayload {
+    title: string
+    description: string | null
+    categoryId: number | null
     schedule: PlanningSchedule
 }

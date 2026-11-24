@@ -7,7 +7,7 @@ once it is stale.
 
 ## Where things stand
 
-Updated on 2026-11-23.
+Updated on 2026-11-24.
 
 - Domains delivered, back and front: user accounts and sessions, todo list, trackers (hydration,
   weight, sleep, steps), habits, workouts, routines (`docs/product/website/routines.md`) and
@@ -21,16 +21,27 @@ Updated on 2026-11-23.
      `/api/planning/training`, the `/planning` week page (`components/WeekCalendar`,
      `features/planning/`). A slot is kept by a workout of its routine started that day, read
      from the workouts, never stored. Not yet tried by hand in a browser.
-  3. **Next**: habit entries — a run counting planned days only, a day kept unplanned as a bonus.
-  4. Then task entries — a quest created the day of each date (a once at once); how the daily
-     creation runs (scheduled command, or on first read of the day) is still to decide.
+  3. **Done**: habit entries, back and front — `HabitPlanningEntryDataModel` (hangs off the
+     subscription), `/api/planning/habit`, the plus asking the kind, the habits panel dimming the
+     days not planned (`HabitDayDataOutput::isPlanned`). States are read from the habit's days
+     (`HabitPlanningCalendar`), never stored; unsubscribing deletes the entries through
+     `HabitSubscriptionUpdatedEvent`. No run is counted anywhere yet: "a run counts planned days
+     only" is for the gamification to apply. Not yet tried by hand in a browser.
+  4. **Done**: task entries, back and front — `TaskPlanningEntryDataModel` (a task model on a
+     rule), `/api/planning/task`, tasks linked back to their entry and date
+     (`TaskDataModel::$planningEntry`, `$plannedDate`). A single date's task, or today's, is made
+     on write (`SyncPlannedTasksEventHandler`); the next days' by the nightly
+     `lisar:planning:create-tasks` (`#[AsCronTask]`, run by the `worker` container through
+     symfony/scheduler on Messenger). The entry's time is the planning's only: the task has no
+     time of day. Not yet tried by hand in a browser.
 - The schedule fields are repeated on each entry data model (no Embeddable: that would be a new
   kind of component, not approved). `PlanningScheduleDataInput` / `PlanningScheduleDataOutput`
-  are the shared shapes.
+  are the shared shapes; `PlanningEntryDataModelFactory::applySchedule`,
+  `PlanningScheduleOutputFactory` and `PlanningRule::datesOf` take any kind of entry (union type).
 
 ## Next steps
 
-1. Habit entries, then task entries, as above.
+1. Try the planning by hand in a browser, the three kinds together.
 2. Then, to settle with the user: the gamification (the "RPG" in *Life Is A RPG*), filters on
    `/todo`, routines shared from the back-office, filtering the planning by kind.
 

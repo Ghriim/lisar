@@ -1,4 +1,4 @@
-/* The quest log: the list, its rows, and the shapes that carry a task's state. */
+/* The task list: the list, its rows, and the shapes that carry a task's state. */
 
 .app-shell {
     max-width: 1200px;
@@ -52,7 +52,7 @@
     background: var(--accent-soft);
 }
 
-/* How far a task has got through its sub-quests, in the terms the System counts in. */
+/* How far a task has got through its subtasks, in the terms the System counts in. */
 .subtask-count {
     color: var(--text-faint);
     font-family: var(--font-system);
@@ -445,7 +445,7 @@ button.chip[aria-pressed='true'] {
 /* ------------------------------------------------------------ the trackers */
 
 /* A tracker widget: a big glyph and the day's figure on one line, its details a size down
-   beneath. Every tracker on the quest log speaks this vocabulary, and whatever comes next will
+   beneath. Every tracker on the task list speaks this vocabulary, and whatever comes next will
    too. */
 .tracker {
     display: flex;
@@ -532,7 +532,7 @@ button.chip[aria-pressed='true'] {
     opacity: 0.5;
 }
 
-/* The quest log and the habits, side by side: two thirds for the log, one for the habits. They
+/* The task list and the habits, side by side: two thirds for the log, one for the habits. They
    align at the top rather than stretching to the same height, and stack on a narrow screen. */
 .main-columns {
     display: grid;
@@ -583,7 +583,13 @@ button.chip[aria-pressed='true'] {
     color: #05141c;
 }
 
-/* Four across on the quest log, folding to two then one as the screen narrows. */
+/* A day the habit's planning does not ask for: there, but out of the run. */
+.habit-dot-unplanned {
+    opacity: 0.35;
+    border-style: dashed;
+}
+
+/* Four across on the task list, folding to two then one as the screen narrows. */
 .tracker-row {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));

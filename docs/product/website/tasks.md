@@ -1,4 +1,4 @@
-# Website · Quest log
+# Website · Task list
 
 `/todo` — the person's tasks, and everything they do to them. The same log also sits on the
 [dashboard](dashboard.md), beside the trackers; it is one component in both places, so the two
@@ -12,8 +12,8 @@ later without calling any of it into question.
 Root tasks, grouped by category. Two tabs: the tasks in progress, and a separate view for the
 ones already done.
 
-**A row carries two actions and no more**: ticking the quest off, and opening it. Everything
-else — editing, adding a sub-quest, deleting — lives inside the quest's own window, because those
+**A row carries two actions and no more**: ticking the task off, and opening it. Everything
+else — editing, adding a subtask, deleting — lives inside the task's own window, because those
 are done once in a while and ticking off is done constantly. A list crowded with five icons per
 line makes the one action that matters harder to hit.
 
@@ -54,6 +54,11 @@ own. One level, and one only.
 
 **An overdue due date is not a state**, only a way of displaying one.
 
+**A task can come from the planning**: a [task entry](planning.md#a-task-entry) makes one per
+date, from its model — title, description, category — with that date as its due date and the
+default priority. It is then an ordinary task: ticked off, edited, deleted by hand. It carries
+no time of day; the entry's time only places the date on the planning.
+
 ## The four states
 
 | State | How it is reached |
@@ -83,8 +88,8 @@ closes anything on the person's behalf.
 
 ## Reading a task, then acting on it
 
-The eye opens the quest **read-only** in a window headed *Détails de la quête* — generic,
-because the quest's own title is the first field inside it. Field by field under its own heading,
+The eye opens the task **read-only** in a window headed *Détails de la tâche* — generic,
+because the task's own title is the first field inside it. Field by field under its own heading,
 **on the same grid and in the same order as the form**: the title with its state beside it, the
 detail across the width, then the short fields two to a line — category and priority, then
 the due date. The state carries no heading: the chip already says the word. A field is where it
@@ -92,21 +97,21 @@ was when it was filled in, so reading and editing do not ask the eye to relearn 
 field with no value says so rather than disappearing — "Aucune échéance" — and the reader can
 tell an empty field from a forgotten one.
 
-The actions come next, then the sub-quests. The window holds four: **terminer** (or rouvrir),
-**modifier**, **ajouter une sous-quête**, **supprimer**. Editing does not open a second window:
+The actions come next, then the subtasks. The window holds four: **terminer** (or rouvrir),
+**modifier**, **ajouter une sous-tâche**, **supprimer**. Editing does not open a second window:
 the same one becomes the form. Deleting asks first, and says what it takes with it.
 
-**Each sub-quest carries its own actions there too** — terminer, modifier, supprimer — so working
-through a quest's sub-quests does not mean closing and reopening windows. The list behind updates
-as they are ticked off, and so does the window: it re-reads the quest rather than showing what it
+**Each subtask carries its own actions there too** — terminer, modifier, supprimer — so working
+through a task's subtasks does not mean closing and reopening windows. The list behind updates
+as they are ticked off, and so does the window: it re-reads the task rather than showing what it
 was when it opened.
 
-A sub-quest's window offers no "add a sub-quest": there is one level, and one only.
+A subtask's window offers no "add a subtask": there is one level, and one only.
 
 ## Writing a task
 
 The form is a **modal**, opened by the `+` in the panel header — the page shows the list first —
-or reached from a quest's own window.
+or reached from a task's own window.
 
 Nothing is preselected: no category, no priority. The only default anywhere is the priority,
 **Normale**, and it is applied **by the server** to a payload that named none.
@@ -133,7 +138,7 @@ alongside, greyed out. The list they choose from is the list they manage.
 - **recurrence** and **scheduling** ("do it on", as opposed to "due by"): standalone components,
   to be specified on their own and then plugged in here
 - sharing or assigning a task to someone else — that comes with the friends list
-- projects or quests grouping tasks: the list is flat
+- projects grouping tasks: the list is flat
 - reminders and notifications
 
 ## Open questions

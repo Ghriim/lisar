@@ -1,5 +1,11 @@
 import { request, setAccessToken } from './client'
 import type {
+    HabitPlanning,
+    HabitPlanningEntry,
+    HabitPlanningEntryPayload,
+    TaskPlanning,
+    TaskPlanningEntry,
+    TaskPlanningEntryPayload,
     TrainingPlanning,
     TrainingPlanningEntry,
     TrainingPlanningEntryPayload,
@@ -420,4 +426,41 @@ export function updateTrainingPlanningEntry(id: number, payload: TrainingPlannin
 
 export function deleteTrainingPlanningEntry(id: number): Promise<void> {
     return request<void>(`/api/planning/training/${id}`, { method: 'DELETE' })
+}
+
+/** The habit entries, the dates they give over those days, and the days kept unplanned: six weeks at most. */
+export function fetchHabitPlanning(from: string, to: string): Promise<HabitPlanning> {
+    return request<HabitPlanning>(`/api/planning/habit?from=${from}&to=${to}`)
+}
+
+export function createHabitPlanningEntry(payload: HabitPlanningEntryPayload): Promise<HabitPlanningEntry> {
+    return request<HabitPlanningEntry>('/api/planning/habit', { method: 'POST', body: payload })
+}
+
+/** Replaces it whole: the dates to come follow it. */
+export function updateHabitPlanningEntry(id: number, payload: HabitPlanningEntryPayload): Promise<HabitPlanningEntry> {
+    return request<HabitPlanningEntry>(`/api/planning/habit/${id}`, { method: 'PUT', body: payload })
+}
+
+export function deleteHabitPlanningEntry(id: number): Promise<void> {
+    return request<void>(`/api/planning/habit/${id}`, { method: 'DELETE' })
+}
+
+/** The task entries, and the dates they give over those days, open, done or to come: six weeks at most. */
+export function fetchTaskPlanning(from: string, to: string): Promise<TaskPlanning> {
+    return request<TaskPlanning>(`/api/planning/task?from=${from}&to=${to}`)
+}
+
+/** A single date's task, or today's, is made at once. */
+export function createTaskPlanningEntry(payload: TaskPlanningEntryPayload): Promise<TaskPlanningEntry> {
+    return request<TaskPlanningEntry>('/api/planning/task', { method: 'POST', body: payload })
+}
+
+/** Replaces it whole: the dates to come follow it, the tasks already made stay. */
+export function updateTaskPlanningEntry(id: number, payload: TaskPlanningEntryPayload): Promise<TaskPlanningEntry> {
+    return request<TaskPlanningEntry>(`/api/planning/task/${id}`, { method: 'PUT', body: payload })
+}
+
+export function deleteTaskPlanningEntry(id: number): Promise<void> {
+    return request<void>(`/api/planning/task/${id}`, { method: 'DELETE' })
 }

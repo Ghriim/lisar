@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import type { PlanningSchedule, TrainingPlanningEntry } from '../../api/types'
+import type { PlanningSchedule } from '../../api/types'
 import {
     Alert,
     Button,
@@ -7,18 +7,30 @@ import {
     FormActions,
     FormGrid,
     Select,
+    TextArea,
     TextInput,
     ToggleChip,
     useViolations,
 } from '../../components'
+import { useHabits } from '../habits/queries'
 import { useRoutines } from '../routines/queries'
+import { useCategories } from '../tasks/queries'
 import { failureOf } from '../workouts/workoutFormat'
 import { MONTH_WEEKS, RULES, WEEKDAYS } from './planningFormat'
-import { useCreateTrainingPlanningEntry, useUpdateTrainingPlanningEntry } from './queries'
+import type { KindedEntry, PlanningKind } from './planningKinds'
+import {
+    useCreateHabitPlanningEntry,
+    useCreateTaskPlanningEntry,
+    useCreateTrainingPlanningEntry,
+    useUpdateHabitPlanningEntry,
+    useUpdateTaskPlanningEntry,
+    useUpdateTrainingPlanningEntry,
+} from './queries'
 
-interface TrainingEntryFormProps {
-    /** The entry being changed, or null for a new one. */
-    editing: TrainingPlanningEntry | null
+interface PlanningEntryFormProps {
+    kind: PlanningKind
+    /** The entry being changed, of that kind, or null for a new one. */
+    editing: KindedEntry | null
     /** "YYYY-MM-DD": what a new entry starts on, shown filled in. */
     today: string
     onDone: () => void
@@ -27,19 +39,37 @@ interface TrainingEntryFormProps {
 const MONTH_DAYS = Array.from({ length: 31 }, (_, index) => index + 1)
 
 /**
- * A routine and when: the rule, then only the fields that rule reads. Nothing is chosen for the
- * person — no routine, no rule, no day — but the start date, which opens on today.
+ * What is planned — a routine, a task model, or a habit one keeps — and when: the rule, then only
+ * the fields that rule reads. Nothing is chosen for the person — no routine, category or habit, no
+ * rule, no day — but the start date, which opens on today.
  */
-export function TrainingEntryForm({ editing, today, onDone }: TrainingEntryFormProps) {
+export function PlanningEntryForm({ kind, editing, today, onDone }: PlanningEntryFormProps) {
     const routines = useRoutines()
-    const create = useCreateTrainingPlanningEntry()
-    const update = useUpdateTrainingPlanningEntry()
-    const mutation = editing === null ? create : update
+    const habits = useHabits()
+    const categories = useCategories()
+    const createTraining = useCreateTrainingPlanningEntry()
+    const updateTraining = useUpdateTrainingPlanningEntry()
+    const createTask = useCreateTaskPlanningEntry()
+    const updateTask = useUpdateTaskPlanningEntry()
+    const createHabit = useCreateHabitPlanningEntry()
+    const updateHabit = useUpdateHabitPlanningEntry()
+    const isNew = editing === null
+    const mutation = {
+        training: isNew ? createTraining : updateTraining,
+        task: isNew ? createTask : updateTask,
+        habit: isNew ? createHabit : updateHabit,
+    }[kind]
     const violations = useViolations(mutation.error)
     const field = (name: string) => violations.for(`schedule.${name}`)
 
-    const initial = editing?.schedule
-    const [routineId, setRoutineId] = useState(editing === null ? '' : `${editing.routineId}`)
+    const initial = editing?.entry.schedule
+    const [subjectId, setSubjectId] = useState(
+        editing?.kind === 'training' ? `${editing.entry.routineId}` : editing?.kind === 'habit' ? `${editing.entry.habitId}` : '',
+    )
+    // A task entry's model.
+    const [title, setTitle] = useState(editing?.kind === 'task' ? editing.entry.title : '')
+    const [description, setDescription] = useState(editing?.kind === 'task' ? (editing.entry.description ?? '') : '')
+    const [categoryId, setCategoryId] = useState(editing?.kind === 'task' && editing.entry.category !== null ? `${editing.entry.category.id}` : '')
     const [rule, setRule] = useState(initial?.rule ?? '')
     const [startDate, setStartDate] = useState(initial?.startDate ?? today)
     const [endDate, setEndDate] = useState(initial?.endDate ?? '')
@@ -64,13 +94,21 @@ export function TrainingEntryForm({ editing, today, onDone }: TrainingEntryFormP
             startTime: startTime === '' ? null : startTime,
             durationInMinutes: startTime === '' || duration === '' ? null : Number(duration),
         }
-        const payload = { routineId: Number(routineId), schedule }
-
         try {
-            if (editing === null) {
-                await create.mutateAsync(payload)
+            if (kind === 'training') {
+                const payload = { routineId: Number(subjectId), schedule }
+                await (editing === null ? createTraining.mutateAsync(payload) : updateTraining.mutateAsync({ id: editing.entry.id, payload }))
+            } else if (kind === 'task') {
+                const payload = {
+                    title,
+                    description: description.trim() === '' ? null : description,
+                    categoryId: categoryId === '' ? null : Number(categoryId),
+                    schedule,
+                }
+                await (editing === null ? createTask.mutateAsync(payload) : updateTask.mutateAsync({ id: editing.entry.id, payload }))
             } else {
-                await update.mutateAsync({ id: editing.id, payload })
+                const payload = { habitId: Number(subjectId), schedule }
+                await (editing === null ? createHabit.mutateAsync(payload) : updateHabit.mutateAsync({ id: editing.entry.id, payload }))
             }
             onDone()
         } catch {
@@ -82,14 +120,49 @@ export function TrainingEntryForm({ editing, today, onDone }: TrainingEntryFormP
 
     return (
         <form className="form-grid" onSubmit={(event) => void submit(event)}>
-            <Field label="Routine" errors={violations.for('routineId')}>
-                <Select
-                    value={routineId}
-                    onChange={setRoutineId}
-                    placeholder={routines.isPending ? 'Chargement…' : 'Choisir une routine'}
-                    options={(routines.data ?? []).map((routine) => ({ value: `${routine.id}`, label: routine.name }))}
-                />
-            </Field>
+            {kind === 'training' && (
+                <Field label="Routine" errors={violations.for('routineId')}>
+                    <Select
+                        value={subjectId}
+                        onChange={setSubjectId}
+                        placeholder={routines.isPending ? 'Chargement…' : 'Choisir une routine'}
+                        options={(routines.data ?? []).map((routine) => ({ value: `${routine.id}`, label: routine.name }))}
+                    />
+                </Field>
+            )}
+
+            {kind === 'task' && (
+                <>
+                    <Field label="Intitulé" errors={violations.for('title')}>
+                        <TextInput value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ce qu'il y a à faire" required />
+                    </Field>
+                    <Field label="Détail" errors={violations.for('description')}>
+                        <TextArea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Facultatif" />
+                    </Field>
+                    <Field label="Catégorie" errors={violations.for('categoryId')}>
+                        <Select
+                            value={categoryId}
+                            onChange={setCategoryId}
+                            placeholder="Aucune"
+                            options={(categories.data ?? []).map((category) => ({
+                                value: String(category.id),
+                                label: category.isPersonal ? `${category.label} ·` : category.label,
+                            }))}
+                        />
+                    </Field>
+                </>
+            )}
+
+            {kind === 'habit' && (
+                <Field label="Habitude" errors={violations.for('habitId')}>
+                    <Select
+                        value={subjectId}
+                        onChange={setSubjectId}
+                        placeholder={habits.isPending ? 'Chargement…' : 'Choisir une habitude'}
+                        options={(habits.data ?? []).map((habit) => ({ value: `${habit.habitId}`, label: habit.name }))}
+                    />
+                </Field>
+            )}
 
             <Field label="Quand" errors={field('rule')}>
                 <Select value={rule} onChange={setRule} placeholder="Choisir une règle" options={RULES} />

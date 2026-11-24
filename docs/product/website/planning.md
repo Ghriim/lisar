@@ -2,7 +2,7 @@
 
 `/planning` is where a person lays out their weeks: **which routine on which day, which task to do
 when, which days a habit counts**. Each of the three keeps its own page — the routines on
-`/workouts`, the quest log on `/todo`, the habits on the dashboard — and this page is the one place
+`/workouts`, the task list on `/todo`, the habits on the dashboard — and this page is the one place
 where they are scheduled and seen side by side.
 
 A planning entry is **a rule, not a list of things already made**. Planning « Push every Tuesday »
@@ -18,7 +18,7 @@ the page filter by kind:
 | Kind | Ties | See |
 | --- | --- | --- |
 | **training** | a routine of the person's | [A training entry](#a-training-entry) |
-| **task** | a model of quest: title, description, category | [A task entry](#a-task-entry) |
+| **task** | a task model: title, description, category | [A task entry](#a-task-entry) |
 | **habit** | a habit the person is subscribed to | [A habit entry](#a-habit-entry) |
 
 Every kind carries the same schedule:
@@ -51,8 +51,8 @@ One engine, shared by the three kinds:
 No single date can be moved or skipped on its own: to change a date, the rule is changed.
 
 **Changing an entry changes the dates from today on.** What already fell — a slot kept, a slot
-missed, a quest already created — stays as it was. **Deleting an entry** removes the dates to come
-and keeps the past the same way: a workout started, a quest created, a habit day kept.
+missed, a task already created — stays as it was. **Deleting an entry** removes the dates to come
+and keeps the past the same way: a workout started, a task created, a habit day kept.
 
 **Weeks start on Monday, and every day and time is read in `Europe/Paris`**, as everywhere in the
 app.
@@ -71,7 +71,7 @@ Each date carries its kind's icon, its name and its state:
 | Kind | States |
 | --- | --- |
 | training | **to come** · **kept** (a workout of that routine started that day) · **missed** (the day went by without one) |
-| task | **to come** · **open** (its quest exists, not done — shown overdue once its day is past) · **done** |
+| task | **to come** (no task made yet) · **open** (its task exists, not done — shown overdue once its day is past) · **done** |
 | habit | **to come** · **kept** · **missed** — plus **kept, unplanned** for a habit kept on a day no entry asked for |
 
 **The plus** at the top of the page creates an entry: it asks the kind — training, task, habit —
@@ -87,7 +87,10 @@ person. A duration is asked only once a start time is given.
 Narrower than a laptop, the seven columns stack, one day under the other, each listing its dates
 in order rather than on an hour grid.
 
-**So far only training entries exist**: the plus goes straight to them, without asking the kind.
+The plus asks between the three kinds. A task entry's dates show the task list's icon and the
+task's title; an open task of a day gone by shows as « En retard ». A habit entry's dates show the
+habit's icon and name; a day kept unplanned shows as « Bonus », with no eye, since no entry asks
+for it.
 
 ## A training entry
 
@@ -103,19 +106,29 @@ in order rather than on an hour grid.
 
 ## A task entry
 
-A task entry makes **quests from a model** it holds: a title, a description, a category. Subtasks
+A task entry makes **tasks from a model** it holds: a title, a description, a category. Subtasks
 are not part of a model.
 
-- **Recurring**: each date gets **its own quest, created that day** (from midnight), with that date
+- **Recurring**: each date gets **its own task, created that day** (from midnight), with that date
   as its due date. Before the day, it shows only on the planning, as to come.
-- **A quest not done stays open**, overdue, as any quest past its due date: the next date creates
-  its own quest beside it, and nothing is closed on the person's behalf. Three Mondays missed are
-  three open quests — the quest log shows them overdue, each with its day.
-- **Once**: the quest is **created at once**, with the date as its due date, so it can be seen
-  coming in the quest log. Not done, it stays open and overdue.
-- A planned quest carries the time of its entry, if any, and is otherwise an ordinary quest: done
-  by hand, edited, deleted. Changing the entry's model changes the quests to come, not those
-  already created.
+- **A task not done stays open**, overdue, as any task past its due date: the next date creates
+  its own task beside it, and nothing is closed on the person's behalf. Three Mondays missed are
+  three open tasks — the task list shows them overdue, each with its day.
+- **Once**: the task is **created at once**, with the date as its due date, so it can be seen
+  coming in the task list. Not done, it stays open and overdue.
+- **The time is the planning's**: an entry with a start time places its dates on the hour grid;
+  without one they sit within the day. The task made carries no time of day, like every task,
+  and is otherwise ordinary: done by hand, edited, deleted.
+- **Changing the entry** changes the dates to come: a task already made for a date still ahead —
+  a single date's — and not done goes, and is made again from the new model and rule. Today's
+  task and those before stay as they were, even when the rule no longer gives their date.
+  **Deleting the entry** likewise deletes such a task to come, and keeps the others in the task
+  list, no longer on the planning.
+- A date gone by whose task was deleted by hand no longer shows; one still ahead shows as to
+  come.
+- **The tasks are made each night**, a few minutes past midnight: a job runs on the server and
+  makes the day's task of every recurring entry falling on it. A night the job did not run makes
+  nothing for that day, unless it is replayed by hand.
 
 ## A habit entry
 
@@ -135,7 +148,7 @@ are not part of a model.
 
 ## Not here yet
 
-Filtering the page by kind, closing a quest left undone as missed, moving or skipping a single
+Filtering the page by kind, closing a task left undone as missed, moving or skipping a single
 date, entries counting a number of times (« 12 sessions »), « N times a week » habits, reminders
 and notifications, a day or month view, and what the gamification will make of a slot kept or
 missed.

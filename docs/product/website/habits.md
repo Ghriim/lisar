@@ -3,7 +3,7 @@
 A panel on the dashboard: the habits the person has taken on, each with the last week at a glance
 and — when it is theirs to tick — a button to mark today done.
 
-Habits are not quests. A quest is done once and gone; a habit is never done, it is kept, one day
+Habits are not tasks. A task is done once and gone; a habit is never done, it is kept, one day
 at a time, and what matters is the run of days, not a finish line. It is closer to the trackers
 beside it than to the list below: a per-day record against a recurring intent.
 
@@ -24,7 +24,9 @@ One line per subscribed habit:
 - **its name**;
 - **the last seven days**, today included: a circle a day, empty for a day not kept, checked for a
   day kept. Seven small marks, read left to right, oldest to today — the run is seen, not counted
-  at the person;
+  at the person. A habit planned on some days only ([planning](planning.md#a-habit-entry)) shows
+  the days its planning does not ask for dimmed: kept on one of them, the circle is checked and
+  still dimmed — a bonus, outside the run;
 - **a button to keep it today**, and only when the habit is **manual**. Ticking it marks today
   done; it is the one gesture. A habit already kept today shows its last circle checked and needs
   no second tick.
@@ -49,8 +51,8 @@ unkeeps the day again.
 ## Not in v1
 
 - creating one's own habits (the catalogue is admin-only for now);
-- schedules other than daily (every day only; weekday and "N times a week" habits come later, with
-  the run maths they need);
+- "N times a week" habits (which days a habit counts is now set on the [planning](planning.md#a-habit-entry);
+  a habit without any entry counts every day);
 - typing a manual count toward a target;
 - the experience a kept habit will earn, and the streak bonus that rewards a long run — a separate
   gamification domain will read what is being recorded now: each kept day, the moment it was kept,

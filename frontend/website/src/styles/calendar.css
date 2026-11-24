@@ -125,6 +125,19 @@
     border-left-color: var(--success);
 }
 
+.planning-slot-kept_unplanned {
+    border-left-color: var(--success);
+    border-left-style: dashed;
+}
+
+.planning-slot-done {
+    border-left-color: var(--success);
+}
+
+.planning-slot-overdue {
+    border-left-color: var(--danger);
+}
+
 .planning-slot-missed {
     border-left-color: var(--danger);
     opacity: 0.75;

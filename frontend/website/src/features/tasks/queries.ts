@@ -5,6 +5,9 @@ import type { CreateTaskPayload, Task, UpdateTaskPayload } from '../../api/types
 /** Every task list in the app answers to this key, so one mutation refreshes them all. */
 const TASKS = ['tasks'] as const
 
+/** The planning's key, spelt here rather than imported: a task made by a planning entry is a date of it. */
+const PLANNING = ['planning'] as const
+
 export function useTasks(isDone: boolean) {
     return useQuery({
         queryKey: [...TASKS, isDone],
@@ -13,7 +16,7 @@ export function useTasks(isDone: boolean) {
 }
 
 /**
- * One quest, kept fresh while its window is open. The key sits under the same prefix as the
+ * One task, kept fresh while its window is open. The key sits under the same prefix as the
  * lists, so every mutation refreshes it too — which is what lets the window show the effect of
  * an action taken inside it.
  */
@@ -40,8 +43,8 @@ function useTaskMutation<TVariables, TResult>(mutationFn: (variables: TVariables
         mutationFn,
         onSuccess: async () => {
             // Both lists move together: ticking a task off takes it out of one and into the
-            // other.
-            await queryClient.invalidateQueries({ queryKey: TASKS })
+            // other. A planned task's date follows it on the planning.
+            await Promise.all([queryClient.invalidateQueries({ queryKey: TASKS }), queryClient.invalidateQueries({ queryKey: PLANNING })])
         },
     })
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '../../api/endpoints'
 import type { Habit } from '../../api/types'
+import { PLANNING } from '../planning/queries'
 
 const HABITS = ['habits'] as const
 
@@ -13,17 +14,19 @@ export function useHabits() {
 
 /**
  * Ticking and un-ticking both answer with the habit they changed, so its line is refreshed from
- * the answer rather than the whole list refetched.
+ * the answer rather than the whole list refetched. Today's date on the planning follows, re-read.
  */
 function useCompletionMutation(mutationFn: (habitId: number) => Promise<Habit>) {
     const queryClient = useQueryClient()
 
     return useMutation({
         mutationFn,
-        onSuccess: (habit) =>
+        onSuccess: async (habit) => {
             queryClient.setQueryData<Habit[]>([...HABITS, 'list'], (habits) =>
                 habits?.map((current) => (current.habitId === habit.habitId ? habit : current)),
-            ),
+            )
+            await queryClient.invalidateQueries({ queryKey: PLANNING })
+        },
     })
 }
 
@@ -44,7 +47,8 @@ export function useHabitCatalog() {
 
 /**
  * Subscribing or dropping changes both the catalogue (the flag) and the kept list (a row appears
- * or leaves), so both are refetched.
+ * or leaves), so both are refetched — and the planning, which a dropped habit leaves with its
+ * entries.
  */
 function useSubscriptionMutation(mutationFn: (habitId: number) => Promise<unknown>) {
     const queryClient = useQueryClient()
@@ -55,6 +59,7 @@ function useSubscriptionMutation(mutationFn: (habitId: number) => Promise<unknow
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: [...HABITS, 'catalog'] }),
                 queryClient.invalidateQueries({ queryKey: [...HABITS, 'list'] }),
+                queryClient.invalidateQueries({ queryKey: PLANNING }),
             ])
         },
     })

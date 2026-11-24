@@ -7,7 +7,7 @@ import { HabitStreak } from './HabitStreak'
 import { useCompleteHabit, useHabits, useUncompleteHabit } from './queries'
 
 /**
- * The kept habits, on the quest log: a line each, its last seven days beside it, and a tick for
+ * The kept habits, on the task list: a line each, its last seven days beside it, and a tick for
  * the manual ones. A tracker-fed habit carries no tick — it is kept on its own when its tracker
  * crosses the mark. The catalogue to subscribe from is behind "Gérer".
  */
