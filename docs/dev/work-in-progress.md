@@ -34,6 +34,16 @@ Updated on 2026-11-24.
      `lisar:planning:create-tasks` (`#[AsCronTask]`, run by the `worker` container through
      symfony/scheduler on Messenger). The entry's time is the planning's only: the task has no
      time of day. Not yet tried by hand in a browser.
+- **Current stream: gamification** (`docs/product/website/status.md`), built simple first.
+  1. **Done**: the structure, at zero — six stats in two groups (`StatRegistry`), the level curve
+     50 × N² (`LevelCurve`), the experience gains journal (`ExperienceGainDataModel`, seeded for
+     Alice in dev), `GET /api/status`, the `/statut` window and the level under « LISAR » in the
+     menu; a movement's primary stat and up to two secondary ones, in the back-office, and their
+     70/30 split (`MovementExperienceSplit`, not used yet). Not yet tried by hand in a browser.
+  2. **Next, to settle with the user**: what earns experience and how much (workouts → physical
+     stats through the movements; tasks and habits → the mental ones), taking it back when the
+     action is undone, and the level-up message — announced in the answer of the write, enriched
+     through a Symfony event, decided on 2026-11-24.
 - The schedule fields are repeated on each entry data model (no Embeddable: that would be a new
   kind of component, not approved). `PlanningScheduleDataInput` / `PlanningScheduleDataOutput`
   are the shared shapes; `PlanningEntryDataModelFactory::applySchedule`,
@@ -42,7 +52,7 @@ Updated on 2026-11-24.
 ## Next steps
 
 1. Try the planning by hand in a browser, the three kinds together.
-2. Then, to settle with the user: the gamification (the "RPG" in *Life Is A RPG*), filters on
+2. Then, to settle with the user: the gamification's gains (above), filters on
    `/todo`, routines shared from the back-office, filtering the planning by kind.
 
 ## Context Claude needs that the repository does not hold

@@ -11,6 +11,7 @@ use App\Domain\DTO\DataModel\Training\MuscleDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
 use App\Domain\DTO\Input\Training\UpdateMovementDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Registry\Gamification\StatRegistry;
 use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\MovementEquipmentsConstraint;
 use App\Domain\Validation\Constraint\Training\MovementFamilyUsableConstraint;
@@ -257,6 +258,8 @@ final class UpdateMovementValidatorTest extends TestCase
         array $equipmentIds = [1],
         bool $tracksReps = true,
         bool $tracksWeight = true,
+        string $primaryStat = StatRegistry::STRENGTH,
+        array $secondaryStats = [StatRegistry::ENDURANCE],
     ): UpdateMovementDataInput {
         return new UpdateMovementDataInput(
             $name,
@@ -268,6 +271,8 @@ final class UpdateMovementValidatorTest extends TestCase
             $equipmentIds,
             $tracksReps,
             $tracksWeight,
+            primaryStat: $primaryStat,
+            secondaryStats: $secondaryStats,
         );
     }
 

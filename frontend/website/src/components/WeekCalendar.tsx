@@ -22,6 +22,12 @@ const DEFAULT_FIRST_HOUR = 7
 const DEFAULT_LAST_HOUR = 21
 /** A mark without a duration still takes this much room, to be read. */
 const MARK_MINUTES = 30
+/**
+ * What a card needs to be read whole — its name, its state, its buttons — in minutes of grid. A
+ * short card grows to that; the grid runs on long enough after the last one to hold it, rather
+ * than letting it spill over the bottom of the panel.
+ */
+const ROOM_MINUTES = 90
 
 /**
  * Seven days side by side: what holds within the day at the head of each column, the rest on an
@@ -33,12 +39,13 @@ export function WeekCalendar({ days }: { days: CalendarDay[] }) {
     const firstHour = Math.min(DEFAULT_FIRST_HOUR, ...timed.map((item) => Math.floor((item.startInMinutes ?? 0) / 60)))
     const lastHour = Math.max(
         DEFAULT_LAST_HOUR,
-        ...timed.map((item) => Math.ceil(((item.startInMinutes ?? 0) + (item.durationInMinutes ?? MARK_MINUTES)) / 60)),
+        ...timed.map((item) => Math.ceil(((item.startInMinutes ?? 0) + Math.max(item.durationInMinutes ?? MARK_MINUTES, ROOM_MINUTES)) / 60)),
     )
     const hours = Array.from({ length: Math.min(24, lastHour) - firstHour }, (_, index) => firstHour + index)
 
     return (
-        <div className="week-calendar" style={{ '--calendar-hours': hours.length } as CSSProperties}>
+        // The grid stops at midnight: a card late in the evening still needs its room under it.
+        <div className="week-calendar" style={{ '--calendar-hours': hours.length, '--calendar-tail': Math.max(0, lastHour - 24) } as CSSProperties}>
             <div className="week-calendar-gutter" aria-hidden>
                 <div className="week-calendar-head" />
                 <div className="week-calendar-allday" />

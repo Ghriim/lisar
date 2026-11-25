@@ -3,6 +3,7 @@
 @import './list.css';
 @import './nav.css';
 @import './calendar.css';
+@import './status.css';
 
 *,
 *::before,
@@ -228,6 +229,18 @@ select {
     text-transform: uppercase;
 }
 
+.field-required {
+    color: var(--accent);
+}
+
+.form-legend {
+    margin: 0;
+    color: var(--text-faint);
+    font-family: var(--font-system);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+}
+
 .field-input {
     padding: 10px 12px;
     background: rgba(3, 8, 20, 0.6);
@@ -285,6 +298,10 @@ textarea.field-input {
 
 .spread {
     justify-content: space-between;
+}
+
+.end {
+    justify-content: flex-end;
 }
 
 .wrap {

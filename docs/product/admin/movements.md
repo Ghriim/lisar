@@ -20,6 +20,8 @@ only**, the ones every account is offered.
 | equipments | any number; **none means bodyweight** |
 | what a set records | reps, weight, duration, distance — see below |
 | unilateral | done one side at a time |
+| primary stat | exactly one of Force, Endurance, Agilité; required, **nothing preselected** on a creation |
+| secondary stats | none, one or two, **never the primary one** — picking a stat as primary takes it out of the secondaries |
 | active | inactive: no longer offered to new workouts |
 
 The name is unique among common movements only, and the check is the application's, not a database
@@ -28,6 +30,13 @@ index: a person's own movement will be allowed to share a common name.
 **An equipment variant is a separate movement**, named in full: `Bench press (barbell)` and
 `Bench press (dumbbell)` are two rows in the same family. Muscles are chosen from a list sorted by
 group, and both lists can be searched.
+
+### The stats it feeds
+
+The physical experience a workout earns goes to its movements' stats: all of it to the primary
+when there is no secondary, otherwise 70 % to the primary and 30 % split evenly between the
+secondaries — see [Statut](../website/status.md#a-movements-stats). The list shows the primary
+stat beside the family.
 
 ### What a set records
 
@@ -85,5 +94,5 @@ By name, with a search on the name, and filters that combine:
 
 ## Seeded
 
-41 families and 68 movements, all common and active; the table is readable in
+41 families and 68 movements, all common and active, each with its stats; the table is readable in
 `src/Fixtures/Training/MovementFixtures.php`.

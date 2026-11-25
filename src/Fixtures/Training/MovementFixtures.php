@@ -12,6 +12,7 @@ use App\Domain\Gateway\Persister\Training\MovementPersisterGateway;
 use App\Domain\Gateway\Provider\Training\EquipmentProviderGateway;
 use App\Domain\Gateway\Provider\Training\MovementFamilyProviderGateway;
 use App\Domain\Gateway\Provider\Training\MuscleProviderGateway;
+use App\Domain\Registry\Gamification\StatRegistry;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -26,6 +27,9 @@ use function str_contains;
  *
  * The measure is spelled in letters: R reps, W weight, T duration, D distance, and U for a
  * unilateral movement.
+ *
+ * The stats go by family — a variant feeds what its family does: the primary stat first, then the
+ * secondary ones. A family absent from the table is strength alone.
  */
 final class MovementFixtures extends Fixture implements DependentFixtureInterface
 {
@@ -107,6 +111,27 @@ final class MovementFixtures extends Fixture implements DependentFixtureInterfac
         ['Box jump', 'Box jump', 'Quadriceps', ['Glutes', 'Calves'], ['Plyo box'], 'R'],
     ];
 
+    /** family => [primary stat, secondary stats...] */
+    private const array STATS = [
+        'Push-up' => [StatRegistry::STRENGTH, StatRegistry::ENDURANCE],
+        'Dip' => [StatRegistry::STRENGTH, StatRegistry::ENDURANCE],
+        'Pull-up' => [StatRegistry::STRENGTH, StatRegistry::ENDURANCE],
+        'Deadlift' => [StatRegistry::STRENGTH, StatRegistry::ENDURANCE],
+        'Lunge' => [StatRegistry::STRENGTH, StatRegistry::AGILITY],
+        'Plank' => [StatRegistry::ENDURANCE],
+        'Crunch' => [StatRegistry::ENDURANCE],
+        'Leg raise' => [StatRegistry::STRENGTH, StatRegistry::ENDURANCE],
+        'Ab rollout' => [StatRegistry::STRENGTH, StatRegistry::ENDURANCE],
+        'Russian twist' => [StatRegistry::ENDURANCE, StatRegistry::AGILITY],
+        'Carry' => [StatRegistry::STRENGTH, StatRegistry::ENDURANCE],
+        'Running' => [StatRegistry::ENDURANCE],
+        'Rowing' => [StatRegistry::ENDURANCE, StatRegistry::STRENGTH],
+        'Cycling' => [StatRegistry::ENDURANCE],
+        'Jump rope' => [StatRegistry::ENDURANCE, StatRegistry::AGILITY],
+        'Burpee' => [StatRegistry::ENDURANCE, StatRegistry::AGILITY, StatRegistry::STRENGTH],
+        'Box jump' => [StatRegistry::AGILITY, StatRegistry::STRENGTH],
+    ];
+
     private const array REFERENCES = [
         'Bench press (barbell)' => self::BENCH_PRESS_BARBELL,
         'Push-up' => self::PUSH_UP,
@@ -147,6 +172,9 @@ final class MovementFixtures extends Fixture implements DependentFixtureInterfac
             $movement->tracksDuration = str_contains($measure, 'T');
             $movement->tracksDistance = str_contains($measure, 'D');
             $movement->isUnilateral = str_contains($measure, 'U');
+            $stats = self::STATS[$family] ?? [StatRegistry::STRENGTH];
+            $movement->primaryStat = $stats[0];
+            $movement->secondaryStats = array_slice($stats, 1);
 
             $this->movementPersisterGateway->create($movement);
 

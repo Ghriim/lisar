@@ -185,11 +185,11 @@ export function SetTypesPage() {
                         isDefaultType: editing?.isDefaultType ?? false,
                     }}
                 >
-                    <TextField name="name" label="Nom" required autoFocus />
+                    <TextField name="name" label="Nom" isMandatory autoFocus />
                     <SelectField
                         name="colour"
                         label="Couleur"
-                        required
+                        isMandatory
                         placeholder="Choisir une couleur"
                         options={SET_TYPE_COLOURS.map((code) => ({
                             value: code,

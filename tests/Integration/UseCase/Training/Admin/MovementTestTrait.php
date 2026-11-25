@@ -9,6 +9,7 @@ use App\Domain\DTO\DataModel\Training\MovementDataModel;
 use App\Domain\DTO\DataModel\Training\MovementFamilyDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleDataModel;
 use App\Domain\DTO\Input\Training\CreateMovementDataInput;
+use App\Domain\Registry\Gamification\StatRegistry;
 use App\Fixtures\Training\EquipmentFixtures;
 use App\Fixtures\Training\MovementFamilyFixtures;
 
@@ -37,6 +38,8 @@ trait MovementTestTrait
             equipmentIds: $equipmentIds ?? [$this->getReference(EquipmentFixtures::DUMBBELL, EquipmentDataModel::class)->id ?? 0],
             tracksReps: $tracksReps,
             tracksWeight: true,
+            primaryStat: StatRegistry::STRENGTH,
+            secondaryStats: [StatRegistry::ENDURANCE],
         );
     }
 

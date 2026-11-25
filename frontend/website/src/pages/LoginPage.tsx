@@ -1,17 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { useAuth } from '../auth/useAuth'
 import { humanise } from '../api/violations'
-import {
-    Alert,
-    AuthShell,
-    Button,
-    Field,
-    FormActions,
-    SystemPanel,
-    TextInput,
-} from '../components'
+import { Alert, AuthShell, Button, EmailField, Form, FormActions, PasswordField, SystemPanel } from '../components'
 
 export function LoginPage() {
     const { signIn } = useAuth()
@@ -20,8 +12,7 @@ export function LoginPage() {
     const [error, setError] = useState<ApiError | null>(null)
     const [pending, setPending] = useState(false)
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
+    const submit = async () => {
         setPending(true)
         setError(null)
 
@@ -41,27 +32,17 @@ export function LoginPage() {
                     Le System attend tes identifiants.
                 </p>
 
-                <form className="form-grid" onSubmit={(event) => void submit(event)}>
-                    <Field label="Adresse" errors={error?.violationsFor('email')}>
-                        <TextInput
-                            type="email"
-                            value={email}
-                            onChange={(event) => setEmail(event.target.value)}
-                            autoComplete="email"
-                            required
-                            autoFocus
-                        />
-                    </Field>
+                <Form onSubmit={submit}>
+                    <EmailField label="Adresse" isMandatory errors={error?.violationsFor('email')} value={email} onChange={setEmail} autoFocus />
 
-                    <Field label="Mot de passe" errors={error?.violationsFor('password')}>
-                        <TextInput
-                            type="password"
-                            value={password}
-                            onChange={(event) => setPassword(event.target.value)}
-                            autoComplete="current-password"
-                            required
-                        />
-                    </Field>
+                    <PasswordField
+                        label="Mot de passe"
+                        isMandatory
+                        errors={error?.violationsFor('password')}
+                        value={password}
+                        onChange={setPassword}
+                        autoComplete="current-password"
+                    />
 
                     {error !== null && error.violations === null && (
                         <Alert>{signInMessage(error)}</Alert>
@@ -72,7 +53,7 @@ export function LoginPage() {
                             {pending ? 'Entrer…' : 'Entrer'}
                         </Button>
                     </FormActions>
-                </form>
+                </Form>
 
                 <p className="system-text dim" style={{ marginBottom: 0 }}>
                     Pas encore de compte ? <Link to="/inscription">S’éveiller</Link>

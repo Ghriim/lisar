@@ -59,5 +59,15 @@ final class MovementDataOutput
 
     public bool $isUnilateral;
 
+    /** One of strength, endurance, agility. */
+    public string $primaryStat;
+
+    /**
+     * None, one or two, never the primary one.
+     *
+     * @var list<string>
+     */
+    public array $secondaryStats = [];
+
     public bool $isActive;
 }

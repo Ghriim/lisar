@@ -1,15 +1,17 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import type { WorkoutMovement, WorkoutSet } from '../../api/types'
 import {
     Alert,
     Button,
-    Field,
+    DecimalField,
+    DurationField,
+    Form,
     FormActions,
     FormGrid,
-    Select,
-    TextInput,
-    useViolations,
+    NumberField,
     type Option,
+    SelectField,
+    useViolations,
 } from '../../components'
 import { useAddWorkoutSet, useUpdateWorkoutSet, useWorkoutSetTypes } from './queries'
 import { decimalField, durationField, failureOf, formatRpe, parseDecimal, parseDuration } from './workoutFormat'
@@ -68,9 +70,7 @@ export function SetForm({ workoutId, exerciseId, movement, editing, previous, on
         typeOptions.push({ value: `${editing.setType.id}`, label: editing.setType.name })
     }
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         // Only what the movement tracks is sent: anything else would be refused.
         const payload = {
             reps: movement.tracksReps ? parseDecimal(reps) : null,
@@ -94,67 +94,63 @@ export function SetForm({ workoutId, exerciseId, movement, editing, previous, on
     }
 
     return (
-        <form className="form-grid" onSubmit={(event) => void submit(event)}>
+        <Form onSubmit={submit}>
             <FormGrid columns={2}>
                 {movement.tracksReps && (
-                    <Field label={movement.isUnilateral ? 'Répétitions / côté' : 'Répétitions'} errors={violations.for('reps')}>
-                        <TextInput
-                            type="number"
-                            inputMode="numeric"
-                            min={1}
-                            value={reps}
-                            autoFocus
-                            onChange={(event) => setReps(event.target.value)}
-                        />
-                    </Field>
+                    <NumberField
+                        label={movement.isUnilateral ? 'Répétitions / côté' : 'Répétitions'}
+                        isMandatory
+                        errors={violations.for('reps')}
+                        min={1}
+                        value={reps}
+                        autoFocus
+                        onChange={setReps}
+                    />
                 )}
 
+                {/* Not marked: a load is required only once the workout is over, which this form cannot see. */}
                 {movement.tracksWeight && (
-                    <Field label="Charge (kg)" errors={violations.for('weightInKilograms')}>
-                        <TextInput
-                            inputMode="decimal"
-                            value={weight}
-                            autoFocus={!movement.tracksReps}
-                            onChange={(event) => setWeight(event.target.value)}
-                        />
-                    </Field>
+                    <DecimalField
+                        label="Charge (kg)"
+                        errors={violations.for('weightInKilograms')}
+                        value={weight}
+                        autoFocus={!movement.tracksReps}
+                        onChange={setWeight}
+                    />
                 )}
 
                 {movement.tracksDuration && (
-                    <Field label="Durée (s ou m:ss)" errors={violations.for('durationInSeconds')}>
-                        <TextInput
-                            inputMode="numeric"
-                            value={duration}
-                            placeholder="1:30"
-                            onChange={(event) => setDuration(event.target.value)}
-                        />
-                    </Field>
+                    <DurationField
+                        label="Durée (s ou m:ss)"
+                        isMandatory
+                        errors={violations.for('durationInSeconds')}
+                        value={duration}
+                        placeholder="1:30"
+                        onChange={setDuration}
+                    />
                 )}
 
                 {movement.tracksDistance && (
-                    <Field label="Distance (m)" errors={violations.for('distanceInMetres')}>
-                        <TextInput
-                            type="number"
-                            inputMode="numeric"
-                            min={1}
-                            value={distance}
-                            onChange={(event) => setDistance(event.target.value)}
-                        />
-                    </Field>
+                    <NumberField
+                        label="Distance (m)"
+                        isMandatory
+                        errors={violations.for('distanceInMetres')}
+                        min={1}
+                        value={distance}
+                        onChange={setDistance}
+                    />
                 )}
 
-                <Field label="RPE (facultatif)" errors={violations.for('rpe')}>
-                    <Select value={rpe} onChange={setRpe} options={RPE_OPTIONS} placeholder="Aucun" />
-                </Field>
+                <SelectField label="RPE" errors={violations.for('rpe')} value={rpe} onChange={setRpe} options={RPE_OPTIONS} placeholder="Aucun" />
 
-                <Field label="Type (facultatif)" errors={violations.for('setTypeId')}>
-                    <Select
-                        value={setTypeId}
-                        onChange={setSetTypeId}
-                        options={typeOptions}
-                        placeholder={defaultType?.name ?? 'Par défaut'}
-                    />
-                </Field>
+                <SelectField
+                    label="Type"
+                    errors={violations.for('setTypeId')}
+                    value={setTypeId}
+                    onChange={setSetTypeId}
+                    options={typeOptions}
+                    placeholder={defaultType?.name ?? 'Par défaut'}
+                />
             </FormGrid>
 
             {violations.isGeneral && <Alert>{failureOf(mutation.error) ?? ''}</Alert>}
@@ -169,6 +165,6 @@ export function SetForm({ workoutId, exerciseId, movement, editing, previous, on
                         : mutation.isPending ? 'Enregistrer…' : 'Enregistrer'}
                 </Button>
             </FormActions>
-        </form>
+        </Form>
     )
 }

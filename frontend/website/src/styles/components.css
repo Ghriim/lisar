@@ -285,17 +285,14 @@ button.chip[aria-pressed='true'] {
  * would do it too, a second late and in the browser's chrome rather than the System's.
  */
 .tooltip-host {
-    position: relative;
     display: inline-flex;
 }
 
-.tooltip-host::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    z-index: 60;
-    transform: translateX(-50%);
+/* Drawn on the body by `Tooltip`, which places it: above its host, or below with `.tooltip-below`. */
+.tooltip {
+    position: fixed;
+    z-index: 70;
+    transform: translate(-50%, -100%);
     padding: 4px 8px;
     max-width: 220px;
     width: max-content;
@@ -309,15 +306,18 @@ button.chip[aria-pressed='true'] {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     text-align: center;
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.12s ease;
+    animation: tooltip-in 0.12s ease;
 }
 
-/* focus-within, so reaching it with a keyboard shows it too. */
-.tooltip-host:hover::after,
-.tooltip-host:focus-within::after {
-    opacity: 1;
+.tooltip-below {
+    transform: translate(-50%, 0);
+}
+
+@keyframes tooltip-in {
+    from {
+        opacity: 0;
+    }
 }
 
 /* ----------------------------------------------------------- the definitions */
@@ -631,10 +631,19 @@ button.chip[aria-pressed='true'] {
 }
 
 /* A family of movements in the picker: its name, then its chips. */
-.movement-family {
+/* A ChoiceField whose chips sit under headings of their own — movements by family. */
+.choice-group {
     display: flex;
     flex-direction: column;
     gap: 2px;
+}
+
+.choice-group-label {
+    color: var(--text-faint);
+    font-family: var(--font-system);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
 }
 
 /* A workout's muscles, one line each: the name, its share as a bar, the figure. */

@@ -46,7 +46,9 @@ final class DeleteHabitPlanningEntriesEventHandlerTest extends KernelTestCase
         $this->handle($this->eventRaisedBy(HabitSubscriptionUpdatedEvent::class, fn () => $this->unsubscribe()));
 
         self::getContainer()->get(EntityManagerInterface::class)->clear();
-        self::assertSame([], self::getContainer()->get(HabitPlanningEntryProviderGateway::class)->findAllForOwner($this->currentUser($this->idOf($this->alice))));
+        $entries = self::getContainer()->get(HabitPlanningEntryProviderGateway::class)->findAllForOwner($this->currentUser($this->idOf($this->alice)));
+        // The walk's stay: only the habit dropped loses its planning.
+        self::assertSame([$this->habitId(HabitFixtures::WALK)], array_map(static fn ($entry) => $entry->subscription->habit->id, $entries));
     }
 
     /** Taking it back up writes the subscription too, and leaves the planning alone. */

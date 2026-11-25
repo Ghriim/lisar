@@ -10,12 +10,14 @@ const DAY = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', ye
 
 interface PlanningEntryDetailProps {
     kinded: KindedEntry
+    /** A habit's only entry: it is changed, never deleted — a kept habit always has a planning. */
+    isLastOfHabit?: boolean
     onEdit: () => void
     onDeleted: () => void
 }
 
 /** An entry read before it is changed: every field, filled in or not. */
-export function PlanningEntryDetail({ kinded, onEdit, onDeleted }: PlanningEntryDetailProps) {
+export function PlanningEntryDetail({ kinded, isLastOfHabit = false, onEdit, onDeleted }: PlanningEntryDetailProps) {
     const removeTraining = useDeleteTrainingPlanningEntry()
     const removeTask = useDeleteTaskPlanningEntry()
     const removeHabit = useDeleteHabitPlanningEntry()
@@ -49,9 +51,11 @@ export function PlanningEntryDetail({ kinded, onEdit, onDeleted }: PlanningEntry
             {remove.error !== null && <Alert>{failureOf(remove.error) ?? ''}</Alert>}
 
             <Row style={{ justifyContent: 'center' }}>
-                <Button variant="danger" icon={Trash2} disabled={remove.isPending} onClick={() => setConfirming(true)}>
-                    Supprimer
-                </Button>
+                {!isLastOfHabit && (
+                    <Button variant="danger" icon={Trash2} disabled={remove.isPending} onClick={() => setConfirming(true)}>
+                        Supprimer
+                    </Button>
+                )}
                 <Button icon={Pencil} onClick={onEdit}>
                     Modifier
                 </Button>
@@ -64,7 +68,7 @@ export function PlanningEntryDetail({ kinded, onEdit, onDeleted }: PlanningEntry
                         {
                             training: `« ${subject} » ne sera plus planifiée : ses dates à venir disparaissent. Les séances déjà faites restent.`,
                             task: `« ${subject} » ne sera plus planifiée : ses dates à venir disparaissent, avec une tâche déjà créée pour une date à venir et pas encore faite. Les tâches d’aujourd’hui et d’avant restent dans la liste.`,
-                            habit: `Ces jours de « ${subject} » ne seront plus planifiés : leurs dates à venir disparaissent. Les jours déjà tenus restent. Sans aucune entrée, l’habitude compte de nouveau chaque jour.`,
+                            habit: `Ces jours de « ${subject} » ne seront plus planifiés : leurs dates à venir disparaissent. Les jours déjà tenus restent.`,
                         }[kinded.kind]
                     }
                     confirmLabel="Supprimer"

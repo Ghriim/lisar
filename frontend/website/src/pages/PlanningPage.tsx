@@ -1,16 +1,49 @@
 import { ArrowLeft, ArrowRight, Dumbbell, ListChecks, Plus } from 'lucide-react'
-import { useState } from 'react'
-import { Alert, Field, IconButton, Loader, Modal, Row, Select, Stack, SystemPanel, WeekCalendar, type CalendarDay } from '../components'
+import { Fragment, useState } from 'react'
+import type { HabitPlanningSlot } from '../api/types'
+import {
+    Alert,
+    type CalendarDay,
+    Form,
+    IconButton,
+    Loader,
+    Modal,
+    Row,
+    SelectField,
+    Stack,
+    SystemPanel,
+    WeekCalendar,
+} from '../components'
 import { iconFor } from '../features/habits/habitIcons'
+import { useCompleteHabit, useHabits, useUncompleteHabit } from '../features/habits/queries'
 import { PlanningEntryDetail } from '../features/planning/PlanningEntryDetail'
 import { PlanningEntryForm } from '../features/planning/PlanningEntryForm'
-import { addDays, dayKey, formatDayLabel, formatTimeSpan, formatWeek, minutesOf, mondayOf } from '../features/planning/planningFormat'
+import {
+    addDays,
+    dayKey,
+    formatDayLabel,
+    formatHabitRhythm,
+    formatTimeSpan,
+    formatWeek,
+    minutesOf,
+    mondayOf,
+    parseDay,
+} from '../features/planning/planningFormat'
 import { KINDS, type KindedEntry, type PlanningKind, subjectOf } from '../features/planning/planningKinds'
-import { PlanningSlotCard } from '../features/planning/PlanningSlotCard'
+import { PlanningHabitsCard } from '../features/planning/PlanningHabitsCard'
+import { type Completion, PlanningSlotCard } from '../features/planning/PlanningSlotCard'
 import { useHabitPlanning, useTaskPlanning, useTrainingPlanning } from '../features/planning/queries'
 import { useStartRoutineAction } from '../features/routines/useStartRoutineAction'
+import { useCompleteTask, useReopenTask } from '../features/tasks/queries'
+import { failureOf } from '../features/workouts/workoutFormat'
 
-type Panel = { kind: 'create' } | { kind: 'view'; kinded: KindedEntry } | { kind: 'edit'; kinded: KindedEntry } | null
+type Panel =
+    | { kind: 'create' }
+    | { kind: 'view'; kinded: KindedEntry }
+    | { kind: 'edit'; kinded: KindedEntry }
+    /** The habits of one day held within it, listed: the card on the grid only counts them. */
+    | { kind: 'habits'; day: string }
+    | null
 
 type DayItem = CalendarDay['items'][number]
 
@@ -27,6 +60,15 @@ export function PlanningPage() {
     const tasks = useTaskPlanning(dayKey(monday), dayKey(sunday))
     const habits = useHabitPlanning(dayKey(monday), dayKey(sunday))
     const start = useStartRoutineAction()
+    // Ticking off from the week: a task made for its date, and today's date of a habit kept by hand.
+    const kept = useHabits()
+    const completeTask = useCompleteTask()
+    const reopenTask = useReopenTask()
+    const completeHabit = useCompleteHabit()
+    const uncompleteHabit = useUncompleteHabit()
+    const completing = completeTask.isPending || reopenTask.isPending || completeHabit.isPending || uncompleteHabit.isPending
+    const completionError = failureOf(completeTask.error ?? reopenTask.error ?? completeHabit.error ?? uncompleteHabit.error)
+    const manualHabits = new Set((kept.data ?? []).filter((habit) => habit.sourceKind === 'manual').map((habit) => habit.habitId))
     const [panel, setPanel] = useState<Panel>(null)
     const close = () => setPanel(null)
 
@@ -85,37 +127,93 @@ export function PlanningPage() {
                         time={formatTimeSpan(entry.schedule)}
                         state={state}
                         onOpen={() => setPanel({ kind: 'view', kinded: { kind: 'task', entry } })}
+                        completion={
+                            slot.taskId === null
+                                ? undefined
+                                : {
+                                      isDone: slot.state === 'done',
+                                      doLabel: 'Terminer',
+                                      undoLabel: 'Rouvrir',
+                                      pending: completing,
+                                      onToggle: () => (slot.state === 'done' ? reopenTask : completeTask).mutate(slot.taskId ?? 0),
+                                  }
+                        }
                     />
                 ),
             },
         ]
     })
 
-    const habitItems = (habits.data?.slots ?? []).flatMap((slot): (DayItem & { day: string })[] => {
+    // Every habit is planned, most of them every day and at no hour: those of a day share one
+    // card, which counts them, and a window lists them. A habit at an hour keeps its own place.
+    // A habit is kept for the day in progress only, and by hand only when no tracker keeps it.
+    const habitCompletion = (slot: HabitPlanningSlot): Completion | undefined => {
+        if (slot.day !== todayKey || !manualHabits.has(slot.habitId)) {
+            return undefined
+        }
+        const isDone = slot.state === 'kept' || slot.state === 'kept_unplanned'
+
+        return {
+            isDone,
+            doLabel: 'Valider',
+            undoLabel: 'Décocher',
+            pending: completing,
+            onToggle: () => (isDone ? uncompleteHabit : completeHabit).mutate(slot.habitId),
+        }
+    }
+    const habitSlots = (habits.data?.slots ?? []).flatMap((slot) => {
         const entry = slot.entryId === null ? undefined : habitEntries.get(slot.entryId)
         const habit = entry ?? habitsById.get(slot.habitId)
-        if (habit === undefined) {
-            return []
-        }
 
-        return [
-            {
-                day: slot.day,
-                key: `habit-${slot.entryId ?? 'unplanned'}-${slot.habitId}-${slot.day}`,
-                startInMinutes: entry === undefined ? null : minutesOf(entry.schedule.startTime),
-                durationInMinutes: entry === undefined ? null : entry.schedule.durationInMinutes,
+        return habit === undefined ? [] : [{ slot, entry, habit }]
+    })
+    const isTimed = ({ entry }: (typeof habitSlots)[number]) => entry !== undefined && entry.schedule.startTime !== null
+    // Listed in the day's window, a habit also says the days it counts: the card on the grid has no room for it.
+    const habitCard = ({ slot, entry, habit }: (typeof habitSlots)[number], withRhythm = false) => (
+        <PlanningSlotCard
+            icon={iconFor(habit.habitIcon)}
+            title={habit.habitName}
+            time={entry === undefined ? null : formatTimeSpan(entry.schedule)}
+            rhythm={withRhythm ? formatHabitRhythm(slot.habitId, habits.data?.entries ?? []) : null}
+            state={slot.state}
+            onOpen={entry === undefined ? undefined : () => setPanel({ kind: 'view', kinded: { kind: 'habit', entry } })}
+            completion={habitCompletion(slot)}
+        />
+    )
+    const untimedHabitsOf = (day: string) => habitSlots.filter((one) => one.slot.day === day && !isTimed(one))
+
+    const timedHabitItems = habitSlots.filter(isTimed).map(
+        (one): DayItem & { day: string } => ({
+            day: one.slot.day,
+            key: `habit-${one.slot.entryId ?? 'unplanned'}-${one.slot.habitId}-${one.slot.day}`,
+            startInMinutes: minutesOf(one.entry?.schedule.startTime ?? null),
+            durationInMinutes: one.entry?.schedule.durationInMinutes ?? null,
+            content: habitCard(one),
+        }),
+    )
+    const habitGroupItems = [...new Set(habitSlots.filter((one) => !isTimed(one)).map((one) => one.slot.day))].map(
+        (day): DayItem & { day: string } => {
+            const group = untimedHabitsOf(day)
+            const kept = group.filter(({ slot }) => slot.state === 'kept' || slot.state === 'kept_unplanned').length
+
+            return {
+                day,
+                key: `habits-${day}`,
+                startInMinutes: null,
+                durationInMinutes: null,
                 content: (
-                    <PlanningSlotCard
-                        icon={iconFor(habit.habitIcon)}
-                        title={habit.habitName}
-                        time={entry === undefined ? null : formatTimeSpan(entry.schedule)}
-                        state={slot.state}
-                        onOpen={entry === undefined ? undefined : () => setPanel({ kind: 'view', kinded: { kind: 'habit', entry } })}
+                    <PlanningHabitsCard
+                        kept={kept}
+                        total={group.length}
+                        hasMissed={group.some(({ slot }) => slot.state === 'missed')}
+                        onOpen={() => setPanel({ kind: 'habits', day })}
                     />
                 ),
-            },
-        ]
-    })
+            }
+        },
+    )
+    const habitItems = [...timedHabitItems, ...habitGroupItems]
+    const entriesOfHabit = (habitId: number) => (habits.data?.entries ?? []).filter((entry) => entry.habitId === habitId).length
 
     const days: CalendarDay[] = Array.from({ length: 7 }, (_, index) => {
         const date = addDays(monday, index)
@@ -145,6 +243,7 @@ export function PlanningPage() {
                 </Row>
 
                 {start.error !== null && <Alert>{start.error}</Alert>}
+                {completionError !== null && <Alert>{completionError}</Alert>}
 
                 {isPending ? (
                     <Loader />
@@ -155,21 +254,32 @@ export function PlanningPage() {
                 )}
             </SystemPanel>
 
-            {panel?.kind === 'create' && (
-                <Modal title="Planifier" onClose={close}>
-                    <CreateEntry today={todayKey} onDone={close} />
-                </Modal>
-            )}
+            {/* One window for every panel: going from one to the next changes what it holds, and
+                the page behind stays blurred instead of flashing as a window closes and another opens. */}
+            {panel !== null && (
+                <Modal title={titleOf(panel)} onClose={close}>
+                    <Fragment key={keyOf(panel)}>
+                        {panel.kind === 'create' && <CreateEntry today={todayKey} onDone={close} />}
 
-            {panel?.kind === 'view' && (
-                <Modal title={subjectOf(panel.kinded)} onClose={close}>
-                    <PlanningEntryDetail kinded={panel.kinded} onEdit={() => setPanel({ kind: 'edit', kinded: panel.kinded })} onDeleted={close} />
-                </Modal>
-            )}
+                        {panel.kind === 'habits' && (
+                            <Stack>
+                                {untimedHabitsOf(panel.day).map((one) => (
+                                    <div key={`${one.slot.entryId ?? 'unplanned'}-${one.slot.habitId}`}>{habitCard(one, true)}</div>
+                                ))}
+                            </Stack>
+                        )}
 
-            {panel?.kind === 'edit' && (
-                <Modal title={`Modifier · ${subjectOf(panel.kinded)}`} onClose={close}>
-                    <PlanningEntryForm kind={panel.kinded.kind} editing={panel.kinded} today={todayKey} onDone={close} />
+                        {panel.kind === 'view' && (
+                            <PlanningEntryDetail
+                                kinded={panel.kinded}
+                                isLastOfHabit={panel.kinded.kind === 'habit' && entriesOfHabit(panel.kinded.entry.habitId) <= 1}
+                                onEdit={() => setPanel({ kind: 'edit', kinded: panel.kinded })}
+                                onDeleted={close}
+                            />
+                        )}
+
+                        {panel.kind === 'edit' && <PlanningEntryForm kind={panel.kinded.kind} editing={panel.kinded} today={todayKey} onDone={close} />}
+                    </Fragment>
                 </Modal>
             )}
         </Stack>
@@ -180,12 +290,48 @@ export function PlanningPage() {
 function CreateEntry({ today, onDone }: { today: string; onDone: () => void }) {
     const [kind, setKind] = useState<PlanningKind | ''>('')
 
-    return (
-        <Stack>
-            <Field label="Quoi">
-                <Select value={kind} onChange={(value) => setKind(value as PlanningKind)} placeholder="Choisir un type" options={KINDS} />
-            </Field>
-            {kind !== '' && <PlanningEntryForm key={kind} kind={kind} editing={null} today={today} onDone={onDone} />}
-        </Stack>
+    const picker = (
+        <SelectField
+            label="Quoi"
+            isMandatory
+            value={kind}
+            onChange={(value) => setKind(value as PlanningKind)}
+            placeholder="Choisir un type"
+            options={KINDS}
+        />
     )
+
+    // Until a kind is chosen there is nothing to submit: the picker sits alone in a form of its
+    // own, which gives it the same legend as the form it then opens.
+    return kind === '' ? (
+        <Form onSubmit={() => undefined}>{picker}</Form>
+    ) : (
+        <PlanningEntryForm key={kind} kind={kind} editing={null} today={today} kindPicker={picker} onDone={onDone} />
+    )
+}
+
+function titleOf(panel: NonNullable<Panel>): string {
+    switch (panel.kind) {
+        case 'create':
+            return 'Planifier'
+        case 'habits':
+            return `Habitudes · ${formatDayLabel(parseDay(panel.day))}`
+        case 'view':
+            return subjectOf(panel.kinded)
+        case 'edit':
+            return `Modifier · ${subjectOf(panel.kinded)}`
+    }
+}
+
+/** What resets the window's content between two panels: a form starts over, a list does not carry its state into a detail. */
+function keyOf(panel: NonNullable<Panel>): string {
+    switch (panel.kind) {
+        case 'create':
+            return 'create'
+        case 'habits':
+            return `habits-${panel.day}`
+        case 'view':
+        case 'edit':
+            return `${panel.kind}-${panel.kinded.kind}-${panel.kinded.entry.id}`
+    }
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import * as api from '../api/endpoints'
-import type { Equipment, Movement, MovementFamily, MovementPayload, Muscle } from '../api/types'
+import { PHYSICAL_STATS, type Equipment, type Movement, type MovementFamily, type MovementPayload, type Muscle } from '../api/types'
 import {
     ActiveFilter,
     Button,
@@ -40,6 +40,13 @@ interface MovementValues {
     tracksDuration: boolean
     tracksDistance: boolean
     isUnilateral: boolean
+    primaryStat: string | undefined
+    secondaryStats: string[]
+}
+
+/** A stat's name, from its code. */
+function statLabel(stat: string): string {
+    return PHYSICAL_STATS.find((one) => one.value === stat)?.label ?? stat
 }
 
 /** A muscle is offered to a new movement only when it and its group are both active. */
@@ -138,6 +145,11 @@ export function MovementsPage() {
             patch.secondaryMuscleIds = values.secondaryMuscleIds.filter((id) => id !== changed.primaryMuscleId)
         }
 
+        // Likewise for the stats.
+        if (changed.primaryStat !== undefined) {
+            patch.secondaryStats = values.secondaryStats.filter((stat) => stat !== changed.primaryStat)
+        }
+
         // On a creation, the equipments suggest what a set records; the admin adjusts after. An edit
         // is left alone: what the movement records was decided already.
         if (editing === null && changed.equipmentIds !== undefined) {
@@ -216,7 +228,7 @@ export function MovementsPage() {
                                 {movement.name}
                                 <Row gap={8}>
                                     <Text muted size="small">
-                                        {movement.movementFamilyName}
+                                        {movement.movementFamilyName} · {statLabel(movement.primaryStat)}
                                     </Text>
                                     {!movement.movementFamilyIsActive && <Tag colour="red">Famille désactivée</Tag>}
                                 </Row>
@@ -320,6 +332,8 @@ export function MovementsPage() {
                                 tracksDuration: values.tracksDuration,
                                 tracksDistance: values.tracksDistance,
                                 isUnilateral: values.isUnilateral,
+                                primaryStat: values.primaryStat ?? '',
+                                secondaryStats: values.secondaryStats,
                             },
                         })
                     }
@@ -328,19 +342,19 @@ export function MovementsPage() {
                     <TextField
                         name="name"
                         label="Nom"
-                        required
+                        isMandatory
                         autoFocus
                         hint="Une variante d’équipement est un mouvement à part : « Développé couché (barre) »."
                     />
                     <SelectField
                         name="movementFamilyId"
                         label="Famille"
-                        required
+                        isMandatory
                         searchable
                         options={familyOptions}
                         hint="Seules les familles actives reçoivent un mouvement."
                     />
-                    <SelectField name="primaryMuscleId" label="Muscle principal" required searchable options={muscleOptions} />
+                    <SelectField name="primaryMuscleId" label="Muscle principal" isMandatory searchable options={muscleOptions} />
                     <SelectField
                         name="secondaryMuscleIds"
                         label="Muscles secondaires"
@@ -366,6 +380,20 @@ export function MovementsPage() {
                         <SwitchField name="tracksDistance" label="Distance" />
                         <SwitchField name="isUnilateral" label="Unilatéral" />
                     </Row>
+                    <SelectField
+                        name="primaryStat"
+                        label="Stat principale"
+                        isMandatory
+                        options={PHYSICAL_STATS.map((stat) => ({ value: stat.value, label: stat.label }))}
+                        hint="Elle reçoit l’expérience du mouvement : toute, ou 70 % s’il a des stats secondaires."
+                    />
+                    <SelectField
+                        name="secondaryStats"
+                        label="Stats secondaires"
+                        multiple
+                        options={PHYSICAL_STATS.map((stat) => ({ value: stat.value, label: stat.label }))}
+                        hint="Deux au plus : elles se partagent les 30 % restants."
+                    />
                     <TextAreaField name="description" label="Description" />
                     <TextField name="videoUrl" label="Vidéo" placeholder="https://" />
                 </FormModal>
@@ -396,6 +424,8 @@ function initialValuesFor(movement: Movement | null): MovementValues {
             tracksDuration: false,
             tracksDistance: false,
             isUnilateral: false,
+            primaryStat: undefined,
+            secondaryStats: [],
         }
     }
 
@@ -412,6 +442,8 @@ function initialValuesFor(movement: Movement | null): MovementValues {
         tracksDuration: movement.tracksDuration,
         tracksDistance: movement.tracksDistance,
         isUnilateral: movement.isUnilateral,
+        primaryStat: movement.primaryStat,
+        secondaryStats: movement.secondaryStats,
     }
 }
 
@@ -550,7 +582,7 @@ function MovementFamilyManager({ families, loading }: { families: MovementFamily
                     onSubmit={({ name }) => save.mutate({ id: editing?.id ?? null, name })}
                     initialValues={{ name: editing?.name ?? '' }}
                 >
-                    <TextField name="name" label="Nom" required autoFocus />
+                    <TextField name="name" label="Nom" isMandatory autoFocus />
                 </FormModal>
             )}
         </>

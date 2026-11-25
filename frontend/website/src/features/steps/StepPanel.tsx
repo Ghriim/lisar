@@ -1,6 +1,6 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import type { StepDay } from '../../api/types'
-import { Button, Field, FormActions, Stack, TextInput, useViolations } from '../../components'
+import { Button, Form, FormActions, NumberField, Stack, useViolations } from '../../components'
 import { useSaveSteps } from './queries'
 
 /**
@@ -17,9 +17,7 @@ export function StepPanel({ day, onClose }: { day: StepDay; onClose: () => void 
 
     const [typed, setTyped] = useState(day.countInSteps === null ? '' : String(day.countInSteps))
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         try {
             await save.mutateAsync(Number(typed))
             onClose()
@@ -34,20 +32,19 @@ export function StepPanel({ day, onClose }: { day: StepDay; onClose: () => void 
                 {note(day)}
             </p>
 
-            <form className="form-grid" onSubmit={(event) => void submit(event)}>
-                <Field label="Nombre de pas" errors={violations.for('countInSteps')}>
-                    <TextInput
-                        type="number"
-                        step="1"
-                        min={0}
-                        max={200000}
-                        value={typed}
-                        onChange={(event) => setTyped(event.target.value)}
-                        placeholder="8000"
-                        autoFocus
-                        required
-                    />
-                </Field>
+            <Form onSubmit={submit}>
+                <NumberField
+                    label="Nombre de pas"
+                    isMandatory
+                    errors={violations.for('countInSteps')}
+                    step={1}
+                    min={0}
+                    max={200000}
+                    value={typed}
+                    onChange={setTyped}
+                    placeholder="8000"
+                    autoFocus
+                />
 
                 <FormActions>
                     <Button variant="quiet" onClick={onClose}>
@@ -57,7 +54,7 @@ export function StepPanel({ day, onClose }: { day: StepDay; onClose: () => void 
                         {save.isPending ? 'Enregistrer…' : 'Enregistrer'}
                     </Button>
                 </FormActions>
-            </form>
+            </Form>
         </Stack>
     )
 }

@@ -70,7 +70,8 @@ final class ListHabitsUseCaseTest extends KernelTestCase
         foreach ($reading->days as $day) {
             self::assertSame(in_array((int) (new DateTimeImmutable($day->day))->format('N'), [1, 3, 5], true), $day->isPlanned, $day->day);
         }
-        self::assertSame(array_fill(0, HabitOutputFactory::WINDOW_IN_DAYS, true), array_map(static fn ($day) => $day->isPlanned, $walk->days));
+        // Taken on today, the walk is planned every day from today: the days before it are not its.
+        self::assertSame([...array_fill(0, HabitOutputFactory::WINDOW_IN_DAYS - 1, false), true], array_map(static fn ($day) => $day->isPlanned, $walk->days));
     }
 
     public function testSomeoneWhoKeepsNoHabitHasAnEmptyList(): void

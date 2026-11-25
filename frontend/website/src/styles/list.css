@@ -435,3 +435,13 @@
 .list-item-done:hover {
     border-left-color: var(--success);
 }
+
+/* A row with a footer wraps it onto a line of its own, under the body and the actions alike. */
+.list-item {
+    flex-wrap: wrap;
+    row-gap: var(--step);
+}
+
+.list-item-footer {
+    flex-basis: 100%;
+}

@@ -1,6 +1,6 @@
 import { BedDouble } from 'lucide-react'
 import { useState } from 'react'
-import { Loader, Modal, SystemPanel } from '../../components'
+import { Loader, Modal, SystemPanel, Tooltip } from '../../components'
 import { SleepPanel } from './SleepPanel'
 import { useSleepToday } from './queries'
 import { formatDuration, timeOf } from './sleepFormat'
@@ -37,14 +37,14 @@ export function SleepWidget() {
                                     <span className="tracker-value">{formatDuration(noted)}</span>
                                     <div className="tracker-aux">
                                         {mood !== undefined && (
-                                            <span className="tooltip-host" data-tooltip={mood.label}>
+                                            <Tooltip label={mood.label}>
                                                 <mood.icon
                                                     size={18}
                                                     strokeWidth={1.8}
                                                     className="tracker-mood"
                                                     aria-label={mood.label}
                                                 />
-                                            </span>
+                                            </Tooltip>
                                         )}
                                         <span>
                                             {timeOf(today.data.bedtimeAt)} → {timeOf(today.data.wakeUpAt)}

@@ -183,11 +183,11 @@ export function MusclesPage() {
                         muscleGroupId: editing === null ? undefined : String(editing.muscleGroupId),
                     }}
                 >
-                    <TextField name="name" label="Nom" required autoFocus />
+                    <TextField name="name" label="Nom" isMandatory autoFocus />
                     <SelectField
                         name="muscleGroupId"
                         label="Groupe"
-                        required
+                        isMandatory
                         options={groupOptions}
                         hint="Seuls les groupes actifs reçoivent un muscle."
                     />
@@ -311,7 +311,7 @@ function MuscleGroupManager({ groups, loading }: { groups: MuscleGroup[]; loadin
                     onSubmit={({ name }) => save.mutate({ id: editing?.id ?? null, name })}
                     initialValues={{ name: editing?.name ?? '' }}
                 >
-                    <TextField name="name" label="Nom" required autoFocus />
+                    <TextField name="name" label="Nom" isMandatory autoFocus />
                 </FormModal>
             )}
         </>

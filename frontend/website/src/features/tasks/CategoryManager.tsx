@@ -1,5 +1,5 @@
 import { Pencil, X } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { ApiError } from '../../api/client'
 import type { Category } from '../../api/types'
 import { humanise } from '../../api/violations'
@@ -7,12 +7,12 @@ import {
     Button,
     ConfirmDialog,
     DataList,
-    Field,
+    Form,
     FormActions,
     IconButton,
     ListItem,
     Stack,
-    TextInput,
+    TextField,
     useViolations,
 } from '../../components'
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from './queries'
@@ -40,9 +40,7 @@ export function CategoryManager() {
     const personal = all.filter((category) => category.isPersonal)
     const reference = all.filter((category) => !category.isPersonal)
 
-    const submitNew = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submitNew = async () => {
         try {
             await create.mutateAsync(newLabel)
             setNewLabel('')
@@ -51,9 +49,7 @@ export function CategoryManager() {
         }
     }
 
-    const submitRename = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submitRename = async () => {
         if (editing === null) {
             return
         }
@@ -91,14 +87,15 @@ export function CategoryManager() {
                 emptyText="Aucune catégorie personnelle."
                 renderItem={(category) =>
                     editing?.id === category.id ? (
-                        <form className="form-grid" onSubmit={(event) => void submitRename(event)}>
-                            <Field label="Nom" errors={[...rename.for('label'), ...rename.for('id')]}>
-                                <TextInput
-                                    value={editing.label}
-                                    onChange={(event) => setEditing({ id: category.id, label: event.target.value })}
-                                    autoFocus
-                                />
-                            </Field>
+                        <Form onSubmit={submitRename}>
+                            <TextField
+                                label="Nom"
+                                isMandatory
+                                errors={[...rename.for('label'), ...rename.for('id')]}
+                                value={editing.label}
+                                onChange={(label) => setEditing({ id: category.id, label })}
+                                autoFocus
+                            />
 
                             <FormActions>
                                 <Button variant="quiet" onClick={() => setEditing(null)}>
@@ -108,7 +105,7 @@ export function CategoryManager() {
                                     Renommer
                                 </Button>
                             </FormActions>
-                        </form>
+                        </Form>
                     ) : (
                         <ListItem
                             title={category.label}
@@ -150,22 +147,22 @@ export function CategoryManager() {
                 />
             )}
 
-            <form className="form-grid" onSubmit={(event) => void submitNew(event)}>
-                <Field label="Nouvelle catégorie" errors={creation.for('label')}>
-                    <TextInput
-                        value={newLabel}
-                        onChange={(event) => setNewLabel(event.target.value)}
-                        placeholder="Sport, Lecture…"
-                        required
-                    />
-                </Field>
+            <Form onSubmit={submitNew}>
+                <TextField
+                    label="Nouvelle catégorie"
+                    isMandatory
+                    errors={creation.for('label')}
+                    value={newLabel}
+                    onChange={setNewLabel}
+                    placeholder="Sport, Lecture…"
+                />
 
                 <FormActions>
                     <Button variant="primary" submit disabled={create.isPending}>
                         Créer
                     </Button>
                 </FormActions>
-            </form>
+            </Form>
 
             {confirming !== null && (
                 <ConfirmDialog

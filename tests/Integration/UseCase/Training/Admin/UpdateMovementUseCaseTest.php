@@ -12,6 +12,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\UpdateMovementDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
+use App\Domain\Registry\Gamification\StatRegistry;
 use App\Domain\Validation\Constraint\Training\MovementEquipmentsConstraint;
 use App\Domain\Validation\Validator\Training\UpdateMovementValidator;
 use App\Fixtures\Training\EquipmentFixtures;
@@ -57,12 +58,15 @@ final class UpdateMovementUseCaseTest extends KernelTestCase
             equipmentIds: [$vest->id ?? 0],
             tracksReps: true,
             tracksWeight: true,
+            primaryStat: StatRegistry::STRENGTH,
+            secondaryStats: [StatRegistry::AGILITY, StatRegistry::ENDURANCE],
         ));
 
         self::assertSame('Push-up (weighted vest)', $output->name);
         self::assertSame([], $output->secondaryMuscles);
         self::assertSame(['Weighted vest'], array_map(static fn ($equipment) => $equipment->name, $output->equipments));
         self::assertTrue($output->tracksWeight);
+        self::assertSame([StatRegistry::STRENGTH, [StatRegistry::AGILITY, StatRegistry::ENDURANCE]], [$output->primaryStat, $output->secondaryStats]);
 
         // Read back from the database, not from what the use case held: the links are changed in
         // place, and only what moved is written.
@@ -101,6 +105,7 @@ final class UpdateMovementUseCaseTest extends KernelTestCase
                 primaryMuscleId: $pushUp->primaryMuscle->id ?? 0,
                 equipmentIds: [$vest->id ?? 0],
                 tracksReps: true,
+                primaryStat: StatRegistry::STRENGTH,
             ));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
@@ -135,6 +140,8 @@ final class UpdateMovementUseCaseTest extends KernelTestCase
             equipmentIds: array_values(array_map(static fn (EquipmentDataModel $equipment): int => $equipment->id ?? 0, $reread->equipments->toArray())),
             tracksReps: $reread->tracksReps,
             tracksWeight: $reread->tracksWeight,
+            primaryStat: $reread->primaryStat,
+            secondaryStats: $reread->secondaryStats,
         );
     }
 }

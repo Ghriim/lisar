@@ -11,8 +11,8 @@ use App\Infrastructure\EventHandler\EventHandlerInterface;
 use LogicException;
 
 /**
- * Dropping a habit takes its planning entries with it: taken back up, it counts every day again,
- * until it is planned anew. The days already kept stay — they hang off the subscription, which is
+ * Dropping a habit takes its planning entries with it: taken back up, it starts again from every
+ * day (CreateDefaultHabitPlanningEntryEventHandler). The days already kept stay — they hang off the subscription, which is
  * deactivated, not deleted.
  */
 final readonly class DeleteHabitPlanningEntriesEventHandler implements EventHandlerInterface

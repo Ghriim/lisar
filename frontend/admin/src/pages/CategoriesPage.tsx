@@ -99,7 +99,7 @@ export function CategoriesPage() {
                     onSubmit={({ label }) => save.mutate({ id: editing?.id ?? null, label })}
                     initialValues={{ label: editing?.label ?? '' }}
                 >
-                    <TextField name="label" label="Libellé" required autoFocus />
+                    <TextField name="label" label="Libellé" isMandatory autoFocus />
                 </FormModal>
             )}
         </Page>

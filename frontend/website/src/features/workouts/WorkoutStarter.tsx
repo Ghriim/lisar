@@ -1,6 +1,6 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert, Button, Field, FormActions, SystemPanel, TextInput, useViolations } from '../../components'
+import { Alert, Button, Form, FormActions, SystemPanel, TextField, useViolations } from '../../components'
 import { useStartWorkout } from './queries'
 import { failureOf } from './workoutFormat'
 
@@ -15,9 +15,7 @@ export function WorkoutStarter() {
     const [name, setName] = useState('')
     const navigate = useNavigate()
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         // Awaited rather than passed to mutate(): storing the new workout swaps this form for its
         // overview, and mutate() drops the callbacks of a component that is gone by then.
         try {
@@ -30,15 +28,15 @@ export function WorkoutStarter() {
 
     return (
         <SystemPanel title="Nouvelle séance">
-            <form className="form-grid" onSubmit={(event) => void submit(event)}>
-                <Field label="Nom (facultatif)" errors={violations.for('name')}>
-                    <TextInput
-                        value={name}
-                        maxLength={128}
-                        placeholder="Push, jambes, footing…"
-                        onChange={(event) => setName(event.target.value)}
-                    />
-                </Field>
+            <Form onSubmit={submit}>
+                <TextField
+                    label="Nom"
+                    errors={violations.for('name')}
+                    value={name}
+                    maxLength={128}
+                    placeholder="Push, jambes, footing…"
+                    onChange={setName}
+                />
 
                 {violations.for('name').length === 0 && start.error !== null && <Alert>{failureOf(start.error) ?? ''}</Alert>}
 
@@ -47,7 +45,7 @@ export function WorkoutStarter() {
                         {start.isPending ? 'Démarrer…' : 'Démarrer'}
                     </Button>
                 </FormActions>
-            </form>
+            </Form>
         </SystemPanel>
     )
 }

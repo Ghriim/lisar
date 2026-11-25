@@ -197,7 +197,7 @@ export function EquipmentsPage() {
                         hasDistance: editing?.hasDistance ?? false,
                     }}
                 >
-                    <TextField name="name" label="Nom" required autoFocus />
+                    <TextField name="name" label="Nom" isMandatory autoFocus />
                     <SwitchField
                         name="hasWeight"
                         label="Avec charge"

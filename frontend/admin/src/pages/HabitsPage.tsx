@@ -155,12 +155,12 @@ export function HabitsPage() {
                         trackerThreshold: editing?.trackerThreshold ?? null,
                     }}
                 >
-                    <TextField name="name" label="Nom" required autoFocus />
+                    <TextField name="name" label="Nom" isMandatory autoFocus />
 
                     <SelectField
                         name="icon"
                         label="Icône"
-                        required
+                        isMandatory
                         options={HABIT_ICONS.map((code) => ({
                             value: code,
                             label: (
@@ -175,7 +175,7 @@ export function HabitsPage() {
                     <SelectField
                         name="sourceKind"
                         label="Complétion"
-                        required
+                        isMandatory
                         options={HABIT_SOURCES.map((code) => ({ value: code, label: SOURCE_LABELS[code] }))}
                     />
 

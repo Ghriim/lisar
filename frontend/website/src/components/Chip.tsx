@@ -1,5 +1,4 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 
 interface ChipProps {
     children: ReactNode
@@ -17,15 +16,6 @@ export function Chip({ children, colour, tone = 'default' }: ChipProps) {
         >
             {children}
         </span>
-    )
-}
-
-/** A chip that is also a way in: it opens the page of what it names. */
-export function LinkChip({ children, colour, to }: { children: ReactNode; colour?: string; to: string }) {
-    return (
-        <Link to={to} className="chip" style={colour === undefined ? undefined : ({ color: colour } as CSSProperties)}>
-            {children}
-        </Link>
     )
 }
 
@@ -48,20 +38,5 @@ export function StateChip({ children, colour }: { children: ReactNode; colour: s
         <span className="chip chip-state" style={{ '--state-colour': colour } as CSSProperties}>
             {children}
         </span>
-    )
-}
-
-interface ToggleChipProps {
-    children: ReactNode
-    pressed: boolean
-    onToggle: () => void
-}
-
-/** A chip that is also a choice, to toggle on and off. */
-export function ToggleChip({ children, pressed, onToggle }: ToggleChipProps) {
-    return (
-        <button type="button" className="chip" aria-pressed={pressed} onClick={onToggle}>
-            {children}
-        </button>
     )
 }

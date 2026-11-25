@@ -67,7 +67,8 @@ budget; one test checks the table below against the container. The how is in
 | `WorkoutUpdatedEvent` · `WorkoutDeletedEvent` | `WorkoutPersister` | `RefreshPersonalBestsEventHandler`, `SyncWorkoutHabitsEventHandler` |
 | `HydrationEntryCreatedEvent` · `HydrationEntryUpdatedEvent` · `HydrationEntryDeletedEvent` | `HydrationEntryPersister` | `SyncHydrationHabitsEventHandler` |
 | `StepDayCreatedEvent` · `StepDayUpdatedEvent` | `StepDayPersister` | `SyncStepHabitsEventHandler` |
-| `HabitSubscriptionUpdatedEvent` | `HabitSubscriptionPersister::update` | `DeleteHabitPlanningEntriesEventHandler` |
+| `HabitSubscriptionCreatedEvent` | `HabitSubscriptionPersister::create` | `CreateDefaultHabitPlanningEntryEventHandler` |
+| `HabitSubscriptionUpdatedEvent` | `HabitSubscriptionPersister::update` | `DeleteHabitPlanningEntriesEventHandler`, `CreateDefaultHabitPlanningEntryEventHandler` |
 | `TaskPlanningEntryCreatedEvent` · `TaskPlanningEntryUpdatedEvent` · `TaskPlanningEntryDeletedEvent` | `TaskPlanningEntryPersister` | `SyncPlannedTasksEventHandler` |
 
 ### A workout's summary
@@ -110,14 +111,21 @@ what the write left in memory as much as what it left in the database: `Hydratio
 adds a new entry to its day's `entries`, and takes a removed one out, before the hydration
 handler reads the day's total off them.
 
-### A dropped habit's planning
+### A habit's planning, from taking it on to dropping it
+
+A kept habit always has a planning. Taking it on raises `HabitSubscriptionCreatedEvent`, and
+`CreateDefaultHabitPlanningEntryEventHandler` plans it every day from today
+(`HabitPlanningEntryDataModelFactory::buildEveryDay` — a weekly rule on all seven days).
 
 Unsubscribing deactivates the subscription rather than deleting it, so its planning entries do not
 go through the database's cascade. `HabitSubscriptionPersister::update` says whether the write is
-the one dropping the habit (`deactivates`, read from the original data), and
-`DeleteHabitPlanningEntriesEventHandler` deletes that subscription's entries in one statement:
-taken back up, the habit counts every day again. Taking it back up raises the same event, with
-`deactivates` false, and changes nothing.
+the one dropping the habit (`deactivates`) or the one taking it back up (`activates`), both read
+from the original data. On `deactivates`, `DeleteHabitPlanningEntriesEventHandler` deletes that
+subscription's entries in one statement; on `activates`, `CreateDefaultHabitPlanningEntryEventHandler`
+plans it every day again. Any other write of the subscription moves neither.
+
+That the last entry stays is a rule, not an event: `DeleteHabitPlanningEntryValidator` refuses it
+(`HabitPlanningEntryNotLastConstraint`).
 
 ### The tasks a task entry makes
 

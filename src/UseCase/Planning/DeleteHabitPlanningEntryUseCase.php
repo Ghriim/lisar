@@ -14,8 +14,8 @@ use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
 
 /**
- * A habit entry gone, its dates to come with it. The days the habit was kept stay; its last entry
- * gone, the habit counts every day again.
+ * A habit entry gone, its dates to come with it. The days the habit was kept stay. Its last entry
+ * cannot go: a kept habit always has a planning.
  */
 final readonly class DeleteHabitPlanningEntryUseCase implements UseCaseInterface
 {
@@ -37,7 +37,7 @@ final readonly class DeleteHabitPlanningEntryUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(HabitPlanningEntryDataModel::class);
         }
 
-        $this->validator->validate($currentUser, $entry);
+        $this->validator->validate($currentUser, $entry, $this->entryProviderGateway->findForSubscription($entry->subscription));
 
         $this->entryPersisterGateway->delete($entry);
     }

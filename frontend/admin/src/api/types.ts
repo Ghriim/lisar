@@ -159,6 +159,10 @@ export interface Movement {
     tracksDuration: boolean
     tracksDistance: boolean
     isUnilateral: boolean
+    /** strength, endurance or agility: the physical stat the experience it earns goes to. */
+    primaryStat: string
+    /** None, one or two, never the primary one. */
+    secondaryStats: string[]
     isActive: boolean
 }
 
@@ -175,7 +179,16 @@ export interface MovementPayload {
     tracksDuration: boolean
     tracksDistance: boolean
     isUnilateral: boolean
+    primaryStat: string
+    secondaryStats: string[]
 }
+
+/** The physical stats a movement can feed, as the back-office words them. */
+export const PHYSICAL_STATS = [
+    { value: 'strength', label: 'Force' },
+    { value: 'endurance', label: 'Endurance' },
+    { value: 'agility', label: 'Agilité' },
+] as const
 
 export type Violations = Record<string, string[]>
 

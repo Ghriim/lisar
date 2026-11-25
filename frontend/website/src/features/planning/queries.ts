@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as api from '../../api/endpoints'
 import type { HabitPlanningEntryPayload, TaskPlanningEntryPayload, TrainingPlanningEntryPayload } from '../../api/types'
+import { dayKey } from './planningFormat'
 
 /**
  * Every planning query answers to this key: a write, a workout started or deleted, a habit kept or
@@ -36,6 +37,20 @@ export function useHabitPlanning(from: string, to: string) {
         queryKey: [...PLANNING, 'habit', from, to],
         queryFn: () => api.fetchHabitPlanning(from, to),
         placeholderData: keepPreviousData,
+    })
+}
+
+/**
+ * Every habit entry of the person's, whatever days it falls on: the planning answers all of them
+ * with any range, so today's is asked — the dates do not matter here, only the entries.
+ */
+export function useHabitPlanningEntries() {
+    const today = dayKey(new Date())
+
+    return useQuery({
+        queryKey: [...PLANNING, 'habit', today, today],
+        queryFn: () => api.fetchHabitPlanning(today, today),
+        select: (planning) => planning.entries,
     })
 }
 

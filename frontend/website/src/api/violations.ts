@@ -87,6 +87,7 @@ const MESSAGES: Record<string, string> = {
     routine_invalid: 'Choisis une routine.',
     habit_not_subscribed: 'Tu ne suis pas cette habitude.',
     habit_invalid: 'Choisis une habitude.',
+    last_habit_planning_entry: 'C’est le dernier planning de cette habitude : modifie-le, ou ne la suis plus.',
     rule_required: 'Choisis une règle.',
     rule_unknown: 'Cette règle n’existe pas.',
     start_date_required: 'La date de début est nécessaire.',

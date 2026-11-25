@@ -9,6 +9,7 @@ use App\Domain\DTO\DataModel\Training\MovementFamilyDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\CreateMovementDataInput;
 use App\Domain\Gateway\Provider\Training\MuscleProviderGateway;
+use App\Domain\Registry\Gamification\StatRegistry;
 use App\Fixtures\Training\EquipmentFixtures;
 use App\Fixtures\Training\MovementFamilyFixtures;
 use App\Fixtures\Training\MovementFixtures;
@@ -82,6 +83,7 @@ final class ListWorkoutMovementsUseCaseTest extends KernelTestCase
             equipmentIds: [$this->getReference(EquipmentFixtures::DUMBBELL, EquipmentDataModel::class)->id ?? 0],
             tracksReps: true,
             tracksWeight: true,
+            primaryStat: StatRegistry::STRENGTH,
         );
     }
 }

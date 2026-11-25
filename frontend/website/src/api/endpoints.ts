@@ -3,6 +3,7 @@ import type {
     HabitPlanning,
     HabitPlanningEntry,
     HabitPlanningEntryPayload,
+    Status,
     TaskPlanning,
     TaskPlanningEntry,
     TaskPlanningEntryPayload,
@@ -463,4 +464,9 @@ export function updateTaskPlanningEntry(id: number, payload: TaskPlanningEntryPa
 
 export function deleteTaskPlanningEntry(id: number): Promise<void> {
     return request<void>(`/api/planning/task/${id}`, { method: 'DELETE' })
+}
+
+/** The account's level and stats. */
+export function fetchStatus(): Promise<Status> {
+    return request<Status>('/api/status')
 }

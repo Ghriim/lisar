@@ -285,7 +285,8 @@ same names everywhere:
 | `Training/` | workouts and their reference data: movements, families, muscles, groups, equipment, set types |
 | `Tracking/` | the trackers, one sub-folder each: `Hydration/`, `Sleep/`, `Step/`, `Weight/` |
 | `Habits/` | the habit catalogue, subscriptions, entries |
-| `Planning/` | planning entries, one data model per kind (training, habit), and the date engine they share |
+| `Planning/` | planning entries, one data model per kind (training, task, habit), and the date engine they share |
+| `Gamification/` | the stats and the level curve, the experience gains, the status; a movement's stats are codes of `StatRegistry` |
 | `Todo/` | tasks and their categories; priorities are a registry |
 | `User/` | accounts, identities, sessions, admin comments |
 

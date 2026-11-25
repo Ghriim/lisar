@@ -10,6 +10,7 @@ use App\Domain\DTO\Input\Planning\SaveHabitPlanningEntryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Planning\HabitPlanningEntryNotLastConstraint;
 use App\Domain\Validation\Constraint\Planning\HabitSubscribedConstraint;
 use App\Domain\Validation\Constraint\Planning\PlanningRangeConstraint;
 use App\Domain\Validation\Constraint\Planning\PlanningScheduleConstraint;
@@ -90,14 +91,35 @@ final class HabitPlanningValidatorsTest extends TestCase
         );
     }
 
+    public function testDeletingLetsAnEntryThroughWhenTheHabitKeepsAnother(): void
+    {
+        $subscription = $this->subscriptionOf($this->anyCurrentUser());
+        $entry = $this->habitEntry(1, $subscription);
+
+        $this->expectNotToPerformAssertions();
+
+        (new DeleteHabitPlanningEntryValidator())->validate($this->anyCurrentUser(), $entry, [$entry, $this->habitEntry(2, $subscription)]);
+    }
+
     public function testDeletingRefusesSomeoneElsesEntry(): void
     {
-        (new DeleteHabitPlanningEntryValidator())->validate($this->anyCurrentUser(), $this->habitEntry(1, $this->subscriptionOf($this->anyCurrentUser())));
+        $entry = $this->habitEntry(1, $this->subscriptionOf($this->currentUser(99)));
 
         $this->assertRefused(
             DeleteHabitPlanningEntryValidator::ERROR_CODE,
             ['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]],
-            fn () => (new DeleteHabitPlanningEntryValidator())->validate($this->anyCurrentUser(), $this->habitEntry(1, $this->subscriptionOf($this->currentUser(99)))),
+            fn () => (new DeleteHabitPlanningEntryValidator())->validate($this->anyCurrentUser(), $entry, [$entry]),
+        );
+    }
+
+    public function testDeletingRefusesTheHabitsLastEntry(): void
+    {
+        $entry = $this->habitEntry(1, $this->subscriptionOf($this->anyCurrentUser()));
+
+        $this->assertRefused(
+            DeleteHabitPlanningEntryValidator::ERROR_CODE,
+            ['id' => [HabitPlanningEntryNotLastConstraint::LAST_HABIT_PLANNING_ENTRY]],
+            fn () => (new DeleteHabitPlanningEntryValidator())->validate($this->anyCurrentUser(), $entry, [$entry]),
         );
     }
 

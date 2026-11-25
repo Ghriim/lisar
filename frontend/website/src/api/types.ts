@@ -541,3 +541,34 @@ export interface TaskPlanningEntryPayload {
     categoryId: number | null
     schedule: PlanningSchedule
 }
+
+/** Where some experience stands on the level curve: a stat's, or the whole of it. */
+export interface Progress {
+    level: number
+    /** All the experience gathered. */
+    experience: number
+    /** How much of it counts towards the next level. */
+    experienceIntoLevel: number
+    /** What going to the next level takes, in all. */
+    experienceForNextLevel: number
+}
+
+export interface Stat {
+    /** strength, endurance, agility, intelligence, spirit or willpower. */
+    stat: string
+    progress: Progress
+}
+
+/** A heading over three stats, with no level of its own. */
+export interface StatGroup {
+    /** physical or mental. */
+    group: string
+    stats: Stat[]
+}
+
+/** The Statut window: the global level, then each stat by group. */
+export interface Status {
+    progress: Progress
+    /** Physical, then mental. */
+    groups: StatGroup[]
+}

@@ -125,7 +125,7 @@ export function HydrationPresetsPage() {
                     <SelectField
                         name="icon"
                         label="Icône"
-                        required
+                        isMandatory
                         hint="Un code, pas une image : chaque front la dessine avec son propre jeu d’icônes."
                         options={HYDRATION_ICONS.map((code) => ({
                             value: code,
@@ -141,7 +141,7 @@ export function HydrationPresetsPage() {
                     <NumberField
                         name="volumeInMillilitres"
                         label="Volume (mL)"
-                        required
+                        isMandatory
                         min={1}
                         max={5000}
                     />

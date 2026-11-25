@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Habits;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Event\Habits\HabitSubscriptionCreatedEvent;
+use App\Domain\DTO\Event\Habits\HabitSubscriptionUpdatedEvent;
 use App\Fixtures\Habits\HabitFixtures;
 use App\Fixtures\Habits\HabitSubscriptionFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Habits\CompleteHabitUseCase;
 use App\UseCase\Habits\ListHabitsUseCase;
@@ -23,6 +26,7 @@ final class SubscribeHabitUseCaseTest extends KernelTestCase
     use HabitTestTrait;
     use LoadFixturesTrait;
     use QueryCountTrait;
+    use RecordedEventsTrait;
     use SignedInUserTrait;
 
     private ListHabitsUseCase $list;
@@ -60,6 +64,31 @@ final class SubscribeHabitUseCaseTest extends KernelTestCase
         // Resumed: it is back, and today is still kept.
         $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $meditate);
         self::assertTrue($this->habitOf($this->alice, HabitFixtures::MEDITATE)->isCompletedToday);
+    }
+
+    /** Taken on, the habit is planned by the handler the event reaches: the write only says so. */
+    public function testTakingAHabitOnRaisesItsCreation(): void
+    {
+        $this->forgetRaisedEvents();
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $this->habitId(HabitFixtures::MEDITATE));
+
+        self::assertSame($this->habitId(HabitFixtures::MEDITATE), $this->assertEventRaised(HabitSubscriptionCreatedEvent::class)->subscription->habit->id);
+        $this->assertNoEventRaised(HabitSubscriptionUpdatedEvent::class);
+    }
+
+    public function testTakingAHabitBackUpSaysItActivatesIt(): void
+    {
+        $meditate = $this->habitId(HabitFixtures::MEDITATE);
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $meditate);
+        $this->unsubscribe->execute($this->currentUser($this->idOf($this->alice)), $meditate);
+
+        $this->forgetRaisedEvents();
+        $this->subscribe->execute($this->currentUser($this->idOf($this->alice)), $meditate);
+
+        $event = $this->assertEventRaised(HabitSubscriptionUpdatedEvent::class);
+        self::assertTrue($event->activates);
+        self::assertFalse($event->deactivates);
+        $this->assertNoEventRaised(HabitSubscriptionCreatedEvent::class);
     }
 
     public function testSubscribingToAHabitStaysWithinItsQueryBudget(): void

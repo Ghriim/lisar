@@ -1,8 +1,8 @@
 import { Layout } from 'antd'
 import type { ReactNode } from 'react'
-import { Button } from './Button'
+import { Button } from './Button/Button'
 import { Row } from './Layout'
-import { SideMenu, type Section } from './SideMenu'
+import { SideMenu, type Section } from './Navigation/SideMenu'
 import { Text } from './Text'
 
 interface AppShellProps {

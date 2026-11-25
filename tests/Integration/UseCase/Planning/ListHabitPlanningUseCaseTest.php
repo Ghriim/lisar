@@ -14,8 +14,8 @@ use App\Tests\Integration\QueryCountTrait;
 use App\UseCase\Habits\CompleteHabitUseCase;
 use App\UseCase\Habits\UnsubscribeHabitUseCase;
 use App\UseCase\Planning\CreateHabitPlanningEntryUseCase;
-use App\UseCase\Planning\DeleteHabitPlanningEntryUseCase;
 use App\UseCase\Planning\ListHabitPlanningUseCase;
+use App\UseCase\Planning\UpdateHabitPlanningEntryUseCase;
 use DateTimeImmutable;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -32,15 +32,19 @@ final class ListHabitPlanningUseCaseTest extends KernelTestCase
         $this->loadPlanningFixtures();
     }
 
-    /** The seeded entry gives a Monday, a Wednesday and a Friday each week; the walk, with no entry, is not there. */
+    /** The seeded entry gives a Monday, a Wednesday and a Friday each week; the walk, taken on today, every day. */
     public function testItListsTheEntriesAndTheirDates(): void
     {
         $output = $this->useCase(ListHabitPlanningUseCase::class)->execute(
             $this->currentUser($this->aliceId), new ListPlanningDataInput('2026-11-30', '2026-12-06'),
         );
 
-        self::assertCount(1, $output->entries);
-        $entry = $output->entries[0];
+        $byHabit = array_column(array_map(static fn ($entry) => [$entry->habitId, $entry], $output->entries), 1, 0);
+        self::assertCount(2, $output->entries);
+        $entry = $byHabit[$this->readingId()];
+        $walk = $byHabit[$this->walkId()];
+        self::assertSame(['weekly', [1, 2, 3, 4, 5, 6, 7]], [$walk->schedule->rule, $walk->schedule->weekdays]);
+        $output->slots = array_values(array_filter($output->slots, fn ($slot) => $this->readingId() === $slot->habitId));
         self::assertSame([$this->readingId(), 'Lire'], [$entry->habitId, $entry->habitName]);
         self::assertSame(['weekly', '2026-11-02', [1, 3, 5], null], [$entry->schedule->rule, $entry->schedule->startDate, $entry->schedule->weekdays, $entry->schedule->startTime]);
         self::assertSame(['2026-11-30', '2026-12-02', '2026-12-04'], array_map(static fn ($slot) => $slot->day, $output->slots));
@@ -51,8 +55,7 @@ final class ListHabitPlanningUseCaseTest extends KernelTestCase
     /** Today's date is to come until the habit is kept; then kept. The days gone by without it are missed. */
     public function testTodaysDateIsKeptByKeepingTheHabit(): void
     {
-        $this->useCase(DeleteHabitPlanningEntryUseCase::class)->execute($this->currentUser($this->aliceId), $this->seededEntryId());
-        $this->useCase(CreateHabitPlanningEntryUseCase::class)->execute($this->currentUser($this->aliceId), $this->weekly($this->readingId()));
+        $this->useCase(UpdateHabitPlanningEntryUseCase::class)->execute($this->currentUser($this->aliceId), $this->seededEntryId(), $this->weekly($this->readingId()));
 
         self::assertSame(PlanningOccurrenceStateRegistry::TO_COME, $this->todaysSlot()?->state);
 
@@ -60,6 +63,9 @@ final class ListHabitPlanningUseCaseTest extends KernelTestCase
 
         self::assertSame(PlanningOccurrenceStateRegistry::KEPT, $this->todaysSlot()?->state);
         foreach ($this->thisWeek()->slots as $slot) {
+            if ($this->readingId() !== $slot->habitId) {
+                continue;
+            }
             if ($slot->day < $this->today()) {
                 self::assertSame(PlanningOccurrenceStateRegistry::MISSED, $slot->state);
             }
@@ -72,9 +78,8 @@ final class ListHabitPlanningUseCaseTest extends KernelTestCase
     /** Planned on no day of this week, the habit kept today is a bonus: kept unplanned, with no entry. */
     public function testAHabitKeptOnADayNotPlannedIsKeptUnplanned(): void
     {
-        $this->useCase(DeleteHabitPlanningEntryUseCase::class)->execute($this->currentUser($this->aliceId), $this->seededEntryId());
         $tomorrow = (int) (new DateTimeImmutable($this->today()))->modify('+1 day')->format('N');
-        $this->useCase(CreateHabitPlanningEntryUseCase::class)->execute($this->currentUser($this->aliceId), $this->weekly($this->readingId(), [$tomorrow]));
+        $this->useCase(UpdateHabitPlanningEntryUseCase::class)->execute($this->currentUser($this->aliceId), $this->seededEntryId(), $this->weekly($this->readingId(), [$tomorrow]));
 
         $this->useCase(CompleteHabitUseCase::class)->execute($this->currentUser($this->aliceId), $this->readingId());
 
@@ -134,8 +139,9 @@ final class ListHabitPlanningUseCaseTest extends KernelTestCase
 
     private function todaysSlot(): ?HabitPlanningSlotDataOutput
     {
+        // Reading's: the walk, taken on today, has today's date too.
         foreach ($this->thisWeek()->slots as $slot) {
-            if ($slot->day === $this->today()) {
+            if ($slot->day === $this->today() && $this->readingId() === $slot->habitId) {
                 return $slot;
             }
         }

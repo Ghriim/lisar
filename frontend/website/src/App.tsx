@@ -13,6 +13,7 @@ import { WorkoutCompletePage } from './pages/WorkoutCompletePage'
 import { WorkoutPage } from './pages/WorkoutPage'
 import { WorkoutsPage } from './pages/WorkoutsPage'
 import { RecordsPage } from './pages/RecordsPage'
+import { StatusPage } from './pages/StatusPage'
 
 export function App() {
     const { status } = useAuth()
@@ -44,6 +45,7 @@ export function App() {
                 <Route path="/workouts/:id/complete" element={<WorkoutCompletePage />} />
                 <Route path="/routines/:id" element={<RoutinePage />} />
                 <Route path="/records" element={<RecordsPage />} />
+                <Route path="/statut" element={<StatusPage />} />
                 <Route path="/statistiques" element={<ComingSoonPage title="Statistiques" />} />
                 <Route path="/messages" element={<ComingSoonPage title="Messages" />} />
                 <Route path="/amis" element={<ComingSoonPage title="Amis" />} />

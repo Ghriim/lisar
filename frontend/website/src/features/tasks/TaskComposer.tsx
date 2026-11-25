@@ -1,13 +1,14 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { TASK_PRIORITIES, type Task, type TaskPriority } from '../../api/types'
 import {
     Button,
-    Field,
+    DateField,
+    Form,
     FormActions,
     FormGrid,
-    Select,
-    TextArea,
-    TextInput,
+    SelectField,
+    TextAreaField,
+    TextField,
     useViolations,
 } from '../../components'
 import { useCategories, useCreateTask, useUpdateTask } from './queries'
@@ -68,9 +69,7 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
     const set = (field: keyof FormState) => (value: string) =>
         setForm((current) => ({ ...current, [field]: value }))
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         const payload = {
             title: form.title,
             description: form.description === '' ? null : form.description,
@@ -94,59 +93,47 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
     }
 
     return (
-        <form className="form-grid" onSubmit={(event) => void submit(event)}>
-            <Field label="Intitulé" errors={violations.for('title')}>
-                <TextInput
-                    value={form.title}
-                    onChange={(event) => set('title')(event.target.value)}
-                    placeholder="Ce qu'il y a à faire"
-                    required
-                    autoFocus
-                />
-            </Field>
+        <Form onSubmit={submit}>
+            <TextField
+                label="Intitulé"
+                isMandatory
+                errors={violations.for('title')}
+                value={form.title}
+                onChange={set('title')}
+                placeholder="Ce qu'il y a à faire"
+                autoFocus
+            />
 
-            <Field label="Détail" errors={violations.for('description')}>
-                <TextArea
-                    value={form.description}
-                    onChange={(event) => set('description')(event.target.value)}
-                    placeholder="Facultatif"
-                />
-            </Field>
+            <TextAreaField label="Détail" errors={violations.for('description')} value={form.description} onChange={set('description')} />
 
             <FormGrid columns={2}>
-                <Field label="Catégorie" errors={violations.for('categoryId')}>
-                    <Select
-                        value={form.categoryId}
-                        onChange={set('categoryId')}
-                        placeholder="Aucune"
-                        options={(categories.data ?? []).map((category) => ({
-                            value: String(category.id),
-                            label: category.isPersonal ? `${category.label} ·` : category.label,
-                        }))}
-                    />
-                </Field>
+                <SelectField
+                    label="Catégorie"
+                    errors={violations.for('categoryId')}
+                    value={form.categoryId}
+                    onChange={set('categoryId')}
+                    placeholder="Aucune"
+                    options={(categories.data ?? []).map((category) => ({
+                        value: String(category.id),
+                        label: category.isPersonal ? `${category.label} ·` : category.label,
+                    }))}
+                />
 
-                <Field label="Priorité" errors={violations.for('priority')}>
-                    <Select
-                        value={form.priority}
-                        onChange={set('priority')}
-                        placeholder="Par défaut"
-                        options={TASK_PRIORITIES.map((priority) => ({
-                            value: priority,
-                            label: priorityDisplay(priority).label,
-                        }))}
-                    />
-                </Field>
+                <SelectField
+                    label="Priorité"
+                    errors={violations.for('priority')}
+                    value={form.priority}
+                    onChange={set('priority')}
+                    placeholder="Par défaut"
+                    options={TASK_PRIORITIES.map((priority) => ({
+                        value: priority,
+                        label: priorityDisplay(priority).label,
+                    }))}
+                />
             </FormGrid>
 
             <FormGrid columns={2}>
-                <Field label="Échéance" errors={violations.for('dueDate')}>
-                    <TextInput
-                        type="date"
-                        value={form.dueDate}
-                        onChange={(event) => set('dueDate')(event.target.value)}
-                    />
-                </Field>
+                <DateField label="Échéance" errors={violations.for('dueDate')} value={form.dueDate} onChange={set('dueDate')} />
             </FormGrid>
 
             <FormActions>
@@ -158,6 +145,6 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
                     {editing !== null ? 'Enregistrer' : 'Créer'}
                 </Button>
             </FormActions>
-        </form>
+        </Form>
     )
 }

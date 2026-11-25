@@ -4,42 +4,46 @@
  * The rule this file enforces: **no page imports `antd`**. Only the components here do, so the
  * library stays one decision rather than a hundred, and a screen reads in the vocabulary of the
  * product instead of the vocabulary of a widget set.
+ *
+ * Sorted by what they are for: `Button/`, `Form/`, `List/`, `Modal/`, `Navigation/`; what fits
+ * none of them sits at the root.
  */
-export { ActiveFilter } from './ActiveFilter'
+export { Button, type ButtonVariant } from './Button/Button'
+export { ConfirmButton } from './Button/ConfirmButton'
+
+export { EmailField } from './Form/EmailField'
+export { Form, type ValuesChangeHandler } from './Form/Form'
+export { FormActions } from './Form/FormActions'
+export { NumberField } from './Form/NumberField'
+export { PasswordField } from './Form/PasswordField'
+export { SelectField, type SelectOption, type SelectOptionGroup } from './Form/SelectField'
+export { SwitchField } from './Form/SwitchField'
+export { TextArea } from './Form/TextArea'
+export { TextAreaField } from './Form/TextAreaField'
+export { TextField } from './Form/TextField'
+
+export { ActiveFilter } from './List/ActiveFilter'
+export { DataTable, type Column, type Pagination } from './List/DataTable'
+export { DescriptionList, type Description } from './List/DescriptionList'
+export { FilterSelect } from './List/FilterSelect'
+export { ItemList } from './List/ItemList'
+export { ListToolbar } from './List/ListToolbar'
+export { useActiveFilter, type ActiveStatus } from './List/useActiveFilter'
+
+export { DetailDrawer, Separator } from './Modal/DetailDrawer'
+export { FormModal } from './Modal/FormModal'
+
+export { LinkText } from './Navigation/LinkText'
+export { SideMenu, type Screen, type Section } from './Navigation/SideMenu'
+
 export { AppShell, Panel, PlainShell } from './AppShell'
 export { ColourDot, RoleTag, StatusTag } from './Badges'
-export { Button, type ButtonVariant } from './Button'
-export { ConfirmButton } from './ConfirmButton'
-export { DataTable, type Column, type Pagination } from './DataTable'
 export { DateText } from './DateText'
-export { DescriptionList, type Description } from './DescriptionList'
-export { DetailDrawer, Separator } from './DetailDrawer'
 export { Alert, EmptyState, FullPageLoader, Tag } from './Feedback'
-export { ItemList } from './ItemList'
-export {
-    EmailField,
-    Form,
-    FormActions,
-    NumberField,
-    PasswordField,
-    SelectField,
-    SwitchField,
-    TextArea,
-    TextAreaField,
-    TextField,
-    type SelectOption,
-    type SelectOptionGroup,
-    type ValuesChangeHandler,
-} from './Form'
-export { FilterSelect } from './FilterSelect'
-export { FormModal } from './FormModal'
 export { HabitIcon } from './HabitIcon'
 export { HydrationIcon } from './HydrationIcon'
 export { IconGallery } from './IconGallery'
 export { Centered, Row, Stack } from './Layout'
-export { ListToolbar } from './ListToolbar'
 export { Page } from './Page'
-export { SideMenu, type Screen, type Section } from './SideMenu'
-export { LinkText, Paragraph, Text, Title } from './Text'
-export { useActiveFilter, type ActiveStatus } from './useActiveFilter'
+export { Paragraph, Text, Title } from './Text'
 export { useNotifier, type Notifier } from './useNotifier'

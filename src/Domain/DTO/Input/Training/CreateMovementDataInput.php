@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\DTO\Input\Training;
 
 use App\Domain\DTO\Input\DataInputInterface;
+use App\Domain\Registry\Gamification\StatRegistry;
 use Symfony\Component\Validator\Constraints as Assert;
 
 use function in_array;
@@ -17,8 +18,9 @@ use function in_array;
 final readonly class CreateMovementDataInput implements DataInputInterface
 {
     /**
-     * @param list<int> $secondaryMuscleIds
-     * @param list<int> $equipmentIds       none at all: done with the body's own weight
+     * @param list<int>    $secondaryMuscleIds
+     * @param list<int>    $equipmentIds       none at all: done with the body's own weight
+     * @param list<string> $secondaryStats     none, one or two physical stats
      */
     public function __construct(
         #[Assert\NotBlank(message: 'name_required')]
@@ -51,6 +53,15 @@ final readonly class CreateMovementDataInput implements DataInputInterface
         public bool $tracksDistance = false,
 
         public bool $isUnilateral = false,
+
+        // Defaulted only so the field can come last: blank is refused.
+        #[Assert\NotBlank(message: 'primary_stat_required')]
+        #[Assert\Choice(choices: StatRegistry::PHYSICAL, message: 'primary_stat_invalid')]
+        public string $primaryStat = '',
+
+        #[Assert\Count(max: StatRegistry::MAX_SECONDARY_STATS, maxMessage: 'secondary_stats_too_many')]
+        #[Assert\All([new Assert\Choice(choices: StatRegistry::PHYSICAL, message: 'secondary_stat_invalid')])]
+        public array $secondaryStats = [],
     ) {
     }
 
@@ -70,6 +81,12 @@ final readonly class CreateMovementDataInput implements DataInputInterface
     public function getSecondaryMuscleIds(): array
     {
         return self::unique($this->secondaryMuscleIds);
+    }
+
+    /** @return list<string> de-duplicated */
+    public function getSecondaryStats(): array
+    {
+        return array_values(array_unique($this->secondaryStats));
     }
 
     /** @return list<int> de-duplicated */

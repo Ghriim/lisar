@@ -83,6 +83,8 @@ final readonly class CreateMovementUseCase implements UseCaseInterface
         $movement->tracksDuration = $input->tracksDuration;
         $movement->tracksDistance = $input->tracksDistance;
         $movement->isUnilateral = $input->isUnilateral;
+        $movement->primaryStat = $input->primaryStat;
+        $movement->secondaryStats = $input->getSecondaryStats();
 
         $this->movementPersisterGateway->create($movement);
 

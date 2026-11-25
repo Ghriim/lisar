@@ -1,7 +1,7 @@
 import { Play, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Alert, IconButton, Loader, Stack, SystemPanel, Tabs } from '../components'
+import { Alert, IconButton, Loader, Row, Stack, SystemPanel, Tabs } from '../components'
 import { RoutineCreator } from '../features/routines/RoutineCreator'
 import { RoutineList } from '../features/routines/RoutineList'
 import { useCurrentWorkout } from '../features/workouts/queries'
@@ -52,13 +52,7 @@ export function WorkoutsPage() {
                 />
             )}
 
-            <SystemPanel
-                actions={
-                    view === 'routines' ? (
-                        <IconButton icon={Plus} label="Créer une routine" onClick={() => setCreating(true)} />
-                    ) : undefined
-                }
-            >
+            <SystemPanel>
                 <Tabs<View>
                     current={view}
                     onChange={setView}
@@ -68,7 +62,17 @@ export function WorkoutsPage() {
                     ]}
                 />
 
-                {view === 'history' ? <WorkoutHistory /> : <RoutineList />}
+                {view === 'history' ? (
+                    <WorkoutHistory />
+                ) : (
+                    <Stack>
+                        {/* Under the tabs rather than in the card's corner: it belongs to this tab, not to the card. */}
+                        <Row end>
+                            <IconButton icon={Plus} label="Créer" onClick={() => setCreating(true)} />
+                        </Row>
+                        <RoutineList />
+                    </Stack>
+                )}
             </SystemPanel>
 
             {creating && <RoutineCreator onClose={() => setCreating(false)} />}

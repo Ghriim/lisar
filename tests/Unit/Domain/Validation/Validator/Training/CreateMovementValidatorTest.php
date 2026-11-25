@@ -11,12 +11,14 @@ use App\Domain\DTO\DataModel\Training\MuscleDataModel;
 use App\Domain\DTO\DataModel\Training\MuscleGroupDataModel;
 use App\Domain\DTO\Input\Training\CreateMovementDataInput;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Registry\Gamification\StatRegistry;
 use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Constraint\Training\MovementEquipmentsConstraint;
 use App\Domain\Validation\Constraint\Training\MovementFamilyUsableConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMeasureConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMusclesConstraint;
 use App\Domain\Validation\Constraint\Training\MovementNameAvailableConstraint;
+use App\Domain\Validation\Constraint\Training\MovementStatsConstraint;
 use App\Domain\Validation\Validator\Training\CreateMovementValidator;
 use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
@@ -121,6 +123,34 @@ final class CreateMovementValidatorTest extends TestCase
         }
     }
 
+    /** One physical primary stat, required; up to two physical secondaries, never the primary. */
+    public function testItRejectsStatsThatDoNotHold(): void
+    {
+        $this->assertStatsRefused(['primaryStat' => ['primary_stat_required', 'primary_stat_invalid']], '', []);
+        $this->assertStatsRefused(['primaryStat' => ['primary_stat_invalid'], 'secondaryStats[0]' => ['secondary_stat_invalid']], StatRegistry::INTELLIGENCE, [StatRegistry::WILLPOWER]);
+        $this->assertStatsRefused(['secondaryStats' => ['secondary_stats_too_many']], StatRegistry::STRENGTH, [StatRegistry::ENDURANCE, StatRegistry::AGILITY, StatRegistry::AGILITY]);
+        $this->assertStatsRefused(['secondaryStats' => [MovementStatsConstraint::PRIMARY_STAT_ALSO_SECONDARY]], StatRegistry::AGILITY, [StatRegistry::AGILITY]);
+    }
+
+    /** @param list<string> $secondaryStats */
+    private function assertStatsRefused(array $violations, string $primaryStat, array $secondaryStats): void
+    {
+        try {
+            $this->validator->validate(
+                $this->currentAdmin(),
+                $this->input(primaryStat: $primaryStat, secondaryStats: $secondaryStats),
+                null,
+                $this->family(1, true),
+                $this->muscle(1),
+                [$this->muscle(2)],
+                [$this->equipment(1)],
+            );
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame($violations, $exception->violations);
+        }
+    }
+
     public function testItRejectsATooLongNameAndVideoUrl(): void
     {
         try {
@@ -203,6 +233,8 @@ final class CreateMovementValidatorTest extends TestCase
         array $equipmentIds = [1],
         bool $tracksReps = true,
         bool $tracksWeight = true,
+        string $primaryStat = StatRegistry::STRENGTH,
+        array $secondaryStats = [StatRegistry::ENDURANCE],
     ): CreateMovementDataInput {
         return new CreateMovementDataInput(
             $name,
@@ -214,6 +246,8 @@ final class CreateMovementValidatorTest extends TestCase
             $equipmentIds,
             $tracksReps,
             $tracksWeight,
+            primaryStat: $primaryStat,
+            secondaryStats: $secondaryStats,
         );
     }
 

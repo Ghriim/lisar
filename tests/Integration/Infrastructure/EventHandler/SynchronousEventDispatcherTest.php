@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Infrastructure\EventHandler;
 
+use App\Domain\DTO\Event\Habits\HabitSubscriptionCreatedEvent;
 use App\Domain\DTO\Event\Habits\HabitSubscriptionUpdatedEvent;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryCreatedEvent;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryDeletedEvent;
@@ -24,6 +25,7 @@ use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Infrastructure\EventHandler\Habits\SyncHydrationHabitsEventHandler;
 use App\Infrastructure\EventHandler\Habits\SyncStepHabitsEventHandler;
 use App\Infrastructure\EventHandler\Habits\SyncWorkoutHabitsEventHandler;
+use App\Infrastructure\EventHandler\Planning\CreateDefaultHabitPlanningEntryEventHandler;
 use App\Infrastructure\EventHandler\Planning\DeleteHabitPlanningEntriesEventHandler;
 use App\Infrastructure\EventHandler\Planning\SyncPlannedTasksEventHandler;
 use App\Infrastructure\EventHandler\SynchronousEventDispatcher;
@@ -55,7 +57,8 @@ final class SynchronousEventDispatcherTest extends KernelTestCase
         $records = RefreshPersonalBestsEventHandler::class;
         $summary = RefreshWorkoutSummaryEventHandler::class;
         $expected = [
-            HabitSubscriptionUpdatedEvent::class => [DeleteHabitPlanningEntriesEventHandler::class],
+            HabitSubscriptionCreatedEvent::class => [CreateDefaultHabitPlanningEntryEventHandler::class],
+            HabitSubscriptionUpdatedEvent::class => [CreateDefaultHabitPlanningEntryEventHandler::class, DeleteHabitPlanningEntriesEventHandler::class],
             HydrationEntryCreatedEvent::class => [SyncHydrationHabitsEventHandler::class],
             HydrationEntryDeletedEvent::class => [SyncHydrationHabitsEventHandler::class],
             HydrationEntryUpdatedEvent::class => [SyncHydrationHabitsEventHandler::class],

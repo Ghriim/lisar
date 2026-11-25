@@ -17,6 +17,7 @@ use App\Domain\Validation\Constraint\Training\MovementFamilyUsableConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMeasureConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMusclesConstraint;
 use App\Domain\Validation\Constraint\Training\MovementNameAvailableConstraint;
+use App\Domain\Validation\Constraint\Training\MovementStatsConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 
 /**
@@ -69,6 +70,7 @@ final readonly class UpdateMovementValidator extends AbstractBaseValidator
             $input->tracksDistance,
             $violations,
         );
+        $violations = MovementStatsConstraint::validate($input->primaryStat, $input->getSecondaryStats(), $violations);
 
         if (false === empty($violations)) {
             throw new ValidationException(self::ERROR_CODE, $violations);

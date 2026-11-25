@@ -13,8 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * The days a subscribed habit counts, on a rule of dates. It belongs to the person's subscription,
- * not to the catalogue: a subscription without any entry counts every day; once it has some, its
- * entries say which days instead. Nothing is written for a date ahead of time — whether it was
+ * not to the catalogue. A kept habit always has at least one: taking it on plans it every day, and
+ * its last entry cannot be deleted. Nothing is written for a date ahead of time — whether it was
  * kept is read from the habit's own days.
  *
  * The schedule fields are the same on every kind of planning entry, and read by PlanningRule:

@@ -1,15 +1,6 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import type { SleepNight } from '../../api/types'
-import {
-    Button,
-    Field,
-    FormActions,
-    FormGrid,
-    RatingScale,
-    Stack,
-    TextInput,
-    useViolations,
-} from '../../components'
+import { Button, Form, FormActions, FormGrid, RatingField, Stack, TimeField, useViolations } from '../../components'
 import { useSaveSleepNight } from './queries'
 import { timeOf } from './sleepFormat'
 import { SLEEP_MOODS } from './sleepMoods'
@@ -29,9 +20,7 @@ export function SleepPanel({ night, onClose }: { night: SleepNight; onClose: () 
     const [wakeUpTime, setWakeUpTime] = useState(timeOf(night.wakeUpAt))
     const [moodRating, setMoodRating] = useState<number | null>(night.moodRating)
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         try {
             await save.mutateAsync({ bedtime, wakeUpTime, moodRating })
             onClose()
@@ -48,29 +37,15 @@ export function SleepPanel({ night, onClose }: { night: SleepNight; onClose: () 
                     : 'Nuit déjà notée pour ce matin. L’enregistrer à nouveau la corrige.'}
             </p>
 
-            <form className="form-grid" onSubmit={(event) => void submit(event)}>
+            <Form onSubmit={submit}>
                 <FormGrid columns={2}>
-                    <Field label="Coucher" errors={violations.for('bedtime')}>
-                        <TextInput
-                            type="time"
-                            value={bedtime}
-                            onChange={(event) => setBedtime(event.target.value)}
-                            required
-                        />
-                    </Field>
+                    <TimeField label="Coucher" isMandatory errors={violations.for('bedtime')} value={bedtime} onChange={setBedtime} />
 
-                    <Field label="Lever" errors={violations.for('wakeUpTime')}>
-                        <TextInput
-                            type="time"
-                            value={wakeUpTime}
-                            onChange={(event) => setWakeUpTime(event.target.value)}
-                            required
-                        />
-                    </Field>
+                    <TimeField label="Lever" isMandatory errors={violations.for('wakeUpTime')} value={wakeUpTime} onChange={setWakeUpTime} />
                 </FormGrid>
 
-                <RatingScale
-                    label="Humeur au lever (facultatif)"
+                <RatingField
+                    label="Humeur au lever"
                     levels={SLEEP_MOODS}
                     value={moodRating}
                     onChange={setMoodRating}
@@ -86,7 +61,7 @@ export function SleepPanel({ night, onClose }: { night: SleepNight; onClose: () 
                         {save.isPending ? 'Enregistrer…' : 'Enregistrer'}
                     </Button>
                 </FormActions>
-            </form>
+            </Form>
         </Stack>
     )
 }

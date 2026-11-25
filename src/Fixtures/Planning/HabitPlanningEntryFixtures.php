@@ -30,8 +30,14 @@ final class HabitPlanningEntryFixtures extends Fixture implements DependentFixtu
 
     public function load(ObjectManager $manager): void
     {
+        $reading = $this->getReference(HabitSubscriptionFixtures::ALICE_READING, HabitSubscriptionDataModel::class);
+
+        // Subscribing planned it every day (where the handlers run): Monday, Wednesday and Friday
+        // replace that, rather than adding to it.
+        $this->entryPersisterGateway->deleteAllForSubscription($reading);
+
         $entry = $this->entryFactory->build(
-            $this->getReference(HabitSubscriptionFixtures::ALICE_READING, HabitSubscriptionDataModel::class),
+            $reading,
             new PlanningScheduleDataInput(
                 rule: PlanningRuleRegistry::WEEKLY,
                 startDate: '2026-11-02',

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { Tooltip } from './Tooltip'
 
 interface IndexBadgeProps {
     /** The rank, short: a number, mostly. */
@@ -20,10 +21,10 @@ interface IndexBadgeProps {
 /** A rank in a small frame, in a colour — where a row sits in its list, and what kind it is. */
 export function IndexBadge({ children, colour, label, subject }: IndexBadgeProps) {
     return (
-        <span className="tooltip-host" data-tooltip={label}>
+        <Tooltip label={label}>
             <span className="index-badge" style={{ '--index-badge-colour': colour } as CSSProperties} role="img" aria-label={subject === undefined ? label : `${subject} · ${label}`}>
                 {children}
             </span>
-        </span>
+        </Tooltip>
     )
 }

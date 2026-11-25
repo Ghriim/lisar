@@ -1,13 +1,13 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import type { Workout } from '../../api/types'
 import {
     Alert,
     Button,
-    Field,
+    Form,
     FormActions,
-    RatingScale,
-    TextArea,
-    TextInput,
+    RatingField,
+    TextAreaField,
+    TextField,
     useViolations,
 } from '../../components'
 import { useUpdateWorkout } from './queries'
@@ -27,9 +27,7 @@ export function WorkoutDetailsForm({ workout, onDone }: { workout: Workout; onDo
     const [note, setNote] = useState(workout.note ?? '')
     const [feeling, setFeeling] = useState<number | null>(workout.feeling)
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         try {
             await update.mutateAsync({
                 id: workout.id,
@@ -44,19 +42,19 @@ export function WorkoutDetailsForm({ workout, onDone }: { workout: Workout; onDo
     }
 
     return (
-        <form className="form-grid" onSubmit={(event) => void submit(event)}>
-            <Field label="Nom (facultatif)" errors={violations.for('name')}>
-                <TextInput
-                    value={name}
-                    // The name it carries without one, so leaving it empty is a visible choice.
-                    placeholder={workoutName({ name: null, startedAt: workout.startedAt })}
-                    maxLength={128}
-                    onChange={(event) => setName(event.target.value)}
-                />
-            </Field>
+        <Form onSubmit={submit}>
+            <TextField
+                label="Nom"
+                errors={violations.for('name')}
+                value={name}
+                // The name it carries without one, so leaving it empty is a visible choice.
+                placeholder={workoutName({ name: null, startedAt: workout.startedAt })}
+                maxLength={128}
+                onChange={setName}
+            />
 
-            <RatingScale
-                label="Ressenti (facultatif)"
+            <RatingField
+                label="Ressenti"
                 levels={WORKOUT_FEELINGS}
                 value={feeling}
                 onChange={setFeeling}
@@ -64,9 +62,7 @@ export function WorkoutDetailsForm({ workout, onDone }: { workout: Workout; onDo
                 disabled={update.isPending}
             />
 
-            <Field label="Note (facultatif)" errors={violations.for('note')}>
-                <TextArea value={note} rows={4} maxLength={5000} onChange={(event) => setNote(event.target.value)} />
-            </Field>
+            <TextAreaField label="Note" errors={violations.for('note')} value={note} rows={4} maxLength={5000} onChange={setNote} />
 
             {violations.isGeneral && <Alert>{failureOf(update.error) ?? ''}</Alert>}
 
@@ -78,6 +74,6 @@ export function WorkoutDetailsForm({ workout, onDone }: { workout: Workout; onDo
                     {update.isPending ? 'Enregistrer…' : 'Enregistrer'}
                 </Button>
             </FormActions>
-        </form>
+        </Form>
     )
 }

@@ -10,6 +10,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Training\CreateMovementDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Training\MovementProviderGateway;
+use App\Domain\Registry\Gamification\StatRegistry;
 use App\Domain\Validation\Constraint\Training\MovementEquipmentsConstraint;
 use App\Domain\Validation\Constraint\Training\MovementFamilyUsableConstraint;
 use App\Domain\Validation\Constraint\Training\MovementMeasureConstraint;
@@ -59,11 +60,13 @@ final class CreateMovementUseCaseTest extends KernelTestCase
         self::assertSame(['Dumbbell'], array_map(static fn ($equipment) => $equipment->name, $output->equipments));
         self::assertSame('https://example.com/floor-press', $output->videoUrl);
         self::assertTrue($output->isActive);
+        self::assertSame([StatRegistry::STRENGTH, [StatRegistry::ENDURANCE]], [$output->primaryStat, $output->secondaryStats]);
 
         $movement = $this->movementProviderGateway->findOneCommonById($output->id);
         self::assertNotNull($movement);
         self::assertNull($movement->owner);
         self::assertCount(1, $movement->secondaryMuscles);
+        self::assertSame([StatRegistry::STRENGTH, [StatRegistry::ENDURANCE]], [$movement->primaryStat, $movement->secondaryStats]);
     }
 
     /** No equipment at all is a bodyweight movement, and it is allowed. */

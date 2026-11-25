@@ -1,6 +1,6 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import type { Weight } from '../../api/types'
-import { Button, Field, FormActions, Stack, TextInput, useViolations } from '../../components'
+import { Button, Form, FormActions, NumberField, Stack, useViolations } from '../../components'
 import { useSaveWeight } from './queries'
 import { formatWeight, formatWhen, parseWeight } from './weightFormat'
 
@@ -20,9 +20,7 @@ export function WeightPanel({ latest, onClose }: { latest: Weight; onClose: () =
         latest.weightInKilograms === null ? '' : latest.weightInKilograms.toFixed(2),
     )
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         try {
             await save.mutateAsync(parseWeight(typed))
             onClose()
@@ -37,20 +35,19 @@ export function WeightPanel({ latest, onClose }: { latest: Weight; onClose: () =
                 {note(latest)}
             </p>
 
-            <form className="form-grid" onSubmit={(event) => void submit(event)}>
-                <Field label="Poids en kilogrammes" errors={violations.for('weightInKilograms')}>
-                    <TextInput
-                        type="number"
-                        step="0.01"
-                        min={20}
-                        max={400}
-                        value={typed}
-                        onChange={(event) => setTyped(event.target.value)}
-                        placeholder="72,40"
-                        autoFocus
-                        required
-                    />
-                </Field>
+            <Form onSubmit={submit}>
+                <NumberField
+                    label="Poids en kilogrammes"
+                    isMandatory
+                    errors={violations.for('weightInKilograms')}
+                    step={0.01}
+                    min={20}
+                    max={400}
+                    value={typed}
+                    onChange={setTyped}
+                    placeholder="72,40"
+                    autoFocus
+                />
 
                 <FormActions>
                     <Button variant="quiet" onClick={onClose}>
@@ -60,7 +57,7 @@ export function WeightPanel({ latest, onClose }: { latest: Weight; onClose: () =
                         {save.isPending ? 'Enregistrer…' : 'Enregistrer'}
                     </Button>
                 </FormActions>
-            </form>
+            </Form>
         </Stack>
     )
 }

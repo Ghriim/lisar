@@ -1,5 +1,5 @@
 import { Pencil, Trash2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { ApiError } from '../../api/client'
 import type { HydrationDay, HydrationEntry } from '../../api/types'
 import { humanise } from '../../api/violations'
@@ -8,13 +8,13 @@ import {
     Button,
     DataList,
     EmptyState,
-    Field,
+    Form,
     FormActions,
     IconButton,
     ListItem,
+    NumberField,
     ProgressBar,
     Stack,
-    TextInput,
     useViolations,
 } from '../../components'
 import {
@@ -44,9 +44,7 @@ export function HydrationPanel({ day }: { day: HydrationDay }) {
 
     const busy = log.isPending || correct.isPending || remove.isPending
 
-    const submitFree = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submitFree = async () => {
         try {
             await log.mutateAsync(Number(freeVolume))
             setFreeVolume('')
@@ -55,9 +53,7 @@ export function HydrationPanel({ day }: { day: HydrationDay }) {
         }
     }
 
-    const submitCorrection = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submitCorrection = async () => {
         if (editing === null) {
             return
         }
@@ -103,25 +99,24 @@ export function HydrationPanel({ day }: { day: HydrationDay }) {
                 })}
             </div>
 
-            <form className="form-grid" onSubmit={(event) => void submitFree(event)}>
-                <Field label="Autre quantité" errors={logging.for('volumeInMillilitres')}>
-                    <TextInput
-                        type="number"
-                        min={1}
-                        max={5000}
-                        value={freeVolume}
-                        onChange={(event) => setFreeVolume(event.target.value)}
-                        placeholder="en millilitres"
-                        required
-                    />
-                </Field>
+            <Form onSubmit={submitFree}>
+                <NumberField
+                    label="Autre quantité"
+                    isMandatory
+                    errors={logging.for('volumeInMillilitres')}
+                    min={1}
+                    max={5000}
+                    value={freeVolume}
+                    onChange={setFreeVolume}
+                    placeholder="en millilitres"
+                />
 
                 <FormActions>
                     <Button variant="primary" submit disabled={busy}>
                         Ajouter
                     </Button>
                 </FormActions>
-            </form>
+            </Form>
 
             {removalFailed !== null && (
                 <Alert>{humanise(removalFailed.violationsFor('id')[0] ?? 'action_failed')}</Alert>
@@ -136,17 +131,17 @@ export function HydrationPanel({ day }: { day: HydrationDay }) {
                     emptyText="Rien de bu pour l’instant."
                     renderItem={(entry) =>
                         editing?.id === entry.id ? (
-                            <form className="form-grid" onSubmit={(event) => void submitCorrection(event)}>
-                                <Field label="Quantité" errors={correcting.for('volumeInMillilitres')}>
-                                    <TextInput
-                                        type="number"
-                                        min={1}
-                                        max={5000}
-                                        value={editing.volume}
-                                        onChange={(event) => setEditing({ id: entry.id, volume: event.target.value })}
-                                        autoFocus
-                                    />
-                                </Field>
+                            <Form onSubmit={submitCorrection}>
+                                <NumberField
+                                    label="Quantité"
+                                    isMandatory
+                                    errors={correcting.for('volumeInMillilitres')}
+                                    min={1}
+                                    max={5000}
+                                    value={editing.volume}
+                                    onChange={(volume) => setEditing({ id: entry.id, volume })}
+                                    autoFocus
+                                />
 
                                 <FormActions>
                                     <Button variant="quiet" onClick={() => setEditing(null)}>
@@ -156,7 +151,7 @@ export function HydrationPanel({ day }: { day: HydrationDay }) {
                                         Enregistrer
                                     </Button>
                                 </FormActions>
-                            </form>
+                            </Form>
                         ) : (
                             <ListItem
                                 title={`${entry.volumeInMillilitres} mL`}

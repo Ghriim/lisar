@@ -1,0 +1,61 @@
+/* The Statut window and the level under the app's name. */
+
+.level-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: var(--step);
+    padding: 0 var(--step);
+    color: var(--accent);
+}
+
+.level-badge:hover {
+    text-decoration: none;
+}
+
+.level-badge-level {
+    font-family: var(--font-system);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.side-nav-collapsed .level-badge {
+    align-items: center;
+}
+
+.status-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: calc(var(--step) * 2);
+}
+
+.status-line {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.status-line-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.status-line-name {
+    color: var(--text);
+}
+
+.status-line-level {
+    font-family: var(--font-system);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+}
+
+.status-line-xp {
+    font-family: var(--font-system);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: right;
+}

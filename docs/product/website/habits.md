@@ -19,14 +19,22 @@ habit must not have had its past wiped.
 
 ## The panel
 
-One line per subscribed habit:
+One row per subscribed habit, laid out in two lines: the first holds, on the left, the name with
+the days it counts under it, and on the right the actions; the second, across the full width, the
+last seven days.
 
-- **its name**;
+- **its name**, and under it, dimmed, **the days it counts**: its planning in words — « quotidien »,
+  « lundi, mercredi et vendredi · 07:00 », several entries one after the other.
+  Every kept habit has one ([planning](planning.md#a-habit-entry)): taken on, it counts every day;
 - **the last seven days**, today included: a circle a day, empty for a day not kept, checked for a
   day kept. Seven small marks, read left to right, oldest to today — the run is seen, not counted
   at the person. A habit planned on some days only ([planning](planning.md#a-habit-entry)) shows
   the days its planning does not ask for dimmed: kept on one of them, the circle is checked and
   still dimmed — a bonus, outside the run;
+- **a calendar button, « Planifier »**, opening the habit's planning in a window: its entries one
+  per line, each to change (the pencil) or delete (the bin — absent on the last one: a kept habit
+  always has a planning), and « Ajouter » for another. The form is the planning page's, the habit
+  already chosen;
 - **a button to keep it today**, and only when the habit is **manual**. Ticking it marks today
   done; it is the one gesture. A habit already kept today shows its last circle checked and needs
   no second tick.
@@ -51,8 +59,8 @@ unkeeps the day again.
 ## Not in v1
 
 - creating one's own habits (the catalogue is admin-only for now);
-- "N times a week" habits (which days a habit counts is now set on the [planning](planning.md#a-habit-entry);
-  a habit without any entry counts every day);
+- "N times a week" habits (which days a habit counts is set on the [planning](planning.md#a-habit-entry),
+  every day by default);
 - typing a manual count toward a target;
 - the experience a kept habit will earn, and the streak bonus that rewards a long run — a separate
   gamification domain will read what is being recorded now: each kept day, the moment it was kept,

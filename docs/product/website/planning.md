@@ -25,7 +25,7 @@ Every kind carries the same schedule:
 
 | Field | Note |
 | --- | --- |
-| rule | see [The rules of dates](#the-rules-of-dates) — **required** |
+| rule | see [The rules of dates](#the-rules-of-dates) — **required**. **« Tous les jours » by default**, first in the list |
 | start date | the first day the rule can fall on. **Today by default**, shown filled in |
 | end date | optional: the last day the rule can fall on — an 8-week cycle, a season |
 | start time | optional: without one, the entry holds **within the day** |
@@ -48,6 +48,12 @@ One engine, shared by the three kinds:
 | **N-th weekday of the month** | the 1st and 2nd Monday; the last Friday |
 | **fixed day of the month** | the 15th; a month without that day (the 31st) is skipped |
 
+**« Tous les jours »** is offered as a choice of its own, first in the list, and chosen from the
+start. It is not a rule of its own: it is written as days of the week, all seven, every week — and
+an entry on that rule is shown back as « Tous les jours » when it is changed.
+
+**The days are listed with commas only**: « lundi, mercredi, vendredi », never « … et vendredi ».
+
 No single date can be moved or skipped on its own: to change a date, the rule is changed.
 
 **Changing an entry changes the dates from today on.** What already fell — a slot kept, a slot
@@ -64,7 +70,9 @@ Seven columns, each with its day and date:
 
 - what holds **within the day** sits at the head of its column;
 - what has **a start time** sits on the hour grid, as tall as its duration — an entry without a
-  duration is a mark at its hour.
+  duration is a mark at its hour. A card short on time still grows to show **its kind's icon and
+  its name** (the routine's, the task's, the habit's): the name is never squeezed away to fit, it
+  is cut with an ellipsis when the column is narrow.
 
 Each date carries its kind's icon, its name and its state:
 
@@ -79,10 +87,22 @@ then what it ties, then the rule and the time. **The eye on a date** opens its e
 filled in or not — to change it or delete it after asking. Today's training slot not kept yet also
 carries **« Démarrer »**.
 
+**A date is ticked off from the week**, where there is something to tick:
+
+- **a task date whose task exists** — today's, or one of a day gone by, overdue included — carries
+  the check, « Terminer », and once done the undo, « Rouvrir ». A date still to come has no task
+  yet, so nothing to tick. It is the same gesture as in the task list, and the list follows.
+- **today's date of a habit kept by hand** carries the check, « Valider », and once kept the undo,
+  « Décocher » — as on the habits panel, which follows. A habit is kept for the day in progress
+  only, so its other days carry none; a habit its tracker keeps carries none either. A day's
+  habits held within the day are ticked from the window their card opens.
+
+Whatever the server refuses is said once, above the week.
+
 The form asks the rule first, and then only the fields that rule reads: the days of the week and
 « une semaine sur N » for a weekly rule, the days and their rank in the month for a monthly one,
-the days of the month for the other. The start date opens on today; nothing else is chosen for the
-person. A duration is asked only once a start time is given.
+the days of the month for the other. The rule opens on « Tous les jours » and the start date on
+today; nothing else is chosen for the person. A duration is asked only once a start time is given.
 
 Narrower than a laptop, the seven columns stack, one day under the other, each listing its dates
 in order rather than on an hour grid.
@@ -133,14 +153,26 @@ are not part of a model.
 ## A habit entry
 
 - **The days a habit counts are the person's**: a habit entry belongs to their subscription, not
-  to the catalogue. **A subscribed habit without an entry counts every day**, as today; its entries,
-  once it has some, say which days instead.
+  to the catalogue.
+- **A kept habit always has a planning.** Taking a habit on — or taking it back up after a drop —
+  plans it **every day, from that day**, as one entry; the person changes it from there. **Its last
+  entry cannot be deleted**: the delete is not offered, and the server refuses it
+  (`last_habit_planning_entry`). To stop keeping it, one unsubscribes.
 - **A run counts planned days only.** A day no entry asks for neither breaks the run nor extends it.
 - **A habit can still be kept on an unplanned day**: the day is recorded as kept, shown as a bonus,
   and counts for nothing in the run.
 - The seven circles of the [habits panel](habits.md#the-panel) show the planned days as they are,
-  and the others dimmed. The panel shows the entries; they are created and changed here.
+  and the others dimmed. Its entries are created and changed here **and from the habit's own line
+  on the panel**, through the same form.
 - Unsubscribing takes the habit's entries with it; subscribing again starts from every day.
+- **On the week, a day's habits held within the day share one card**, « 3/5 habitudes »: how many
+  were kept (bonus days included) out of how many the day holds. Every habit is planned, most of
+  them every day: one card each would bury the rest of the week. The card's border says how the
+  day went — green when all were kept, red when one was missed, the accent otherwise — and its eye
+  opens a window listing them, each with its state, **the days it counts** (« quotidien »,
+  « lundi et jeudi »), and its own eye on its entry. The entry opens in the same window,
+  which changes what it holds rather than closing and opening again. **A habit planned
+  at an hour keeps its own card** on the hour grid, like any timed entry.
 
 ## Navigation
 

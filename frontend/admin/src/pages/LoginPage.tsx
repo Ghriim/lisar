@@ -41,8 +41,8 @@ export function LoginPage() {
             <Panel>
                 <Page title="lisar · back-office">
                     <Form<Credentials> onSubmit={(values) => void submit(values)}>
-                        <EmailField name="email" label="Adresse" required autoFocus />
-                        <PasswordField name="password" label="Mot de passe" required />
+                        <EmailField name="email" label="Adresse" isMandatory autoFocus />
+                        <PasswordField name="password" label="Mot de passe" isMandatory />
 
                         {error !== null && <Alert message={error} />}
 

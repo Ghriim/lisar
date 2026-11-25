@@ -1,15 +1,15 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import type { WorkoutBlockExercisePayload, WorkoutMovementChoice } from '../../api/types'
 import {
     Alert,
     Button,
+    ChoiceField,
+    DurationField,
     EmptyState,
-    Field,
+    Form,
     FormActions,
     Loader,
-    Stack,
-    TextInput,
-    ToggleChip,
+    TextField,
     useViolations,
 } from '../../components'
 import { useWorkoutMovements } from './queries'
@@ -54,8 +54,7 @@ export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, o
         }
     }
 
-    const submit = (event: FormEvent) => {
-        event.preventDefault()
+    const submit = () => {
         onSubmit(picked.map((movementId) => ({ movementId, restInSeconds: parseDuration(rests[movementId] ?? '') })))
     }
 
@@ -64,10 +63,8 @@ export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, o
     const error = restErrors.some((errors) => errors.length > 0) ? null : failureOf(failure)
 
     return (
-        <form className="form-grid" onSubmit={submit}>
-            <Field label="Chercher">
-                <TextInput value={search} autoFocus onChange={(event) => setSearch(event.target.value)} />
-            </Field>
+        <Form onSubmit={submit}>
+            <TextField label="Chercher" value={search} autoFocus onChange={setSearch} />
 
             {max > 1 && (
                 <p className="tracker-note" style={{ margin: 0 }}>
@@ -77,44 +74,27 @@ export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, o
                 </p>
             )}
 
-            {movements.isPending ? (
-                <Loader />
-            ) : families.length === 0 ? (
-                <EmptyState>Aucun mouvement ne correspond.</EmptyState>
-            ) : (
-                <Stack>
-                    {families.map((family) => (
-                        <div key={family.name} className="movement-family">
-                            <span className="field-label">{family.name}</span>
-                            <div className="chip-choices">
-                                {family.movements.map((movement) => (
-                                    <ToggleChip
-                                        key={movement.id}
-                                        pressed={picked.includes(movement.id)}
-                                        onToggle={() => toggle(movement.id)}
-                                    >
-                                        {movement.name}
-                                    </ToggleChip>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </Stack>
-            )}
+            <ChoiceField
+                label={max === 1 ? 'Mouvement' : 'Mouvements'}
+                isMandatory
+                choices={families.map((family) => ({
+                    label: family.name,
+                    choices: family.movements.map((movement) => ({ value: movement.id, label: movement.name })),
+                }))}
+                chosen={picked}
+                onToggle={toggle}
+                empty={movements.isPending ? <Loader /> : <EmptyState>Aucun mouvement ne correspond.</EmptyState>}
+            />
 
             {picked.map((id, index) => (
-                <Field
+                <DurationField
                     key={id}
-                    label={`Repos${max === 1 ? '' : ` · ${byId.get(id)?.name ?? ''}`} (s ou m:ss, facultatif)`}
+                    label={`Repos${max === 1 ? '' : ` · ${byId.get(id)?.name ?? ''}`} (s ou m:ss)`}
                     errors={restErrors[index]}
-                >
-                    <TextInput
-                        inputMode="numeric"
-                        placeholder="1:30"
-                        value={rests[id] ?? ''}
-                        onChange={(event) => setRests({ ...rests, [id]: event.target.value })}
-                    />
-                </Field>
+                    placeholder="1:30"
+                    value={rests[id] ?? ''}
+                    onChange={(rest) => setRests({ ...rests, [id]: rest })}
+                />
             ))}
 
             {error !== null && <Alert>{error}</Alert>}
@@ -127,7 +107,7 @@ export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, o
                     {pending ? 'Ajouter…' : 'Ajouter'}
                 </Button>
             </FormActions>
-        </form>
+        </Form>
     )
 }
 

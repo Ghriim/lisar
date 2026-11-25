@@ -1,6 +1,6 @@
-import { type FormEvent, useState } from 'react'
+import { useState } from 'react'
 import type { RoutineSet, WorkoutMovement } from '../../api/types'
-import { Alert, Button, Field, FormActions, FormGrid, TextInput, useViolations } from '../../components'
+import { Alert, Button, DecimalField, Form, FormActions, FormGrid, NumberField, useViolations } from '../../components'
 import { decimalField, failureOf, parseDecimal } from '../workouts/workoutFormat'
 import { useAddRoutineSet, useUpdateRoutineSet } from './queries'
 
@@ -32,9 +32,7 @@ export function RoutineSetForm({ routineId, exerciseId, movement, editing, previ
     const [reps, setReps] = useState(source?.reps?.toString() ?? '')
     const [percentage, setPercentage] = useState(decimalField(source?.percentageOfOneRepMax ?? null))
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         // Only what the movement takes is sent: a share without a load would be refused.
         const payload = {
             reps: parseDecimal(reps),
@@ -54,28 +52,27 @@ export function RoutineSetForm({ routineId, exerciseId, movement, editing, previ
     }
 
     return (
-        <form className="form-grid" onSubmit={(event) => void submit(event)}>
+        <Form onSubmit={submit}>
             <FormGrid columns={2}>
-                <Field label={movement.isUnilateral ? 'Répétitions / côté' : 'Répétitions'} errors={violations.for('reps')}>
-                    <TextInput
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        value={reps}
-                        autoFocus
-                        onChange={(event) => setReps(event.target.value)}
-                    />
-                </Field>
+                <NumberField
+                    label={movement.isUnilateral ? 'Répétitions / côté' : 'Répétitions'}
+                    isMandatory
+                    errors={violations.for('reps')}
+                    min={1}
+                    value={reps}
+                    autoFocus
+                    onChange={setReps}
+                />
 
                 {movement.tracksWeight && (
-                    <Field label="Part du 1RM (%)" errors={violations.for('percentageOfOneRepMax')}>
-                        <TextInput
-                            inputMode="decimal"
-                            placeholder="80"
-                            value={percentage}
-                            onChange={(event) => setPercentage(event.target.value)}
-                        />
-                    </Field>
+                    <DecimalField
+                        label="Part du 1RM (%)"
+                        isMandatory
+                        errors={violations.for('percentageOfOneRepMax')}
+                        placeholder="80"
+                        value={percentage}
+                        onChange={setPercentage}
+                    />
                 )}
             </FormGrid>
 
@@ -91,6 +88,6 @@ export function RoutineSetForm({ routineId, exerciseId, movement, editing, previ
                         : mutation.isPending ? 'Enregistrer…' : 'Enregistrer'}
                 </Button>
             </FormActions>
-        </form>
+        </Form>
     )
 }

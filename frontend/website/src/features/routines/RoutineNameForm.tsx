@@ -1,5 +1,5 @@
-import { type FormEvent, useState } from 'react'
-import { Alert, Button, Field, FormActions, TextInput, useViolations } from '../../components'
+import { useState } from 'react'
+import { Alert, Button, Form, FormActions, TextField, useViolations } from '../../components'
 import { failureOf } from '../workouts/workoutFormat'
 import { ROUTINE_NAME_MAX_LENGTH } from './routineFormat'
 
@@ -19,9 +19,7 @@ export function RoutineNameForm({ current, save, pending, failure, onDone }: Rou
     const [name, setName] = useState(current ?? '')
     const verb = current === null ? 'Créer' : 'Enregistrer'
 
-    const submit = async (event: FormEvent) => {
-        event.preventDefault()
-
+    const submit = async () => {
         try {
             await save(name.trim())
             onDone()
@@ -31,16 +29,17 @@ export function RoutineNameForm({ current, save, pending, failure, onDone }: Rou
     }
 
     return (
-        <form className="form-grid" onSubmit={(event) => void submit(event)}>
-            <Field label="Nom" errors={violations.for('name')}>
-                <TextInput
-                    value={name}
-                    autoFocus
-                    maxLength={ROUTINE_NAME_MAX_LENGTH}
-                    placeholder="Push, jambes, haut du corps…"
-                    onChange={(event) => setName(event.target.value)}
-                />
-            </Field>
+        <Form onSubmit={submit}>
+            <TextField
+                label="Nom"
+                isMandatory
+                errors={violations.for('name')}
+                value={name}
+                autoFocus
+                maxLength={ROUTINE_NAME_MAX_LENGTH}
+                placeholder="Push, jambes, haut du corps…"
+                onChange={setName}
+            />
 
             {violations.isGeneral && <Alert>{failureOf(failure) ?? ''}</Alert>}
 
@@ -52,6 +51,6 @@ export function RoutineNameForm({ current, save, pending, failure, onDone }: Rou
                     {pending ? `${verb}…` : verb}
                 </Button>
             </FormActions>
-        </form>
+        </Form>
     )
 }

@@ -84,6 +84,15 @@ class MovementDataModel implements DataModelInterface
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     public bool $isUnilateral = false;
 
+    // The physical stat the experience it earns goes to (StatRegistry::PHYSICAL): all of it, or
+    // 70 % when it names secondary stats too — see MovementExperienceSplit.
+    #[ORM\Column(length: 16)]
+    public string $primaryStat;
+
+    /** @var list<string> none, one or two of StatRegistry::PHYSICAL, never the primary one */
+    #[ORM\Column(type: Types::JSON)]
+    public array $secondaryStats = [];
+
     #[ORM\ManyToOne(targetEntity: UserDataModel::class)]
     #[ORM\JoinColumn(name: 'owner_id', nullable: true, onDelete: 'CASCADE')]
     public ?UserDataModel $owner = null;

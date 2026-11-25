@@ -22,7 +22,12 @@ optional `subject`, and assembles `Terminer « Ranger le garage »` for a screen
 look at, complete to listen to.
 
 The website draws its own tooltip rather than using the native `title` attribute, which arrives a
-second late and in the browser's chrome instead of the System's. The back-office uses Ant's
+second late and in the browser's chrome instead of the System's. It is the `Tooltip` component,
+and nothing else: it is drawn on `document.body` and placed against the window, because a card
+cuts its corner with a `clip-path` and a window scrolls, and either clips anything drawn inside
+it. It opens above its host, underneath when there is no room above, and never past the edge of
+the window. The folded side menu keeps its own tooltip, to the right, since nothing clips it.
+The back-office uses Ant's
 `Tooltip` the day it gains an icon-only control; it has none today, its buttons carry words.
 
 ### The icons, and what each one means
@@ -40,6 +45,7 @@ app — the same action never wears two faces, and two actions never wear the sa
 | `Copy` | dupliquer | makes a second one of the same, to change on its own — a routine copied |
 | `Pencil` | modifier | |
 | `Plus` | créer, ajouter | |
+| `CalendarDays` | planifier | opens the planning of one thing — a habit's days, from its line |
 | `Trash2` | supprimer | **always `variant="danger"`**, red from the start |
 | `X` | fermer | **closing only** — never deleting |
 | `ChevronRight` / `ChevronDown` | déplier / replier | carries `aria-expanded` |
@@ -61,7 +67,7 @@ actions: they name a value, not a verb, so the verb rule above does not apply to
 else does. Each level still carries a tooltip and a spoken label (`Bon réveil`), because an
 unlabelled face is a guess exactly like an unlabelled verb.
 
-Such a scale belongs in `RatingScale`, not in the feature that happens to need it first: picking
+Such a scale belongs in `RatingField`, not in the feature that happens to need it first: picking
 one level out of five, drawn as icons, with nothing chosen until someone chooses and a second
 click taking the choice back. The faces themselves stay with the feature — the component knows
 about levels, not about sleep.
@@ -81,6 +87,27 @@ Every form ends with the same block, `FormActions`:
     <button type="submit" className="button" disabled={pending}>Créer</button>
 </FormActions>
 ```
+
+## 2.1 Required fields
+
+**A required field carries an asterisk after its label; an optional field says nothing.** No
+label ends in "(facultatif)", no placeholder reads "Facultatif". The asterisk is explained once,
+by a legend on the first line of the form: `* Champ obligatoire`.
+
+- A field is marked required when the **server** refuses the payload without it — the
+  validator is the source of truth, not a guess about what is usually filled in.
+- A field required only under a condition the form can see — a measure the movement tracks, the
+  days a weekly rule reads — is marked when it is shown. A condition the form cannot see (a load
+  required only once the workout is finished) is not marked.
+- A form with no required field has no legend and no asterisk.
+
+On both fronts this is one prop, **`isMandatory`**, on every field component, and nothing else:
+it draws the asterisk, and the field tells the `Form` around it that it is there. `Form` counts
+the mandatory fields on screen and opens on the legend while there is at least one — a field that
+shows only under a condition brings the legend with it. No screen writes the legend by hand.
+
+On the website `isMandatory` also sets the native `required`; in the back-office it adds Ant's
+`required` rule. Either way the server stays the one that decides.
 
 ## 3. Modals, and what cannot be undone
 
@@ -117,12 +144,16 @@ A creation form starts empty: no category, no preselected option in a list. Wher
 default exists — the task priority — it is the **server** that applies it, once, on a payload
 that named none. A front end never guesses on the person's behalf.
 
-**The exception, and it is one:** a field that records a **measurement** opens on the last value
+**Two exceptions, and only two.** The first: a field that records a **measurement** opens on the last value
 measured — the weight field is prefilled with the last known weight. It is not a guess among
 options, it is the same quantity measured again: a weight moves by hundreds of grams, so the
 previous number is almost the next one and retyping it in full is work for nothing. The test for
 the exception is whether the field has a *previous value of its own* rather than a *likely
 choice*; a category does not, and stays empty.
+
+The second, decided by the product owner: the **rule of a planning entry** opens on « Tous les
+jours ». It is what most plans are — and what every habit starts with — so the form offers it first
+and has it chosen; any other rule is one change away.
 
 ## 4.1 An active/inactive filter
 
@@ -153,8 +184,27 @@ Both front ends keep everything they draw with in `src/components/`, re-exported
 
 - **no page imports `antd`** — only `src/components/` does, plus `main.tsx` where the theme is
   configured. A screen reads in the vocabulary of the product, not of a widget set.
-- **no page writes a `<button>`, an `<input>`, a `<select>` or a layout class by hand** on the
-  website. `Button`, `IconButton`, `Select`, `Row`, `Stack`, `FormGrid` exist for that.
+- **no page writes a `<form>`, a `<button>`, an `<input>`, a `<select>` or a layout class by
+  hand** on the website. `Form`, the `…Field` components, `Button`, `IconButton`, `Row`,
+  `Stack`, `FormGrid` exist for that.
+
+### 5.1 Where a component lives
+
+`src/components/` is sorted by what a component is for, the same way on both fronts:
+
+| Folder | Holds | Website | Back-office |
+| --- | --- | --- | --- |
+| `Button/` | what is clicked to act, confirmation included | `Button`, `IconButton` | `Button`, `ConfirmButton` |
+| `Form/` | `Form`, **one component per kind of field**, `FormActions` | `TextField`, `NumberField`, `DecimalField`, `DurationField`, `DateField`, `TimeField`, `EmailField`, `PasswordField`, `TextAreaField`, `SelectField`, `ChoiceField`, `RatingField`, `FormGrid`, `useViolations` | `TextField`, `NumberField`, `EmailField`, `PasswordField`, `TextAreaField`, `SelectField`, `SwitchField`, `TextArea` |
+| `List/` | a list of things, and what filters it | `DataList`, `ListItem`, `DefinitionList` | `DataTable`, `ItemList`, `DescriptionList`, `ListToolbar`, `ActiveFilter`, `FilterSelect`, `useActiveFilter` |
+| `Modal/` | what opens over the screen | `Modal`, `ConfirmDialog` | `FormModal` (a `Form` shown in a window), `DetailDrawer` |
+| `Navigation/` | what leads somewhere else | `SideNav`, `Tabs`, `LinkChip` | `SideMenu`, `LinkText` |
+| root | what fits none of these | chips, feedback, layout, shells, panels | shells, badges, feedback, layout, text, icons |
+
+A field component takes a `label`, `isMandatory`, its value and what changes it — bound by `name`
+in the back-office, controlled on the website — and draws its label, asterisk and errors through
+the same frame as every other. A new kind of value gets a new `…Field`, not an input written in a
+screen. A component whose folder is not obvious is asked about before it is filed.
 
 The point is not purity. It is that a decision — what a destructive action looks like, where a
 form's buttons sit, how a date is written — gets made once and stays made. When Ant renames a

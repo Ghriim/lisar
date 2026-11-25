@@ -1,4 +1,4 @@
-import type { PlanningSchedule } from '../../api/types'
+import type { HabitPlanningEntry, PlanningSchedule } from '../../api/types'
 
 /**
  * How a week, a day and a schedule are written on the planning. Days travel as "YYYY-MM-DD" and are
@@ -27,12 +27,33 @@ export const MONTH_WEEKS: { value: number; label: string }[] = [
     { value: -1, label: 'Dernier' },
 ]
 
+/**
+ * « Tous les jours » is not a rule of the server's: it is a weekly rule on all seven days, every
+ * week. The form offers it as a choice of its own — the one a habit starts with — and writes it
+ * out as that weekly rule.
+ */
+export const DAILY = 'daily'
+const EVERY_WEEKDAY = [1, 2, 3, 4, 5, 6, 7]
+
 export const RULES: { value: string; label: string }[] = [
+    { value: DAILY, label: 'Tous les jours' },
     { value: 'once', label: 'Une seule fois' },
     { value: 'weekly', label: 'Certains jours de la semaine' },
     { value: 'monthly_weekday', label: 'Le N-ième jour de la semaine du mois' },
     { value: 'monthly_day', label: 'Un jour fixe du mois' },
 ]
+
+/** The choice the form shows for a schedule: « tous les jours » for a weekly rule on every day of every week. */
+export function ruleChoiceOf(schedule: Pick<PlanningSchedule, 'rule' | 'weekdays' | 'weekInterval'>): string {
+    return schedule.rule === 'weekly' && schedule.weekInterval === 1 && EVERY_WEEKDAY.every((day) => schedule.weekdays.includes(day))
+        ? DAILY
+        : schedule.rule
+}
+
+/** What the server is sent for the form's choice: « tous les jours » written out as the weekly rule it is. */
+export function scheduleRuleOf(choice: string, weekdays: number[], weekInterval: number): Pick<PlanningSchedule, 'rule' | 'weekdays' | 'weekInterval'> {
+    return choice === DAILY ? { rule: 'weekly', weekdays: EVERY_WEEKDAY, weekInterval: 1 } : { rule: choice, weekdays, weekInterval }
+}
 
 /** A calendar day from its "YYYY-MM-DD", at local midnight. */
 export function parseDay(day: string): Date {
@@ -91,7 +112,7 @@ export function formatTimeSpan(schedule: Pick<PlanningSchedule, 'startTime' | 'd
     return `${schedule.startTime} · ${length}`
 }
 
-/** The rule in words: « le mardi et le jeudi », « un lundi sur 2 », « le 1er et le dernier samedi du mois ». */
+/** The rule in words: « mardi et jeudi », « quotidien », « le lundi, une semaine sur 2 », « le 1er et le dernier samedi du mois ». */
 export function formatRule(schedule: PlanningSchedule): string {
     const days = joinFr(schedule.weekdays.map((value) => WEEKDAYS.find((one) => one.value === value)?.long ?? ''))
 
@@ -100,10 +121,10 @@ export function formatRule(schedule: PlanningSchedule): string {
             return `le ${MONTH_DAY.format(parseDay(schedule.startDate))}`
         case 'weekly':
             if (schedule.weekdays.length === 7) {
-                return schedule.weekInterval === 1 ? 'tous les jours' : `tous les jours, une semaine sur ${schedule.weekInterval}`
+                return schedule.weekInterval === 1 ? 'quotidien' : `quotidien, une semaine sur ${schedule.weekInterval}`
             }
 
-            return schedule.weekInterval === 1 ? `chaque ${days}` : `le ${days}, une semaine sur ${schedule.weekInterval}`
+            return schedule.weekInterval === 1 ? days : `le ${days}, une semaine sur ${schedule.weekInterval}`
         case 'monthly_weekday': {
             const ranks = joinFr(schedule.monthWeeks.map((value) => (MONTH_WEEKS.find((one) => one.value === value)?.label ?? '').toLowerCase()))
 
@@ -116,6 +137,26 @@ export function formatRule(schedule: PlanningSchedule): string {
     }
 }
 
+/**
+ * The days a habit counts, in words — « quotidien », « lundi et jeudi · 07:00 » — its
+ * entries one after the other. Null while they are not known yet.
+ */
+export function formatHabitRhythm(habitId: number, entries: HabitPlanningEntry[]): string | null {
+    const own = entries.filter((entry) => entry.habitId === habitId)
+    if (own.length === 0) {
+        return null
+    }
+
+    return own
+        .map((entry) => {
+            const time = formatTimeSpan(entry.schedule)
+
+            return time === null ? formatRule(entry.schedule) : `${formatRule(entry.schedule)} · ${time}`
+        })
+        .join(' — ')
+}
+
+/** « lundi, mercredi, vendredi »: commas only, no « et » before the last. */
 function joinFr(parts: string[]): string {
-    return parts.length < 2 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} et ${parts.at(-1)}`
+    return parts.join(', ')
 }

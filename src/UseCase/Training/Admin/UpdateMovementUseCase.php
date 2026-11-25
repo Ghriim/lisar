@@ -101,6 +101,8 @@ final readonly class UpdateMovementUseCase implements UseCaseInterface
         $movement->tracksDuration = $input->tracksDuration;
         $movement->tracksDistance = $input->tracksDistance;
         $movement->isUnilateral = $input->isUnilateral;
+        $movement->primaryStat = $input->primaryStat;
+        $movement->secondaryStats = $input->getSecondaryStats();
 
         $this->movementPersisterGateway->update($movement);
 
