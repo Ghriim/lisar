@@ -10,6 +10,7 @@ use App\Infrastructure\Controller\AbstractBaseController;
 use App\UseCase\Habits\CompleteHabitUseCase;
 use App\UseCase\Habits\ListHabitCatalogUseCase;
 use App\UseCase\Habits\ListHabitsUseCase;
+use App\UseCase\Habits\ListTodayHabitsUseCase;
 use App\UseCase\Habits\SubscribeHabitUseCase;
 use App\UseCase\Habits\UncompleteHabitUseCase;
 use App\UseCase\Habits\UnsubscribeHabitUseCase;
@@ -34,6 +35,17 @@ final class HabitController extends AbstractBaseController
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: HabitDataOutput::class))),
     )]
     public function listHabits(ListHabitsUseCase $useCase): JsonResponse
+    {
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
+    }
+
+    #[Route('/api/habits/today', methods: Request::METHOD_GET)]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'The kept habits today asks for — planned today, or with no planning — each with its last seven days.',
+        content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: HabitDataOutput::class))),
+    )]
+    public function listTodayHabits(ListTodayHabitsUseCase $useCase): JsonResponse
     {
         return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }

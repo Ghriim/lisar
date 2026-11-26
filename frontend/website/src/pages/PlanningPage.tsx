@@ -9,9 +9,8 @@ import {
     IconButton,
     Loader,
     Modal,
-    Row,
+    SectionHeading,
     SelectField,
-    Stack,
     SystemPanel,
     WeekCalendar,
 } from '../components'
@@ -235,16 +234,19 @@ export function PlanningPage() {
     const isError = training.isError || tasks.isError || habits.isError
 
     return (
-        <Stack>
-            <SystemPanel
+        <section className="board-section" aria-labelledby="planning-title">
+            <SectionHeading
+                id="planning-title"
                 title="Planning"
-                actions={<IconButton icon={Plus} label="Planifier" onClick={() => setPanel({ kind: 'create' })} />}
-            >
-                <Row style={{ justifyContent: 'center', marginBottom: 'var(--step)' }}>
-                    <IconButton icon={ArrowLeft} label="Semaine précédente" onClick={() => setMonday(addDays(monday, -7))} />
-                    <span className="tracker-note">{formatWeek(monday)}</span>
-                    <IconButton icon={ArrowRight} label="Semaine suivante" onClick={() => setMonday(addDays(monday, 7))} />
-                </Row>
+                actions={<IconButton icon={Plus} label="Planifier" variant="primary" large onClick={() => setPanel({ kind: 'create' })} />}
+            />
+
+            <SystemPanel>
+                <div className="planning-week-nav">
+                    <IconButton icon={ArrowLeft} label="Semaine précédente" medium onClick={() => setMonday(addDays(monday, -7))} />
+                    <span className="planning-week-label">{formatWeek(monday)}</span>
+                    <IconButton icon={ArrowRight} label="Semaine suivante" medium onClick={() => setMonday(addDays(monday, 7))} />
+                </div>
 
                 {start.error !== null && <Alert>{start.error}</Alert>}
                 {completionError !== null && <Alert>{completionError}</Alert>}
@@ -288,7 +290,7 @@ export function PlanningPage() {
                     </Fragment>
                 </Modal>
             )}
-        </Stack>
+        </section>
     )
 }
 

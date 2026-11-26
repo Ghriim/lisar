@@ -27,7 +27,7 @@ export function LoginPage() {
 
     return (
         <AuthShell>
-            <SystemPanel title="Identification">
+            <SystemPanel titleInside title="Identification">
                 <p className="system-text dim" style={{ marginTop: 0 }}>
                     Le System attend tes identifiants.
                 </p>

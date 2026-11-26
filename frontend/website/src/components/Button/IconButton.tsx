@@ -21,6 +21,8 @@ interface IconButtonProps {
     small?: boolean
     /** 44px, framed: a section's action beside its title. */
     large?: boolean
+    /** 40px, framed: among other controls of the same size — a habit's line. */
+    medium?: boolean
     /**
      * Set only on a button that folds something away: it tells a screen reader whether what it
      * controls is open, which an icon alone never could.
@@ -37,6 +39,7 @@ export function IconButton({
     disabled = false,
     small = false,
     large = false,
+    medium = false,
     expanded,
 }: IconButtonProps) {
     const classes = ['icon-button']
@@ -49,8 +52,11 @@ export function IconButton({
     if (small) {
         classes.push('icon-button-small')
     }
-    if (large) {
+    if (large || medium) {
         classes.push('icon-button-large')
+    }
+    if (medium) {
+        classes.push('icon-button-medium')
     }
 
     return (
@@ -63,7 +69,7 @@ export function IconButton({
                 disabled={disabled}
                 onClick={onClick}
             >
-                <Icon size={small ? 13 : large ? 18 : 15} strokeWidth={2} aria-hidden />
+                <Icon size={small ? 13 : large ? 18 : medium ? 16 : 15} strokeWidth={2} aria-hidden />
             </button>
         </Tooltip>
     )

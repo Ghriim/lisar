@@ -103,6 +103,24 @@ final class HabitPlanningCalendarTest extends TestCase
         self::assertSame([1 => []], $this->calendar->plannedDaysBetween([$entry], new DateTimeImmutable('2026-11-19', $zone), new DateTimeImmutable('2026-11-25', $zone)));
     }
 
+    /** Today, a Wednesday: reading is planned on it, the walk is not, the third habit has no planning and counts every day. */
+    public function testADayAsksForTheHabitsPlannedOnItAndThoseWithoutAPlanning(): void
+    {
+        $reading = $this->subscriptionOf($this->anyCurrentUser());
+        $walk = $this->subscriptionOf($this->anyCurrentUser(), 2, 2);
+        $meditate = $this->subscriptionOf($this->anyCurrentUser(), 3, 3);
+        $zone = new DateTimeZone('Europe/Paris');
+        $today = new DateTimeImmutable('2026-11-25', $zone);
+
+        $planned = $this->calendar->plannedDaysBetween(
+            [$this->habitEntry(10, $reading, [3]), $this->habitEntry(20, $walk, [7])],
+            new DateTimeImmutable('2026-11-19', $zone),
+            $today,
+        );
+
+        self::assertSame([$reading, $meditate], $this->calendar->plannedOn([$reading, $walk, $meditate], $planned, $today));
+    }
+
     /**
      * @param list<\App\Domain\DTO\DataModel\Planning\HabitPlanningEntryDataModel> $entries
      * @param list<\App\Domain\DTO\DataModel\Habits\HabitEntryDataModel>           $habitDays

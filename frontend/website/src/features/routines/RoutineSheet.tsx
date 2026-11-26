@@ -36,11 +36,13 @@ export function RoutineSheet({ routine, onDeleted }: RoutineSheetProps) {
             <SystemPanel
                 title={routine.name}
                 actions={
-                    <Row style={{ gap: 6 }}>
-                        <IconButton icon={Pencil} label="Renommer" subject={routine.name} onClick={() => setPanel('rename')} />
+                    <Row style={{ gap: 8 }}>
+                        <IconButton icon={Pencil} label="Renommer" large subject={routine.name} onClick={() => setPanel('rename')} />
                         {start.isOffered && (
                             <IconButton
                                 icon={Play}
+                                variant="primary"
+                                large
                                 label="Démarrer"
                                 subject={routine.name}
                                 disabled={busy}
@@ -49,6 +51,7 @@ export function RoutineSheet({ routine, onDeleted }: RoutineSheetProps) {
                         )}
                         <IconButton
                             icon={Copy}
+                            large
                             label="Dupliquer"
                             subject={routine.name}
                             disabled={busy}
@@ -56,6 +59,7 @@ export function RoutineSheet({ routine, onDeleted }: RoutineSheetProps) {
                         />
                         <IconButton
                             icon={Trash2}
+                            large
                             variant="danger"
                             label="Supprimer"
                             subject={routine.name}

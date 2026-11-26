@@ -71,7 +71,7 @@ export function RoutineExercisesCard({ routine }: { routine: Routine }) {
         <>
             <SystemPanel
                 title="Exercices"
-                actions={<IconButton icon={Plus} label="Ajouter un exercice" onClick={() => setPanel({ kind: 'add-block' })} />}
+                actions={<IconButton icon={Plus} label="Ajouter un exercice" variant="primary" large onClick={() => setPanel({ kind: 'add-block' })} />}
             >
                 {routine.blocks.length === 0 ? (
                     <EmptyState>Aucun exercice pour l’instant.</EmptyState>

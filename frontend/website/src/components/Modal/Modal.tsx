@@ -46,6 +46,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
         >
             <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
                 <SystemPanel
+                    titleInside
                     title={title}
                     actions={<IconButton icon={X} label="Fermer" onClick={onClose} />}
                 >

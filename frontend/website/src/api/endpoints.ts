@@ -179,6 +179,11 @@ export function fetchHabits(): Promise<Habit[]> {
     return request<Habit[]>('/api/habits')
 }
 
+/** The kept habits today asks for — planned today, or with no planning — each with its week. */
+export function fetchTodayHabits(): Promise<Habit[]> {
+    return request<Habit[]>('/api/habits/today')
+}
+
 /** Ticking a manual habit for today answers with that habit, its week refreshed. */
 export function completeHabit(id: number): Promise<Habit> {
     return request<Habit>(`/api/habits/${id}/complete`, { method: 'POST' })

@@ -1,78 +1,55 @@
-import { CalendarDays, Check, RotateCcw, Settings2 } from 'lucide-react'
+import { CalendarDays, RefreshCw, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import type { Habit } from '../../api/types'
-import { DataList, IconButton, ListItem, Modal, SystemPanel } from '../../components'
-import { groupByCategoryIfAny } from '../categories/groupByCategory'
-import { formatHabitRhythm } from '../planning/planningFormat'
+import { Alert, CheckToggle, EmptyState, IconButton, Loader, Modal, SectionHeading, SystemPanel, Tooltip } from '../../components'
+import { formatHabitRhythmShort } from '../planning/planningFormat'
 import { useHabitPlanningEntries } from '../planning/queries'
 import { HabitCatalog } from './HabitCatalog'
+import { HabitCategoryIcon } from './HabitCategoryIcon'
 import { HabitSchedule } from './HabitSchedule'
-import { HabitStreak } from './HabitStreak'
-import { useCompleteHabit, useHabits, useUncompleteHabit } from './queries'
+import { HabitWeek } from './HabitWeek'
+import { habitStreak } from './habitStreak'
+import { useCompleteHabit, useTodayHabits, useUncompleteHabit } from './queries'
+
+const FAILURE = 'Le System ne répond pas. Réessaie dans un instant.'
 
 /**
- * The kept habits, on the dashboard: a line each, the days it counts beside its name, its last
- * seven days under it, and a tick for the manual ones. A tracker-fed habit carries no tick — it is
- * kept on its own when its tracker crosses the mark. Each line opens its own planning; the
- * catalogue to subscribe from is behind "Gérer".
+ * The kept habits today asks for, on the dashboard — which ones is the API's to say
+ * (`/api/habits/today`): one flat list, a box each — its name with its category's
+ * small icon, the days it counts and its run, its planning and its tick on the right, and its
+ * last seven days under it, today last. A tracker-fed habit carries no tick: it is kept on its own when its
+ * tracker crosses the mark. The catalogue to subscribe from is behind « Gérer les habitudes ».
  */
 export function HabitPanel() {
-    const habits = useHabits()
-    const complete = useCompleteHabit()
-    const uncomplete = useUncompleteHabit()
-    const planning = useHabitPlanningEntries()
+    const habits = useTodayHabits()
     const [managing, setManaging] = useState(false)
     const [scheduling, setScheduling] = useState<Habit | null>(null)
 
-    const pending = complete.isPending || uncomplete.isPending
-
-    // Under their category, like the tasks.
-    const groups = groupByCategoryIfAny(habits.data ?? [], (habit) => habit.category)
+    const planning = useHabitPlanningEntries()
 
     return (
-        <SystemPanel
-            title="Habitudes"
-            actions={<IconButton icon={Settings2} label="Gérer" onClick={() => setManaging(true)} />}
-        >
-            <DataList<Habit>
-                groups={groups}
-                keyOf={(habit) => habit.habitId}
-                loading={habits.isPending}
-                error={habits.isError ? 'Le System ne répond pas. Réessaie dans un instant.' : null}
-                emptyText="Aucune habitude suivie. Ouvre « Gérer » pour en choisir."
-                renderItem={(habit) => {
-                    return (
-                        <ListItem
-                            title={habit.name}
-                            description={formatHabitRhythm(habit.habitId, planning.data ?? [])}
-                            footer={<HabitStreak days={habit.days} />}
-                            actions={
-                                <>
-                                    <IconButton icon={CalendarDays} label="Planifier" subject={habit.name} onClick={() => setScheduling(habit)} />
-                                    {habit.sourceKind === 'manual' &&
-                                        (habit.isCompletedToday ? (
-                                            <IconButton
-                                                icon={RotateCcw}
-                                                label="Décocher"
-                                                subject={habit.name}
-                                                disabled={pending}
-                                                onClick={() => uncomplete.mutate(habit.habitId)}
-                                            />
-                                        ) : (
-                                            <IconButton
-                                                icon={Check}
-                                                label="Valider"
-                                                subject={habit.name}
-                                                disabled={pending}
-                                                onClick={() => complete.mutate(habit.habitId)}
-                                            />
-                                        ))}
-                                </>
-                            }
-                        />
-                    )
-                }}
+        <section className="board-section" aria-labelledby="habits-title">
+            <SectionHeading
+                id="habits-title"
+                title="Habitudes"
+                actions={<IconButton icon={Settings2} label="Gérer les habitudes" large onClick={() => setManaging(true)} />}
             />
+
+            <SystemPanel className="habit-card">
+                {habits.isPending && <Loader />}
+                {habits.isError && <Alert>{FAILURE}</Alert>}
+                {habits.isSuccess && habits.data.length === 0 && <EmptyState>Aucune habitude prévue aujourd’hui.</EmptyState>}
+
+                {habits.isSuccess &&
+                    habits.data.map((habit) => (
+                        <HabitLine
+                            key={habit.habitId}
+                            habit={habit}
+                            rhythm={formatHabitRhythmShort(habit.habitId, planning.data ?? [])}
+                            onSchedule={() => setScheduling(habit)}
+                        />
+                    ))}
+            </SystemPanel>
 
             {scheduling !== null && (
                 <Modal title={`Planifier · ${scheduling.name}`} onClose={() => setScheduling(null)}>
@@ -85,6 +62,57 @@ export function HabitPanel() {
                     <HabitCatalog />
                 </Modal>
             )}
-        </SystemPanel>
+        </section>
+    )
+}
+
+interface HabitLineProps {
+    habit: Habit
+    rhythm: string | null
+    onSchedule: () => void
+}
+
+function HabitLine({ habit, rhythm, onSchedule }: HabitLineProps) {
+    const complete = useCompleteHabit()
+    const uncomplete = useUncompleteHabit()
+    const pending = complete.isPending || uncomplete.isPending
+
+    const streak = habitStreak(habit)
+    const details = [rhythm, `série ${streak ?? '—'}`].filter((part) => part !== null).join(' · ')
+
+    return (
+        <div className="habit-line">
+            <div className="habit-line-head">
+                <div className="habit-line-body">
+                    <span className="habit-line-name">
+                        <HabitCategoryIcon category={habit.category} />
+                        {habit.name}
+                    </span>
+                    <span className="tracker-aux">{details}</span>
+                </div>
+
+                <div className="habit-line-actions">
+                    <IconButton icon={CalendarDays} label="Planifier" subject={habit.name} medium onClick={onSchedule} />
+                    {habit.sourceKind === 'manual' ? (
+                        <CheckToggle
+                            checked={habit.isCompletedToday}
+                            label="Valider aujourd’hui"
+                            subject={habit.name}
+                            small
+                            disabled={pending}
+                            onToggle={() => (habit.isCompletedToday ? uncomplete.mutate(habit.habitId) : complete.mutate(habit.habitId))}
+                        />
+                    ) : (
+                        <Tooltip label="Validée automatiquement">
+                            <span className="habit-auto" role="img" tabIndex={0} aria-label={`${habit.name} : validée automatiquement`}>
+                                <RefreshCw size={16} strokeWidth={1.6} aria-hidden />
+                            </span>
+                        </Tooltip>
+                    )}
+                </div>
+            </div>
+
+            <HabitWeek days={habit.days} />
+        </div>
     )
 }

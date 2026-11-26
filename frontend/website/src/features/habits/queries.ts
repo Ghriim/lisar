@@ -12,6 +12,14 @@ export function useHabits() {
     })
 }
 
+/** The dashboard's list: only the habits today asks for — which ones is the API's to say. */
+export function useTodayHabits() {
+    return useQuery({
+        queryKey: [...HABITS, 'today'],
+        queryFn: api.fetchTodayHabits,
+    })
+}
+
 /**
  * Ticking and un-ticking both answer with the habit they changed, so its line is refreshed from
  * the answer rather than the whole list refetched. Today's date on the planning follows, re-read.
@@ -22,9 +30,12 @@ function useCompletionMutation(mutationFn: (habitId: number) => Promise<Habit>) 
     return useMutation({
         mutationFn,
         onSuccess: async (habit) => {
-            queryClient.setQueryData<Habit[]>([...HABITS, 'list'], (habits) =>
-                habits?.map((current) => (current.habitId === habit.habitId ? habit : current)),
-            )
+            // Whichever list holds the habit gets its line from the answer.
+            for (const list of ['list', 'today']) {
+                queryClient.setQueryData<Habit[]>([...HABITS, list], (habits) =>
+                    habits?.map((current) => (current.habitId === habit.habitId ? habit : current)),
+                )
+            }
             await queryClient.invalidateQueries({ queryKey: PLANNING })
         },
     })
@@ -59,6 +70,7 @@ function useSubscriptionMutation(mutationFn: (habitId: number) => Promise<unknow
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: [...HABITS, 'catalog'] }),
                 queryClient.invalidateQueries({ queryKey: [...HABITS, 'list'] }),
+                queryClient.invalidateQueries({ queryKey: [...HABITS, 'today'] }),
                 queryClient.invalidateQueries({ queryKey: PLANNING }),
             ])
         },

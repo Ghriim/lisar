@@ -118,6 +118,26 @@ final readonly class HabitPlanningCalendar
         return $planned;
     }
 
+    /**
+     * The subscriptions a day asks for: the ones planned on it, and those without any entry, which
+     * count every day. Their order is kept.
+     *
+     * @param list<HabitSubscriptionDataModel> $subscriptions
+     * @param array<int, array<string, true>>  $plannedDays   as `plannedDaysBetween` answers it, over a span holding `$day`
+     *
+     * @return list<HabitSubscriptionDataModel>
+     */
+    public function plannedOn(array $subscriptions, array $plannedDays, DateTimeImmutable $day): array
+    {
+        $key = $day->format(self::DAY);
+
+        return array_values(array_filter(
+            $subscriptions,
+            static fn (HabitSubscriptionDataModel $subscription): bool => false === isset($plannedDays[(int) $subscription->id])
+                || true === isset($plannedDays[(int) $subscription->id][$key]),
+        ));
+    }
+
     private function key(HabitSubscriptionDataModel $subscription, DateTimeImmutable $day): string
     {
         return $subscription->id.'@'.$day->format(self::DAY);

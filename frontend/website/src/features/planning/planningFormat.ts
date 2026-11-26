@@ -160,3 +160,33 @@ export function formatHabitRhythm(habitId: number, entries: HabitPlanningEntry[]
 function joinFr(parts: string[]): string {
     return parts.join(', ')
 }
+
+/**
+ * The days a habit counts, short, for its line on the dashboard — « Lun, mer, ven », « Tous les
+ * jours » — its entries one after the other. No time: the line has no room, the planning says it.
+ */
+export function formatHabitRhythmShort(habitId: number, entries: HabitPlanningEntry[]): string | null {
+    const own = entries.filter((entry) => entry.habitId === habitId)
+    if (own.length === 0) {
+        return null
+    }
+
+    return own.map((entry) => capitalise(formatRuleShort(entry.schedule))).join(' — ')
+}
+
+function formatRuleShort(schedule: PlanningSchedule): string {
+    if (schedule.rule !== 'weekly') {
+        return formatRule(schedule)
+    }
+
+    const every = schedule.weekInterval === 1 ? '' : `, 1 sem. sur ${schedule.weekInterval}`
+    if (schedule.weekdays.length === 7) {
+        return `tous les jours${every}`
+    }
+
+    return `${schedule.weekdays.map((value) => (WEEKDAYS.find((one) => one.value === value)?.long ?? '').slice(0, 3)).join(', ')}${every}`
+}
+
+function capitalise(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1)
+}

@@ -42,7 +42,7 @@ export function RegisterPage() {
 
     return (
         <AuthShell>
-            <SystemPanel title="Éveil">
+            <SystemPanel titleInside title="Éveil">
                 <p className="system-text dim" style={{ marginTop: 0 }}>
                     Tu as été désigné. Crée ton profil.
                 </p>
@@ -69,7 +69,7 @@ export function RegisterPage() {
                         autoComplete="new-password"
                     />
 
-                    <p className="system-text dim" style={{ fontSize: 10 }}>
+                    <p className="system-text dim" style={{ fontSize: 12 }}>
                         Huit caractères, une majuscule, une minuscule, un chiffre, un caractère spécial.
                     </p>
 

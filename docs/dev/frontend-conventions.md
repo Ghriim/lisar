@@ -46,6 +46,7 @@ app — the same action never wears two faces, and two actions never wear the sa
 | `Pencil` | modifier | |
 | `Plus` | créer, ajouter | |
 | `CalendarDays` | planifier | opens the planning of one thing — a habit's days, from its line |
+| `RefreshCw` | — | not an action: marks a habit a tracker keeps, « Validée automatiquement » |
 | `Calendar` | voir le planning | a link (`IconLink`) to the planning page, not an action |
 | `Trash2` | supprimer | **always `variant="danger"`**, red from the start |
 | `X` | fermer | **closing only** — never deleting |
@@ -201,6 +202,14 @@ Both front ends keep everything they draw with in `src/components/`, re-exported
 | `Modal/` | what opens over the screen | `Modal`, `ConfirmDialog` | `FormModal` (a `Form` shown in a window), `DetailDrawer` |
 | `Navigation/` | what leads somewhere else | `SideNav`, `Tabs`, `LinkChip`, `IconLink` | `SideMenu`, `LinkText` |
 | root | what fits none of these | chips, feedback, layout, shells, panels, section titles (`SectionHeading`), progress bars (`ProgressBar`, `SegmentedBar`) | shells, badges, feedback, layout, text, icons |
+
+**A titled card is a section of its screen** (website): `SystemPanel` with a `title` draws the
+title above the card, `[ PLANNING ]`, with its `actions` on the right — the same line as
+`SectionHeading` on the dashboard. A heading's icon buttons are `large` (44 px), the section's main
+action in the `primary` variant. Only a box that stands alone keeps its title inside, with
+`titleInside`: a window (`Modal`) and the sign-in and sign-up cards. Outside the section and
+sub-section titles, nothing is written in spaced capitals: labels, notes, chips and alerts are in
+Inter; JetBrains Mono is kept for titles, numbers and hours.
 
 A field component takes a `label`, `isMandatory`, its value and what changes it — bound by `name`
 in the back-office, controlled on the website — and draws its label, asterisk and errors through

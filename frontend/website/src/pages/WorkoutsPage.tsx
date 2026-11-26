@@ -44,6 +44,8 @@ export function WorkoutsPage() {
                     actions={
                         <IconButton
                             icon={Play}
+                            variant="primary"
+                            large
                             label="Reprendre"
                             subject={workoutName(current.data)}
                             onClick={() => void navigate(`/workouts/${current.data?.id}`)}

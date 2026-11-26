@@ -91,7 +91,7 @@ export function WorkoutExercisesCard({ workout, restTimer }: { workout: Workout;
             <SystemPanel
                 title="Exercices"
                 actions={
-                    <IconButton icon={Plus} label="Ajouter un exercice" onClick={() => setPanel({ kind: 'add-block' })} />
+                    <IconButton icon={Plus} label="Ajouter un exercice" variant="primary" large onClick={() => setPanel({ kind: 'add-block' })} />
                 }
             >
                 {workout.blocks.length === 0 ? (

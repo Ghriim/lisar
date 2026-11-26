@@ -48,11 +48,12 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
                 workout={workout}
                 error={error}
                 actions={
-                    <Row style={{ gap: 6 }}>
-                        <IconButton icon={Pencil} label="Modifier" subject={name} onClick={() => setPanel('details')} />
+                    <Row style={{ gap: 8 }}>
+                        <IconButton icon={Pencil} label="Modifier" large subject={name} onClick={() => setPanel('details')} />
                         {!workout.isInProgress && copy.isOffered && (
                             <IconButton
                                 icon={Repeat}
+                                large
                                 label="Refaire"
                                 subject={name}
                                 disabled={busy}
@@ -61,6 +62,7 @@ export function WorkoutSheet({ workout, onDeleted }: WorkoutSheetProps) {
                         )}
                         <IconButton
                             icon={Trash2}
+                            large
                             variant="danger"
                             label={workout.isInProgress ? 'Abandonner' : 'Supprimer'}
                             subject={name}

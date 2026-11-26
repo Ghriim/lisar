@@ -57,13 +57,13 @@
 
 /* How far a task has got through its subtasks, in the terms the System counts in. */
 .subtask-count {
-    color: var(--text-faint);
+    color: var(--text-2);
     font-family: var(--font-system);
     font-size: 12px;
-    letter-spacing: 0.08em;
 }
 
-.icon-button-small {
+/* Doubled, to outweigh `.icon-button`, declared further down. */
+.icon-button.icon-button-small {
     width: 22px;
     height: 22px;
     flex: none;
@@ -74,7 +74,7 @@
     align-items: center;
     gap: 6px;
     padding: 3px 8px;
-    border: 1px solid rgba(157, 180, 204, 0.24);
+    border: 1px solid var(--row-border);
     border-radius: var(--radius);
     color: var(--text-dim);
 }
@@ -111,7 +111,7 @@
 }
 
 .chip-overdue {
-    border-color: rgba(255, 107, 120, 0.5);
+    border-color: var(--danger-border);
     color: var(--danger);
 }
 
@@ -121,8 +121,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: 1px solid rgba(157, 180, 204, 0.24);
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
     border-radius: var(--radius);
     color: var(--text-dim);
     cursor: pointer;
@@ -143,13 +143,13 @@
 /* Red from the start, not on hover: a destructive action announces itself before it is
    reached, otherwise it looks like every other icon until it is too late. */
 .icon-button-danger {
-    border-color: rgba(255, 107, 120, 0.3);
+    border-color: var(--danger-border);
     color: var(--danger);
 }
 
 .icon-button-danger:hover:not(:disabled) {
-    background: rgba(255, 107, 120, 0.14);
-    border-color: rgba(255, 107, 120, 0.5);
+    background: var(--danger-bg);
+    border-color: var(--danger);
     color: var(--danger);
 }
 
@@ -157,16 +157,14 @@
 .subtasks {
     margin: var(--step) 0 0 calc(var(--step) * 2);
     padding-left: calc(var(--step) * 2);
-    border-left: 1px dashed rgba(95, 212, 255, 0.24);
+    border-left: 1px dashed var(--row-border);
 }
 
 .empty {
     padding: calc(var(--step) * 6) calc(var(--step) * 3);
     text-align: center;
-    color: var(--text-faint);
-    font-family: var(--font-system);
-    font-size: 12px;
-    letter-spacing: 0.18em;
+    color: var(--text-2);
+    font-size: 13px;
 }
 
 .auth-screen {
@@ -199,13 +197,11 @@
 
 .alert {
     padding: 10px 12px;
-    border: 1px solid rgba(255, 107, 120, 0.45);
+    border: 1px solid var(--danger-border);
     border-radius: var(--radius);
-    background: rgba(255, 107, 120, 0.1);
+    background: var(--danger-bg);
     color: var(--danger);
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.1em;
+    font-size: 13px;
 }
 
 /* ------------------------------------------------------------- the window */
@@ -258,10 +254,7 @@
 button.chip,
 a.chip {
     background: transparent;
-    font-family: var(--font-system);
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: 12px;
     cursor: pointer;
 }
 
@@ -360,11 +353,8 @@ button.chip[aria-pressed='true'] {
 
 .definition-label {
     margin-bottom: 4px;
-    color: var(--text-dim);
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+    color: var(--text-2);
+    font-size: 13px;
 }
 
 .definition-value {
@@ -393,8 +383,8 @@ button.chip[aria-pressed='true'] {
 .progress {
     width: 100%;
     height: 6px;
-    background: rgba(3, 8, 20, 0.6);
-    border: 1px solid rgba(157, 180, 204, 0.22);
+    background: var(--seg-off);
+    border: 1px solid var(--row-border);
     border-radius: var(--radius);
     overflow: hidden;
 }
@@ -590,38 +580,6 @@ button.chip[aria-pressed='true'] {
     flex-shrink: 0;
 }
 
-/* ------------------------------------------------------------ the habits */
-
-/* The seven-day run under a habit's name: a circle a day, checked when the day was kept. */
-.habit-streak {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.habit-dot {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    border: 1px solid var(--accent-line);
-    border-radius: 50%;
-}
-
-.habit-dot-done {
-    background: var(--accent);
-    border-color: var(--accent);
-    /* The check sits dark on the lit dot, so a kept day reads at a glance. */
-    color: #05141c;
-}
-
-/* A day the habit's planning does not ask for: there, but out of the run. */
-.habit-dot-unplanned {
-    opacity: 0.35;
-    border-style: dashed;
-}
-
 /* Four across, each at least 200px, wrapping as the screen narrows. 16px between them. */
 .tracker-row {
     display: flex;
@@ -650,8 +608,8 @@ button.chip[aria-pressed='true'] {
 
 /* Under a set, what the same set gave the last time: plain text, as written. */
 .set-last-time {
-    color: var(--text-faint);
-    letter-spacing: 0.08em;
+    color: var(--text-2);
+    letter-spacing: normal;
     text-transform: none;
 }
 
@@ -664,11 +622,8 @@ button.chip[aria-pressed='true'] {
 }
 
 .choice-group-label {
-    color: var(--text-faint);
-    font-family: var(--font-system);
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    color: var(--text-2);
+    font-size: 12px;
 }
 
 /* A workout's muscles, one line each: the name, its share as a bar, the figure. */
@@ -710,11 +665,8 @@ button.chip[aria-pressed='true'] {
 }
 
 .rest-timer-label {
-    color: var(--text-dim);
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    color: var(--text-2);
+    font-size: 13px;
 }
 
 .rest-timer-time {
@@ -786,6 +738,12 @@ button.chip[aria-pressed='true'] {
     background: var(--btn-primary-bg);
     border-color: var(--accent);
     color: var(--accent);
+}
+
+/* Large, a destructive action stays red: `.icon-button-large` would otherwise repaint it. */
+.icon-button-large.icon-button-danger {
+    border-color: var(--danger-border);
+    color: var(--danger);
 }
 
 /* --------------------------------------------------------------- chips, more */
@@ -1197,4 +1155,132 @@ button.chip[aria-pressed='true'] {
 /* An icon link: no underline under the pointer, the frame lights up instead. */
 a.icon-button:hover {
     text-decoration: none;
+}
+
+/* A habit's category, in the accent, the size of the text beside it. */
+.habit-category-icon {
+    display: inline-flex;
+    color: var(--accent);
+}
+
+.icon-button-medium {
+    width: 40px;
+    height: 40px;
+}
+
+/* ------------------------------------------------------------ the habits */
+
+.habit-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 22px;
+}
+
+/* A habit: its head line, then its week. */
+.habit-line {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--row-bg);
+    border: 1px solid var(--row-border);
+}
+
+.habit-line-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.habit-line-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.habit-line-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.habit-line-actions {
+    display: flex;
+    gap: 6px;
+    flex: none;
+}
+
+/* Kept by a tracker: not a control, so dashed, and quieter than one. */
+.habit-auto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px dashed #3a6a8f;
+    color: #7fa7c7;
+}
+
+.habit-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.habit-week-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.habit-week-initial {
+    color: var(--text-2);
+    font-family: var(--font-system);
+    font-size: 12px;
+}
+
+.habit-week-initial-today {
+    color: var(--accent);
+}
+
+/* A day's dot, 22px: done, missed, today still to do, or not planned at all. */
+.habit-pip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+}
+
+.habit-pip-done {
+    background: var(--accent);
+}
+
+.habit-pip-missed {
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+
+.habit-pip-today {
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 8px rgba(95, 212, 255, 0.6);
+}
+
+/* Not planned: a short dash, not a circle. */
+.habit-pip-off {
+    border-radius: 0;
+}
+
+.habit-pip-off::before {
+    content: '';
+    width: 8px;
+    height: 1px;
+    background: #3a5670;
 }

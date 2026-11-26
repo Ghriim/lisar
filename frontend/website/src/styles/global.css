@@ -203,11 +203,9 @@ select {
 }
 
 .field-label {
-    color: var(--text-dim);
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 500;
 }
 
 .field-required {
@@ -216,16 +214,14 @@ select {
 
 .form-legend {
     margin: 0;
-    color: var(--text-faint);
-    font-family: var(--font-system);
-    font-size: 10px;
-    letter-spacing: 0.12em;
+    color: var(--text-off);
+    font-size: 12px;
 }
 
 .field-input {
     padding: 10px 12px;
-    background: rgba(3, 8, 20, 0.6);
-    border: 1px solid rgba(157, 180, 204, 0.22);
+    background: var(--row-bg);
+    border: 1px solid var(--btn-border);
     border-radius: var(--radius);
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -247,18 +243,13 @@ textarea.field-input {
 
 .field-error {
     color: var(--danger);
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.08em;
+    font-size: 13px;
 }
 
 /* ------------------------------------------------------------- odds and ends */
 
 .system-text {
-    font-family: var(--font-system);
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: 13px;
 }
 
 .dim {

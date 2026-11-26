@@ -65,8 +65,12 @@ app.
 
 ## The page
 
-**The week**, Monday to Sunday, opens on the current one; arrows go to the previous and next.
-Seven columns, each with its day and date:
+The page is titled `[ PLANNING ]`, above its card as on the dashboard, with **the plus** on the
+right — « Planifier », the main button.
+
+**The week**, Monday to Sunday, opens on the current one; arrows go to the previous and next, either
+side of « Semaine du 23 novembre ». Seven columns, each with its day and date — written plainly,
+not in spaced capitals; today's in the accent:
 
 - what holds **within the day** sits at the head of its column;
 - what has **a start time** sits on the hour grid, as tall as its duration — an entry without a
@@ -82,7 +86,7 @@ Each date carries its kind's icon, its name and its state:
 | task | **to come** (no task made yet) · **open** (its task exists, not done — shown overdue once its day is past) · **done** |
 | habit | **to come** · **kept** · **missed** — plus **kept, unplanned** for a habit kept on a day no entry asked for |
 
-**The plus** at the top of the page creates an entry: it asks the kind — training, task, habit —
+**The plus** beside the title creates an entry: it asks the kind — training, task, habit —
 then what it ties, then the rule and the time. **The eye on a date** opens its entry — every field,
 filled in or not — to change it or delete it after asking. Today's training slot not kept yet also
 carries **« Démarrer »**.

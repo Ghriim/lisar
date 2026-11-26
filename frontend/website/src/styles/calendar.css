@@ -18,6 +18,9 @@
 .week-calendar-gutter,
 .week-calendar-day {
     display: grid;
+    /* Held to its share of the week, it and its one column: what a day holds never widens it onto the next one. */
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
     grid-row: 1 / span 3;
     grid-template-rows: subgrid;
 }
@@ -26,11 +29,11 @@
     margin: 0;
     padding: 6px 4px;
     min-height: 30px;
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--text-2);
     text-align: center;
 }
 
@@ -54,7 +57,7 @@
     margin-bottom: calc(var(--calendar-tail, 0) * var(--calendar-hour-height));
     background: repeating-linear-gradient(
         to bottom,
-        rgba(157, 180, 204, 0.1) 0 1px,
+        var(--row-border) 0 1px,
         transparent 1px var(--calendar-hour-height)
     );
 }
@@ -79,6 +82,8 @@
 
 .week-calendar-item {
     min-width: 0;
+    /* A breath either side, so the cards of two days side by side never touch. */
+    padding-inline: 2px;
 }
 
 .week-calendar-timed {
@@ -137,6 +142,24 @@
     }
 }
 
+/* The week shown, between its two arrows. */
+
+.planning-week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.planning-week-label {
+    min-width: 220px;
+    text-align: center;
+    font-family: var(--font-system);
+    font-size: 14px;
+    color: var(--text);
+}
+
 /* A planned date, inside a calendar column. */
 
 .planning-slot {
@@ -145,10 +168,10 @@
     gap: 2px;
     height: 100%;
     padding: 4px 6px;
-    border: 1px solid var(--accent-line);
-    border-left-width: 3px;
+    border: 1px solid var(--row-border);
+    border-left: 3px solid var(--accent);
     border-radius: var(--radius);
-    background: var(--panel-solid);
+    background: var(--row-bg);
     font-size: 12px;
 }
 
@@ -182,6 +205,14 @@
     flex-shrink: 0;
     min-width: 0;
     color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Sharing its line with the eye — the day's habits — the name gives way to its ellipsis rather
+   than push the eye out of the card. */
+.planning-slot .row > .planning-slot-title {
+    flex-shrink: 1;
 }
 
 .planning-slot-title > svg {

@@ -12,10 +12,12 @@
     align-items: center;
     gap: var(--step);
     margin-bottom: calc(var(--step) * 1.5);
-    color: var(--text-dim);
+    /* A sub-section title, as « AUJOURD'HUI » on the dashboard: the one place, with the section titles, for capitals. */
+    color: var(--text-2);
     font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.24em;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
     text-transform: uppercase;
 }
 
@@ -31,8 +33,8 @@
     gap: calc(var(--step) * 2);
     padding: calc(var(--step) * 2);
     margin-bottom: var(--step);
-    background: var(--panel);
-    border: 1px solid rgba(95, 212, 255, 0.16);
+    background: var(--row-bg);
+    border: 1px solid var(--row-border);
     border-left: 2px solid var(--list-item-accent, var(--accent-line));
     border-radius: var(--radius);
     transition: background 0.15s ease, border-color 0.15s ease;
@@ -66,10 +68,8 @@
 
 /* How far a task has got through its subtasks, in the terms the System counts in. */
 .list-item-note {
-    color: var(--text-faint);
-    font-family: var(--font-system);
-    font-size: 12px;
-    letter-spacing: 0.08em;
+    color: var(--text-2);
+    font-size: 13px;
 }
 
 /* A note in the records' colour, with its trophy: what a workout beat. */
@@ -93,10 +93,7 @@
     align-items: center;
     gap: var(--step);
     margin-top: var(--step);
-    font-family: var(--font-system);
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-size: 12px;
 }
 
 .list-item-actions {
@@ -109,11 +106,11 @@
 .list-item-children {
     margin: var(--step) 0 0 calc(var(--step) * 2);
     padding-left: calc(var(--step) * 2);
-    border-left: 1px dashed rgba(95, 212, 255, 0.24);
+    border-left: 1px dashed var(--row-border);
 }
 .list-item-children .list-item {
     padding: var(--step) calc(var(--step) * 1.5);
-    background: rgba(5, 11, 28, 0.5);
+    background: var(--card-bg);
 }
 
 /* Done, and left in full view: the left edge turns green, the rest of the frame stays as it is. */

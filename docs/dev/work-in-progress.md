@@ -56,6 +56,7 @@ yet. Each one has its slot in one place, rendered « — » until it is wired:
 
 - the player's title: `features/status/playerTitle.ts`.
 - what a task earns: `features/tasks/taskExperience.ts` (`+— XP` on each line and in « Aujourd'hui »).
+- a habit's run: `features/habits/habitStreak.ts` (« série — » on each line).
 
 ## Next steps
 
