@@ -46,7 +46,7 @@ final readonly class HabitPlanningOutputFactory
         $output->id = (int) $entry->id;
         $output->habitId = (int) $entry->subscription->habit->id;
         $output->habitName = $entry->subscription->habit->name;
-        $output->habitIcon = $entry->subscription->habit->icon;
+        $output->habitIcon = $entry->subscription->habit->category?->icon;
         $output->schedule = $this->scheduleOutputFactory->buildOne($entry);
 
         return $output;

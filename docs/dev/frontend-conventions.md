@@ -37,7 +37,7 @@ app — the same action never wears two faces, and two actions never wear the sa
 
 | Icon | Action | Note |
 | --- | --- | --- |
-| `Check` | terminer, cocher | |
+| `Check` | terminer, cocher | a box ticked and unticked by the same gesture is `CheckToggle`, with `aria-pressed` |
 | `RotateCcw` | rouvrir | the undo of `Check`, and only that |
 | `Eye` | consulter | opens something read-only |
 | `Play` | reprendre, démarrer | goes back to something under way, or starts it from its blueprint — a workout from a routine |
@@ -46,6 +46,7 @@ app — the same action never wears two faces, and two actions never wear the sa
 | `Pencil` | modifier | |
 | `Plus` | créer, ajouter | |
 | `CalendarDays` | planifier | opens the planning of one thing — a habit's days, from its line |
+| `Calendar` | voir le planning | a link (`IconLink`) to the planning page, not an action |
 | `Trash2` | supprimer | **always `variant="danger"`**, red from the start |
 | `X` | fermer | **closing only** — never deleting |
 | `ChevronRight` / `ChevronDown` | déplier / replier | carries `aria-expanded` |
@@ -194,12 +195,12 @@ Both front ends keep everything they draw with in `src/components/`, re-exported
 
 | Folder | Holds | Website | Back-office |
 | --- | --- | --- | --- |
-| `Button/` | what is clicked to act, confirmation included | `Button`, `IconButton` | `Button`, `ConfirmButton` |
+| `Button/` | what is clicked to act, confirmation included | `Button`, `IconButton`, `CheckToggle`, `TextButton` | `Button`, `ConfirmButton` |
 | `Form/` | `Form`, **one component per kind of field**, `FormActions` | `TextField`, `NumberField`, `DecimalField`, `DurationField`, `DateField`, `TimeField`, `EmailField`, `PasswordField`, `TextAreaField`, `SelectField`, `ChoiceField`, `RatingField`, `FormGrid`, `useViolations` | `TextField`, `NumberField`, `EmailField`, `PasswordField`, `TextAreaField`, `SelectField`, `SwitchField`, `TextArea` |
-| `List/` | a list of things, and what filters it | `DataList`, `ListItem`, `DefinitionList` | `DataTable`, `ItemList`, `DescriptionList`, `ListToolbar`, `ActiveFilter`, `FilterSelect`, `useActiveFilter` |
+| `List/` | a list of things, and what filters it | `DataList`, `ListItem`, `DefinitionList`, `FoldGroup` | `DataTable`, `ItemList`, `DescriptionList`, `ListToolbar`, `ActiveFilter`, `FilterSelect`, `useActiveFilter` |
 | `Modal/` | what opens over the screen | `Modal`, `ConfirmDialog` | `FormModal` (a `Form` shown in a window), `DetailDrawer` |
-| `Navigation/` | what leads somewhere else | `SideNav`, `Tabs`, `LinkChip` | `SideMenu`, `LinkText` |
-| root | what fits none of these | chips, feedback, layout, shells, panels | shells, badges, feedback, layout, text, icons |
+| `Navigation/` | what leads somewhere else | `SideNav`, `Tabs`, `LinkChip`, `IconLink` | `SideMenu`, `LinkText` |
+| root | what fits none of these | chips, feedback, layout, shells, panels, section titles (`SectionHeading`), progress bars (`ProgressBar`, `SegmentedBar`) | shells, badges, feedback, layout, text, icons |
 
 A field component takes a `label`, `isMandatory`, its value and what changes it — bound by `name`
 in the back-office, controlled on the website — and draws its label, asterisk and errors through

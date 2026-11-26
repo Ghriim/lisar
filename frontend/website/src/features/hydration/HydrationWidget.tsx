@@ -1,48 +1,37 @@
 import { GlassWater } from 'lucide-react'
-import { useState } from 'react'
-import { Loader, Modal, ProgressBar, SystemPanel } from '../../components'
-import { HydrationPanel } from './HydrationPanel'
-import { useHydrationToday } from './queries'
+import { Button, SegmentedBar, SystemPanel } from '../../components'
+import { useHydrationToday, useLogHydration } from './queries'
+
+/** What one tap adds, and what a segment of the bar stands for against a 1500 mL goal. */
+const GLASS_IN_MILLILITRES = 250
+const SEGMENTS = 6
 
 /**
- * A glass of water and where the day stands, on the task list. Drinking is noted in passing,
- * several times a day: a click anywhere on the widget opens the window where everything happens.
+ * The water drunk today against the day's goal. Drinking is noted in passing, several times a day:
+ * one tap adds a glass.
  */
 export function HydrationWidget() {
     const today = useHydrationToday()
-    const [opened, setOpened] = useState(false)
+    const log = useLogHydration()
+
+    const total = today.data?.totalInMillilitres ?? 0
+    const goal = today.data?.goalInMillilitres ?? 0
 
     return (
-        <>
-            <SystemPanel
-                ariaLabel="Hydratation du jour"
-                onActivate={today.isSuccess ? () => setOpened(true) : undefined}
-            >
-                {today.isPending && <Loader />}
+        <SystemPanel className="tracker">
+            <div className="tracker-head">
+                <GlassWater size={36} strokeWidth={1.4} className="tracker-icon" role="img" aria-label="Hydratation" />
+                <div className="tracker-body">
+                    <span className="tracker-value">{total} mL</span>
+                    <span className="tracker-aux">objectif {goal} mL</span>
+                </div>
+            </div>
 
-                {today.isSuccess && (
-                    <div className="tracker">
-                        <GlassWater size={45} strokeWidth={1.6} className="tracker-icon" aria-hidden />
-                        <div className="tracker-body">
-                            <span className="tracker-value">{today.data.totalInMillilitres} mL</span>
+            <SegmentedBar value={total} max={goal} segments={SEGMENTS} label={`Hydratation : ${total} / ${goal} mL`} thin />
 
-                            <div className="tracker-aux">Objectif {today.data.goalInMillilitres} mL</div>
-
-                            <ProgressBar
-                                value={today.data.totalInMillilitres}
-                                max={today.data.goalInMillilitres}
-                                label={`${today.data.totalInMillilitres} sur ${today.data.goalInMillilitres} millilitres`}
-                            />
-                        </div>
-                    </div>
-                )}
-            </SystemPanel>
-
-            {opened && today.isSuccess && (
-                <Modal title="Hydratation du jour" onClose={() => setOpened(false)}>
-                    <HydrationPanel day={today.data} />
-                </Modal>
-            )}
-        </>
+            <Button variant="secondary" disabled={!today.isSuccess || log.isPending} onClick={() => log.mutate(GLASS_IN_MILLILITRES)}>
+                +{GLASS_IN_MILLILITRES} mL
+            </Button>
+        </SystemPanel>
     )
 }

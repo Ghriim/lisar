@@ -11,6 +11,7 @@ use App\Domain\DTO\Output\Habits\HabitAdminDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Habits\HabitAdminOutputFactory;
 use App\Domain\Gateway\Persister\Habits\HabitPersisterGateway;
+use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Validation\Validator\Habits\CreateHabitValidator;
 use App\UseCase\UseCaseInterface;
@@ -21,6 +22,7 @@ final readonly class CreateHabitUseCase implements UseCaseInterface
     public function __construct(
         private CreateHabitValidator $validator,
         private HabitPersisterGateway $habitPersisterGateway,
+        private CategoryProviderGateway $categoryProviderGateway,
         private HabitAdminOutputFactory $outputFactory,
     ) {
     }
@@ -30,12 +32,16 @@ final readonly class CreateHabitUseCase implements UseCaseInterface
      */
     public function execute(UserDataModel $currentUser, CreateHabitDataInput $input): HabitAdminDataOutput
     {
-        $this->validator->validate($currentUser, $input);
+        $category = null === $input->categoryId
+            ? null
+            : $this->categoryProviderGateway->findOneById($input->categoryId);
+
+        $this->validator->validate($currentUser, $input, $category);
 
         $habit = new HabitDataModel();
         $habit->name = $input->name;
-        $habit->icon = $input->icon;
         $habit->sourceKind = $input->sourceKind;
+        $habit->category = $category;
 
         // A manual habit keeps its tracker fields null; only a tracker habit names one and a mark.
         if (HabitSourceRegistry::TRACKER === $input->sourceKind) {

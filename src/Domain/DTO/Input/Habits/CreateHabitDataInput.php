@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\DTO\Input\Habits;
 
 use App\Domain\DTO\Input\DataInputInterface;
-use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -20,9 +19,6 @@ final readonly class CreateHabitDataInput implements DataInputInterface
         #[Assert\Length(max: 128, maxMessage: 'name_too_long')]
         public string $name,
 
-        #[Assert\Choice(choices: HabitIconRegistry::ALL, message: 'icon_unknown')]
-        public string $icon,
-
         #[Assert\Choice(choices: HabitSourceRegistry::ALL, message: 'source_unknown')]
         public string $sourceKind,
 
@@ -32,6 +28,10 @@ final readonly class CreateHabitDataInput implements DataInputInterface
         // Upper bound is a sanity ceiling, not a business rule.
         #[Assert\Range(min: 1, max: 1000000, notInRangeMessage: 'tracker_threshold_invalid')]
         public ?int $trackerThreshold = null,
+
+        // A common category, or none. That it exists and is common is checked by the validator.
+        #[Assert\Positive(message: 'category_invalid')]
+        public ?int $categoryId = null,
     ) {
     }
 }

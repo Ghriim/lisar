@@ -11,7 +11,7 @@ use App\Domain\DTO\Output\Todo\TaskDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
-use App\Domain\Gateway\Provider\Todo\CategoryProviderGateway;
+use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Validation\Validator\Todo\CreateTaskValidator;

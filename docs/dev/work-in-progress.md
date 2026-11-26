@@ -49,6 +49,14 @@ Updated on 2026-11-24.
   are the shared shapes; `PlanningEntryDataModelFactory::applySchedule`,
   `PlanningScheduleOutputFactory` and `PlanningRule::datesOf` take any kind of entry (union type).
 
+## Dashboard v2 — slots waiting for data
+
+The dashboard v2 (`docs/design/dashboard-v2-spec.md`) shows a few values the API does not have
+yet. Each one has its slot in one place, rendered « — » until it is wired:
+
+- the player's title: `features/status/playerTitle.ts`.
+- what a task earns: `features/tasks/taskExperience.ts` (`+— XP` on each line and in « Aujourd'hui »).
+
 ## Next steps
 
 1. Try the planning by hand in a browser, the three kinds together.

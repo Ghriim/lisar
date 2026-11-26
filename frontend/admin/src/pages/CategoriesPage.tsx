@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import * as api from '../api/endpoints'
-import type { Category } from '../api/types'
+import { categoryIconWord } from '../api/categoryWords'
+import { CATEGORY_ICONS, type Category, type CategoryPayload } from '../api/types'
 import {
     Button,
+    CategoryIcon,
     ConfirmButton,
     DataTable,
     FormModal,
     Page,
     Paragraph,
     Row,
+    SelectField,
     TextField,
     useNotifier,
 } from '../components'
@@ -28,8 +31,8 @@ export function CategoriesPage() {
     const refresh = () => queryClient.invalidateQueries({ queryKey: ['categories'] })
 
     const save = useMutation({
-        mutationFn: ({ id, label }: { id: number | null; label: string }) =>
-            id === null ? api.createCategory(label) : api.updateCategory(id, label),
+        mutationFn: ({ id, payload }: { id: number | null; payload: CategoryPayload }) =>
+            id === null ? api.createCategory(payload) : api.updateCategory(id, payload),
         onSuccess: async () => {
             setEditing(undefined)
             notify.success('Catégorie enregistrée.')
@@ -67,7 +70,16 @@ export function CategoriesPage() {
                 loading={categories.isPending}
                 emptyText="Aucune catégorie commune"
                 columns={[
-                    { key: 'label', title: 'Libellé', render: (category) => category.label },
+                    {
+                        key: 'label',
+                        title: 'Libellé',
+                        render: (category) => (
+                            <Row gap={8}>
+                                {category.icon !== null && <CategoryIcon code={category.icon} />}
+                                {category.label}
+                            </Row>
+                        ),
+                    },
                     {
                         key: 'actions',
                         title: '',
@@ -75,7 +87,7 @@ export function CategoriesPage() {
                         render: (category) => (
                             <Row gap={8} justify="end">
                                 <Button size="small" onClick={() => setEditing(category)}>
-                                    Renommer
+                                    Modifier
                                 </Button>
                                 <ConfirmButton
                                     question="Supprimer cette catégorie ?"
@@ -91,15 +103,32 @@ export function CategoriesPage() {
             />
 
             {editing !== undefined && (
-                <FormModal<{ label: string }>
-                    title={editing === null ? 'Nouvelle catégorie' : 'Renommer la catégorie'}
+                <FormModal<CategoryPayload>
+                    title={editing === null ? 'Nouvelle catégorie' : 'Modifier la catégorie'}
                     submitLabel="Enregistrer"
                     pending={save.isPending}
                     onCancel={() => setEditing(undefined)}
-                    onSubmit={({ label }) => save.mutate({ id: editing?.id ?? null, label })}
-                    initialValues={{ label: editing?.label ?? '' }}
+                    onSubmit={({ label, icon }) => save.mutate({ id: editing?.id ?? null, payload: { label, icon } })}
+                    initialValues={{ label: editing?.label ?? '', icon: editing?.icon ?? undefined }}
                 >
                     <TextField name="label" label="Libellé" isMandatory autoFocus />
+
+                    <SelectField
+                        name="icon"
+                        label="Icône"
+                        isMandatory
+                        hint="Celle des tâches et des habitudes rangées dans cette catégorie."
+                        placeholder="Choisir une icône"
+                        options={CATEGORY_ICONS.map((code) => ({
+                            value: code,
+                            label: (
+                                <Row gap={8}>
+                                    <CategoryIcon code={code} size={16} />
+                                    {categoryIconWord(code)}
+                                </Row>
+                            ),
+                        }))}
+                    />
                 </FormModal>
             )}
         </Page>

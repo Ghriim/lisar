@@ -4,23 +4,40 @@
 [dashboard](dashboard.md), beside the trackers; it is one component in both places, so the two
 cannot drift apart. Filters will come to `/todo` only.
 
-Gamification (XP, rewards, penalties) is **out of scope**. It will be plugged onto this page
-later without calling any of it into question.
+What a task earns is not defined yet: the lines and « Aujourd'hui » show its slot, `+— XP`
+(`features/tasks/taskExperience.ts`).
 
 ## What the page shows
 
-Root tasks, grouped by category. Two tabs: the tasks in progress, and a separate view for the
-ones already done.
+The section is titled `[ TÂCHES ]`, outside its card, with two buttons on the right: **Gérer les
+catégories** (a folder) and **Créer une tâche** (a plus, the main one). One card holds every task.
+Two tabs: **`Actives · {n}`** — the number of open root tasks — and **`Terminées`**.
 
-**A row carries two actions and no more**: ticking the task off, and opening it. Everything
-else — editing, adding a subtask, deleting — lives inside the task's own window, because those
-are done once in a while and ticking off is done constantly. A list crowded with five icons per
-line makes the one action that matters harder to hit.
+**A task is shown in one place only.** In the active tab:
 
-**A task with subtasks is folded**, and folded by default: it reads as one line until someone
-asks for more. The line carries how far it has got, right after the title — `(1/2)`, meaning one
-subtask done out of two — so unfolding is for acting on a subtask, not for finding out where
-things stand. A task without subtasks has neither the control nor the count.
+- **« Aujourd'hui »** comes first, always: the open tasks due today and the late ones, whatever
+  their category, plus those of them ticked off today, still ticked. Its heading is lit — a star,
+  the accent, an accent rule — and reads `mer. 25 nov. · retards inclus`, then on the right
+  `{done} / {total} · +{xp} XP`. Its lines are lit too, and each wears its category's name; a late
+  one is red.
+- then **each category**, holding the rest: the tasks without a date, and the ones due later
+  (« Échéance ven. 28/11 »). Its heading folds and unfolds it — open to start with — and gives
+  its count; when some of its tasks sit in « Aujourd'hui », it says so on the right:
+  « +1 dans Aujourd'hui ».
+
+As soon as a task is due today or late it moves to « Aujourd'hui » and out of its category. The
+done tab is the categories alone.
+
+**A line carries two actions and no more**: the box on the left ticks the task off — and
+unticks it — and the title opens it. Everything else — editing, adding a subtask, deleting — lives
+inside the task's own window, because those are done once in a while and ticking off is done
+constantly.
+
+A line shows, after the title, how far its subtasks have got — `1 / 2 sous-tâches` — and under it
+its chips: its category (in « Aujourd'hui » only), « Priorité haute » in amber (high only — normal
+and low say nothing), « En retard · 30/09 » in red, or « Échéance … ». On the right, what it
+earns: `+30 XP`, shown `+— XP` until the gains exist. Subtasks are not unfolded in the line: they
+are acted on in the task's window.
 
 **Default sort, in full**: by category first — a task without one sorts last — then by priority,
 high to low, again with the ones lacking a priority last, then the newest first. Ties had to break
@@ -28,9 +45,6 @@ somewhere.
 
 **The list is not paginated.** A personal todo list is small, and a page of a list sorted by
 category then priority tells you nothing useful.
-
-A *done* task leaves the main list and is found again in the completed view, where it can be
-reopened.
 
 ## A task
 
@@ -118,6 +132,13 @@ Nothing is preselected: no category, no priority. The only default anywhere is t
 
 ## Categories
 
+Categories are not the todo list's own: they are one set the whole app sorts things into — a
+habit sits in one too ([habits](habits.md#the-panel)). The task list is where the person manages
+theirs, because tasks are what their own categories are for.
+
+A task has no icon of its own: its row wears **its category's**, when that is a common one — a
+personal category has none.
+
 Two origins, one single list to choose from:
 
 - **common categories**, managed in the back-office. They cannot be renamed or hidden; they are
@@ -129,7 +150,8 @@ alongside, greyed out. The list they choose from is the list they manage.
 
 - A common category answers **not editable** rather than not found: it is on their screen, and
   pretending otherwise would puzzle them.
-- A category **still holding tasks cannot be deleted**; they empty it first.
+- A category **still holding tasks cannot be deleted**; they empty it first. A personal category
+  holds nothing but tasks: habits only sit in common ones.
 - A label only has to be unique **within what one person sees**: their own plus the common ones.
   Two accounts may each have a "Sport", and a personal "Sport" does not block a common one.
 

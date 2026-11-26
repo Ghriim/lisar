@@ -287,7 +287,8 @@ same names everywhere:
 | `Habits/` | the habit catalogue, subscriptions, entries |
 | `Planning/` | planning entries, one data model per kind (training, task, habit), and the date engine they share |
 | `Gamification/` | the stats and the level curve, the experience gains, the status; a movement's stats are codes of `StatRegistry` |
-| `Todo/` | tasks and their categories; priorities are a registry |
+| `Category/` | the categories every domain sorts things into — common ones and personal ones |
+| `Todo/` | tasks; priorities are a registry |
 | `User/` | accounts, identities, sessions, admin comments |
 
 - **What the back-office alone uses goes in an `Admin/` sub-folder of its perimeter**

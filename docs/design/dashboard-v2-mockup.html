@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Lisar — Tableau de bord v2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#060e1a}
+a{color:#5fd4ff}a:hover{color:#a8e8ff}
+.fr{position:relative}
+.fr::before,.fr::after{content:"";position:absolute;width:10px;height:10px;border-color:#5fd4ff;border-style:solid;pointer-events:none}
+.fr::before{top:6px;left:6px;border-width:1px 0 0 1px}
+.fr::after{bottom:6px;right:6px;border-width:0 1px 1px 0}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid #5fd4ff;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap;background-color:#03070d;background-image:radial-gradient(ellipse 70% 45% at 60% 0%,rgba(24,70,115,0.45) 0%,rgba(3,7,13,0) 75%),linear-gradient(180deg,rgba(3,7,13,0.15) 0%,rgba(3,7,13,0.7) 30%,#03070d 60%),linear-gradient(rgba(95,212,255,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(95,212,255,0.08) 1px,transparent 1px);background-size:auto,auto,56px 56px,56px 56px;font-family:Inter,system-ui,sans-serif;color:#e6f1ff">
+
+<nav aria-label="Navigation principale" style="flex:1 1 220px;max-width:260px;position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;box-sizing:border-box;padding:28px 18px;border-right:1px solid #16324d;background:#050b16;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:4px;padding:0 6px">
+<div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:8px;color:#5fd4ff;font-weight:600">LISAR</div>
+<div style="font-size:12px;color:#8aa3bd">Life is a RPG</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:4px;background:#0f2b47;border-left:2px solid #5fd4ff;color:#e6f1ff;text-decoration:none;font-size:14px;font-weight:500"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="1.6" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Tableau de bord</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6l2 2 3-3M11 7h9M4 13l2 2 3-3M11 14h9M11 20h9"/></svg>Quêtes</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Planning</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>Entraînements</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4a3 3 0 0 0 4 4M16 6h4a3 3 0 0 1-4 4M12 13v4M8 21h8M9 17h6"/></svg>Records</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg>Statistiques</a>
+</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:2px;border-top:1px solid #16324d;padding-top:16px">
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 7l9 6 9-6"/></svg>Messages</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg>Amis</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Réglages</a>
+<a href="#" style="display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;color:#b9cbe0;text-decoration:none;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 4H4v16h6M14 8l4 4-4 4M8 12h10"/></svg>Se déconnecter</a>
+</div>
+</nav>
+
+<main style="flex:999 1 560px;min-width:0;box-sizing:border-box;padding:32px 40px 48px">
+<div style="max-width:1160px;margin:0 auto;display:flex;flex-direction:column;gap:24px">
+
+<!-- PLAYER -->
+<section class="fr" aria-label="Fiche joueur" style="background:#0a1b30;border:1px solid #1d4a6e;padding:12px 24px;display:flex;flex-wrap:wrap;gap:20px;align-items:center">
+<div style="display:flex;align-items:center;gap:18px;flex:1 1 360px">
+<div style="width:46px;height:46px;flex:none;margin:6px;border:1px solid #5fd4ff;transform:rotate(45deg);display:flex;align-items:center;justify-content:center;background:#0f2b47"><span style="transform:rotate(-45deg);font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:#5fd4ff">3</span></div>
+<div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:0">
+<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+<span style="font-size:18px;font-weight:600">Quentin</span>
+<span style="font-size:13px;color:#f5b546;border:1px solid #6b5220;padding:2px 8px">Titre : L'Éveillé</span>
+</div>
+<div style="display:flex;gap:3px" role="img" aria-label="Expérience : {{xpLabel}}">
+<sc-for list="{{xpSegs}}" as="s" hint-placeholder-count="25">
+<sc-if value="{{s.on}}" hint-placeholder-val="{{true}}"><div style="flex:1;height:8px;background:#5fd4ff;box-shadow:0 0 6px #5fd4ff88"></div></sc-if>
+<sc-if value="{{s.off}}" hint-placeholder-val="{{false}}"><div style="flex:1;height:8px;background:#163552"></div></sc-if>
+</sc-for>
+</div>
+<span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#e6f1ff">{{xpLabel}}</span>
+</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;flex:1 1 560px;justify-content:flex-end">
+<div title="Force" style="min-width:74px;padding:6px 12px;border:1px solid #1d4a6e;background:#081629;display:flex;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9db4cc">FOR</span><span style="font-family:'JetBrains Mono',monospace;font-size:16px" aria-label="Force 12">12</span></div></div>
+<div title="Agilité" style="min-width:74px;padding:6px 12px;border:1px solid #1d4a6e;background:#081629;display:flex;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9db4cc">AGI</span><span style="font-family:'JetBrains Mono',monospace;font-size:16px" aria-label="Agilité 8">8</span></div></div>
+<div title="Endurance" style="min-width:74px;padding:6px 12px;border:1px solid #1d4a6e;background:#081629;display:flex;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9db4cc">END</span><span style="font-family:'JetBrains Mono',monospace;font-size:16px" aria-label="Endurance 9">9</span></div></div>
+<div title="Intelligence" style="min-width:74px;padding:6px 12px;border:1px solid #1d4a6e;background:#081629;display:flex;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9db4cc">INT</span><span style="font-family:'JetBrains Mono',monospace;font-size:16px" aria-label="Intelligence 14">14</span></div></div>
+<div title="Esprit" style="min-width:74px;padding:6px 12px;border:1px solid #1d4a6e;background:#081629;display:flex;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9db4cc">ESP</span><span style="font-family:'JetBrains Mono',monospace;font-size:16px" aria-label="Esprit 11">11</span></div></div>
+<div title="Volonté" style="min-width:74px;padding:6px 12px;border:1px solid #1d4a6e;background:#081629;display:flex;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;line-height:1.15"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#9db4cc">VOL</span><span style="font-family:'JetBrains Mono',monospace;font-size:16px" aria-label="Volonté 10">10</span></div></div>
+</div>
+</section>
+
+<!-- TRACKING ROW -->
+<div style="display:flex;flex-wrap:wrap;gap:16px">
+<div class="fr" style="flex:1 1 200px;background:#0a1b30;border:1px solid #1d4a6e;padding:16px 18px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:14px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Hydratation" style="flex:none;filter:drop-shadow(0 0 6px #5fd4ff66)"><path d="M6 3h12l-1.5 17a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"/></svg><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:'JetBrains Mono',monospace;font-size:22px;line-height:1.1">{{water}} mL</span><span style="font-size:13px;color:#9db4cc">objectif 1500 mL</span></div></div><div style="display:flex;gap:3px" aria-hidden="true"><sc-for list="{{waterSegs}}" as="w" hint-placeholder-count="6"><sc-if value="{{w.on}}" hint-placeholder-val="{{false}}"><div style="flex:1;height:6px;background:#5fd4ff"></div></sc-if><sc-if value="{{w.off}}" hint-placeholder-val="{{true}}"><div style="flex:1;height:6px;background:#163552"></div></sc-if></sc-for></div><button type="button" onClick="{{add250}}" style="margin-top:auto;min-height:44px;border:1px solid #2c6a94;background:#0f2b47;color:#e6f1ff;font-size:13px">+250 mL</button></div>
+<div class="fr" style="flex:1 1 200px;background:#0a1b30;border:1px solid #1d4a6e;padding:16px 18px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:14px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Pas" style="flex:none;filter:drop-shadow(0 0 6px #5fd4ff66)"><path d="M8 3c2 0 3 2 3 5s-1 5-3 5-3-2-3-5 1-5 3-5zM6 16h4v2a2 2 0 0 1-4 0zM16 7c2 0 3 2 3 5s-1 5-3 5-3-2-3-5 1-5 3-5zM14 20h4v-1a2 2 0 0 0-4 0z"/></svg><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:'JetBrains Mono',monospace;font-size:22px;line-height:1.1">0 pas</span><span style="font-size:13px;color:#9db4cc">objectif 5000</span></div></div><div style="display:flex;gap:3px" aria-hidden="true"><div style="flex:1;height:6px;background:#163552"></div><div style="flex:1;height:6px;background:#163552"></div><div style="flex:1;height:6px;background:#163552"></div><div style="flex:1;height:6px;background:#163552"></div><div style="flex:1;height:6px;background:#163552"></div><div style="flex:1;height:6px;background:#163552"></div></div><button type="button" style="margin-top:auto;min-height:44px;border:1px solid #2c6a94;background:#0f2b47;color:#e6f1ff;font-size:13px">Saisir mes pas</button></div>
+<div class="fr" style="flex:1 1 200px;background:#0a1b30;border:1px solid #1d4a6e;padding:16px 18px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:14px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Sommeil" style="flex:none;filter:drop-shadow(0 0 6px #5fd4ff66)"><path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.5"/></svg><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:17px;line-height:1.2">Non notée</span><span style="font-size:13px;color:#9db4cc">nuit de mercredi</span></div></div><button type="button" style="margin-top:auto;min-height:44px;border:1px solid #5fd4ff;background:#123553;color:#e6f1ff;font-size:13px;font-weight:600">Noter ma nuit</button></div>
+<div class="fr" style="flex:1 1 200px;background:#0a1b30;border:1px solid #1d4a6e;padding:16px 18px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:14px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Poids" style="flex:none;filter:drop-shadow(0 0 6px #5fd4ff66)"><path d="M12 3v18M7 21h10M4 7h16M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/></svg><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:'JetBrains Mono',monospace;font-size:22px;line-height:1.1">72,40 kg</span><span style="font-size:13px;color:#9db4cc">le 22/11</span></div></div><button type="button" style="margin-top:auto;min-height:44px;border:1px solid #2c6a94;background:#0f2b47;color:#e6f1ff;font-size:13px">Nouvelle pesée</button></div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+
+<!-- UNIFIED QUESTS -->
+<div style="flex:2 1 560px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-height:44px">
+<h2 id="qt" style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:3px;color:#5fd4ff;font-weight:600">[ QUÊTES ]</h2>
+<div style="display:flex;gap:8px">
+<button type="button" aria-label="Gérer les catégories" title="Gérer les catégories" style="width:44px;height:44px;border:1px solid #2c6a94;background:#0f2b47;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b9cbe0" stroke-width="1.6" aria-hidden="true"><path d="M3 6h7l2 2h9v11H3z"/></svg></button>
+<button type="button" aria-label="Nouvelle quête" title="Nouvelle quête" style="width:44px;height:44px;border:1px solid #5fd4ff;background:#123553;display:flex;align-items:center;justify-content:center;padding:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+</div>
+<section class="fr" aria-labelledby="qt" style="background:#0a1b30;border:1px solid #1d4a6e;padding:20px 28px 24px;display:flex;flex-direction:column;gap:18px">
+<div role="tablist" style="display:flex;gap:4px;border-bottom:1px solid #173c5c">
+<button type="button" role="tab" aria-selected="true" style="min-height:40px;padding:0 16px;border:0;border-bottom:2px solid #5fd4ff;background:transparent;color:#e6f1ff;font-size:14px;font-weight:500">Actives · {{activeCount}}</button>
+<button type="button" role="tab" aria-selected="false" style="min-height:40px;padding:0 16px;border:0;background:transparent;color:#9db4cc;font-size:14px">Terminées</button>
+</div>
+
+<!-- TODAY -->
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:10px;min-height:40px;border-bottom:1px solid #5fd4ff;flex-wrap:wrap">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="#5fd4ff" aria-hidden="true" style="filter:drop-shadow(0 0 4px #5fd4ff)"><path d="M12 2l2.5 7.5H22l-6 4.5 2.3 7.5L12 17l-6.3 4.5L8 14 2 9.5h7.5z"/></svg>
+<span style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:2px;color:#5fd4ff;font-weight:600;text-shadow:0 0 8px #5fd4ff88">AUJOURD'HUI</span>
+<span style="font-size:13px;color:#9db4cc">mer. 25 nov. · retards inclus</span>
+<span style="font-family:'JetBrains Mono',monospace;font-size:14px;margin-left:auto"><span style="color:#5fd4ff">{{todayDone}}</span><span style="color:#9db4cc"> / {{todayTotal}} · </span><span style="color:#f5b546">+{{todayXp}} XP</span></span>
+</div>
+<sc-for list="{{today}}" as="q" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:14px;padding:10px 12px;background:{{q.rowBg}};border:1px solid {{q.rowBorder}}">
+<sc-if value="{{q.isTask}}" hint-placeholder-val="{{true}}">
+<button type="button" onClick="{{q.toggle}}" aria-label="Valider : {{q.title}}" aria-pressed="{{q.done}}" style="width:44px;height:44px;flex:none;border:1px solid {{q.boxBorder}};background:{{q.boxBg}};display:flex;align-items:center;justify-content:center;padding:0"><sc-if value="{{q.done}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06101d" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></sc-if></button>
+</sc-if>
+<sc-if value="{{q.isWorkout}}" hint-placeholder-val="{{false}}">
+<div style="width:44px;height:44px;flex:none;border:1px solid #5fd4ff;background:#123553;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="1.8" aria-hidden="true"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg></div>
+</sc-if>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:15px;font-weight:500;color:{{q.titleColor}}">{{q.title}}</span>
+<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px">
+<span style="color:#c9d8e8;background:#163552;padding:2px 8px">{{q.cat}}</span>
+<sc-if value="{{q.high}}" hint-placeholder-val="{{false}}"><span style="color:#f5b546;border:1px solid #6b5220;padding:1px 8px">Priorité haute</span></sc-if>
+<sc-if value="{{q.late}}" hint-placeholder-val="{{false}}"><span style="color:#ff6b78;border:1px solid #7a2a33;padding:1px 8px">En retard · {{q.date}}</span></sc-if>
+<sc-if value="{{q.timed}}" hint-placeholder-val="{{false}}"><span style="color:#9db4cc;padding:2px 0">{{q.time}}</span></sc-if>
+</div>
+</div>
+<span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#f5b546;white-space:nowrap">+{{q.xp}} XP</span>
+<sc-if value="{{q.isWorkout}}" hint-placeholder-val="{{false}}"><button type="button" style="min-height:44px;padding:0 14px;border:1px solid #5fd4ff;background:#123553;color:#e6f1ff;font-size:13px;font-weight:600">Commencer</button></sc-if>
+</div>
+</sc-for>
+</div>
+
+<!-- CATEGORIES -->
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="3">
+<div style="display:flex;flex-direction:column;gap:8px">
+<button type="button" onClick="{{c.toggle}}" aria-expanded="{{c.open}}" style="display:flex;align-items:center;gap:10px;min-height:40px;padding:0;border:0;border-bottom:1px solid #173c5c;background:transparent;color:#e6f1ff;text-align:left">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9db4cc" stroke-width="2" aria-hidden="true" style="transform:{{c.chevron}}"><path d="M9 5l7 7-7 7"/></svg>
+<span style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:2px;font-weight:600">{{c.name}}</span>
+<span style="font-size:13px;color:#9db4cc">{{c.count}}</span>
+<sc-if value="{{c.hasToday}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;color:#5fd4ff;margin-left:auto">{{c.todayNote}}</span></sc-if>
+</button>
+<sc-if value="{{c.open}}" hint-placeholder-val="{{true}}">
+<sc-for list="{{c.items}}" as="q" hint-placeholder-count="2">
+<div style="display:flex;align-items:center;gap:14px;padding:10px 12px;background:#0c2138;border:1px solid #173c5c">
+<button type="button" onClick="{{q.toggle}}" aria-label="Valider : {{q.title}}" aria-pressed="{{q.done}}" style="width:44px;height:44px;flex:none;border:1px solid #5fd4ff;background:{{q.boxBg}};display:flex;align-items:center;justify-content:center;padding:0"><sc-if value="{{q.done}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06101d" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></sc-if></button>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap"><span style="font-size:15px;font-weight:500;color:{{q.titleColor}}">{{q.title}}</span><sc-if value="{{q.hasSub}}" hint-placeholder-val="{{false}}"><span style="font-size:13px;color:#9db4cc">{{q.sub}}</span></sc-if></div>
+<sc-if value="{{q.hasChips}}" hint-placeholder-val="{{false}}"><div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px">
+<sc-if value="{{q.high}}" hint-placeholder-val="{{false}}"><span style="color:#f5b546;border:1px solid #6b5220;padding:1px 8px">Priorité haute</span></sc-if>
+<sc-if value="{{q.hasDate}}" hint-placeholder-val="{{false}}"><span style="color:#b9cbe0;border:1px solid #3a5670;padding:1px 8px">Échéance {{q.date}}</span></sc-if>
+</div></sc-if>
+</div>
+<span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#f5b546;white-space:nowrap">+{{q.xp}} XP</span>
+</div>
+</sc-for>
+</sc-if>
+</div>
+</sc-for>
+</section>
+</div>
+
+<!-- HABITS COLUMN -->
+<div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;min-height:44px">
+<h2 id="wo" style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:3px;color:#5fd4ff;font-weight:600">[ ENTRAÎNEMENT ]</h2>
+<a href="#" aria-label="Voir ma journée dans le planning" title="Voir ma journée" style="width:44px;height:44px;box-sizing:border-box;border:1px solid #2c6a94;background:#0f2b47;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b9cbe0" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4M7 14h4"/></svg></a>
+</div>
+<section class="fr" aria-labelledby="wo" style="background:#0a1b30;border:1px solid #1d4a6e;padding:20px 22px;display:flex;flex-direction:column;gap:14px;margin-bottom:12px">
+
+<sc-if value="{{wsPlanned}}" hint-placeholder-val="{{true}}">
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{workouts}}" as="w" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:#0c2138;border:1px solid #173c5c">
+<span style="width:48px;flex:none;font-family:'JetBrains Mono',monospace;font-size:14px;color:{{w.timeColor}}" title="{{w.timeTitle}}">{{w.time}}</span>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;border-left:1px solid #173c5c;padding-left:12px"><span style="font-size:15px;font-weight:500;color:{{w.titleColor}}">{{w.name}}</span><span style="font-size:13px;color:#9db4cc">{{w.meta}}</span></div>
+<sc-if value="{{w.todo}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{w.start}}" aria-label="Démarrer : {{w.name}}" title="Démarrer" style="width:44px;height:44px;flex:none;border:1px solid #5fd4ff;background:#123553;display:flex;align-items:center;justify-content:center;padding:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="#5fd4ff" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button></sc-if>
+<sc-if value="{{w.done}}" hint-placeholder-val="{{false}}"><div title="Terminée" style="width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center"><div style="width:26px;height:26px;border-radius:50%;background:#5fd4ff;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#06101d" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div></div></sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{wsRest}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:14px">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#5fd4ff" stroke-width="1.4" stroke-linecap="round" aria-hidden="true" style="flex:none;filter:drop-shadow(0 0 6px #5fd4ff66)"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Jour de repos</span><span style="font-size:13px;color:#9db4cc">La récupération fait partie du programme.</span></div>
+</div>
+<div style="display:flex;justify-content:space-between;gap:8px;padding:10px 12px;background:#0c2138;border:1px solid #173c5c;font-size:13px"><span style="color:#9db4cc">Prochaine séance</span><span style="color:#e6f1ff">Vendredi · Bas du corps</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{wsNone}}" hint-placeholder-val="{{false}}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:14px">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7fa7c7" stroke-width="1.4" stroke-linecap="round" aria-hidden="true" style="flex:none"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></svg>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Aucune séance prévue</span><span style="font-size:13px;color:#9db4cc">Rien au programme aujourd'hui.</span></div>
+</div>
+<button type="button" style="min-height:44px;border:1px solid #2c6a94;background:#0f2b47;color:#e6f1ff;font-size:13px">Planifier une séance</button>
+</div>
+</sc-if>
+</section>
+<div style="display:flex;align-items:center;justify-content:space-between;min-height:44px">
+<h2 id="hb" style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:3px;color:#5fd4ff;font-weight:600">[ HABITUDES ]</h2>
+<button type="button" aria-label="Gérer les habitudes" title="Gérer les habitudes" style="width:44px;height:44px;border:1px solid #2c6a94;background:#0f2b47;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b9cbe0" stroke-width="1.6" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+</div>
+<section class="fr" aria-labelledby="hb" style="background:#0a1b30;border:1px solid #1d4a6e;padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+<sc-for list="{{habits}}" as="h" hint-placeholder-count="2">
+<div style="padding:12px 14px;background:#0c2138;border:1px solid #173c5c;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:500">{{h.name}}</span><span style="font-size:13px;color:#9db4cc">{{h.freq}}</span></div>
+<div style="display:flex;gap:6px;flex:none">
+<button type="button" aria-label="Historique : {{h.name}}" title="Historique" style="width:40px;height:40px;border:1px solid #2c6a94;background:#0f2b47;display:flex;align-items:center;justify-content:center;padding:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b9cbe0" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+<sc-if value="{{h.manual}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{h.toggle}}" aria-label="Valider aujourd'hui : {{h.name}}" aria-pressed="{{h.done}}" title="Valider aujourd'hui" style="width:40px;height:40px;border:1px solid #5fd4ff;background:{{h.checkBg}};display:flex;align-items:center;justify-content:center;padding:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{h.checkStroke}}" stroke-width="2.4" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></button></sc-if>
+<sc-if value="{{h.auto}}" hint-placeholder-val="{{false}}"><div title="Validée automatiquement par le podomètre" style="width:40px;height:40px;box-sizing:border-box;border:1px dashed #3a6a8f;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fa7c7" stroke-width="1.6" aria-hidden="true"><path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5"/></svg></div></sc-if>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">
+<sc-for list="{{h.days}}" as="d" hint-placeholder-count="7">
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:{{d.labelColor}}">{{d.l}}</span>
+<sc-if value="{{d.done}}" hint-placeholder-val="{{false}}"><div style="width:22px;height:22px;border-radius:50%;background:#5fd4ff"></div></sc-if>
+<sc-if value="{{d.missed}}" hint-placeholder-val="{{false}}"><div style="width:22px;height:22px;border-radius:50%;border:1px solid #ff6b78;box-sizing:border-box;display:flex;align-items:center;justify-content:center"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ff6b78" stroke-width="3" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></div></sc-if>
+<sc-if value="{{d.today}}" hint-placeholder-val="{{false}}"><div style="width:22px;height:22px;border-radius:50%;border:2px solid #5fd4ff;box-shadow:0 0 8px #5fd4ff99;box-sizing:border-box"></div></sc-if>
+<sc-if value="{{d.planned}}" hint-placeholder-val="{{true}}"><div style="width:22px;height:22px;border-radius:50%;border:1px solid #3a6a8f;box-sizing:border-box"></div></sc-if>
+<sc-if value="{{d.off}}" hint-placeholder-val="{{false}}"><div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center"><div style="width:8px;height:1px;background:#3a5670"></div></div></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</section>
+</div>
+</div>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"workoutState":{"editor":"enum","options":["prévue","repos","aucune"],"default":"prévue"},"$preview":{"width":1440,"height":1340}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { done: {}, closed: {}, water: 0, hdone: {} }; }
+  flip(key, id) { const o = Object.assign({}, this.state[key]); o[id] = !o[id]; const s = {}; s[key] = o; this.setState(s); }
+  renderVals() {
+    const done = this.state.done, closed = this.state.closed, water = this.state.water;
+    const all = [
+      { id: 'gift', title: 'Buy a birthday present', cat: 'Enfant', xp: 30, high: true, date: '30/09', when: 'late' },
+      { id: 'sprint', title: 'Préparer la démo de sprint', cat: 'Travail', xp: 20, date: '25/11', time: 'avant 14 h', when: 'today' },
+      { id: 'flat', title: 'Move the flat', cat: 'Maison', xp: 50, high: true, sub: '1 / 2 sous-quêtes' },
+      { id: 'gutter', title: 'Nettoyer la gouttière', cat: 'Maison', xp: 15, date: 'ven. 28/11' },
+      { id: 'mr', title: 'Relire la MR du service paiement', cat: 'Travail', xp: 10 },
+      { id: 'judo', title: 'Inscrire au judo', cat: 'Enfant', xp: 15, date: '02/12' }
+    ];
+    const decorate = (q) => {
+      const d = !!done[q.id];
+      return Object.assign({}, q, {
+        done: d, toggle: () => this.flip('done', q.id),
+        isTask: !q.workout, isWorkout: !!q.workout,
+        late: q.when === 'late' && !d, timed: !!q.time, hasDate: !!q.date && !q.when,
+        hasSub: !!q.sub, hasChips: !!q.high || (!!q.date && !q.when), high: !!q.high,
+        boxBg: d ? '#5fd4ff' : 'transparent', boxBorder: q.when === 'late' && !d ? '#ff6b78' : '#5fd4ff',
+        titleColor: d ? '#7d95ad' : '#e6f1ff',
+        rowBg: q.when === 'late' && !d ? '#1a0f17' : '#0f2b47', rowBorder: q.when === 'late' && !d ? '#7a2a33' : '#2c6a94'
+      });
+    };
+    const today = all.filter((q) => q.when).map(decorate);
+    const todayDone = today.filter((q) => q.done).length;
+    const todayXp = today.reduce((s, q) => s + q.xp, 0);
+    const gained = all.filter((q) => done[q.id]).reduce((s, q) => s + q.xp, 0);
+    const names = ['Maison', 'Travail', 'Enfant'];
+    const cats = names.map((n) => {
+      const items = all.filter((q) => q.cat === n && !q.when).map(decorate);
+      const t = all.filter((q) => q.cat === n && q.when).length;
+      const open = !closed[n];
+      return { name: n.toUpperCase(), count: items.length + ' quête' + (items.length > 1 ? 's' : ''), items, open,
+        chevron: open ? 'rotate(90deg)' : 'none', hasToday: t > 0, todayNote: '+' + t + ' dans Aujourd’hui',
+        toggle: () => this.flip('closed', n) };
+    });
+    const xp = 340 + gained, max = 500;
+    const L = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    const mk = (st) => st.map((s, i) => ({ l: L[i], done: s === 'done', missed: s === 'missed', today: s === 'today', planned: s === 'planned', off: s === 'off', labelColor: i === 2 ? '#5fd4ff' : '#9db4cc' }));
+    const ws = this.props.workoutState ?? 'prévue';
+    const wd = this.state.wdone || {};
+    const workouts = [
+      { id: 'mob', name: 'Mobilité du matin', meta: '15 min · 5 exercices', at: '07:30' },
+      { id: 'push', name: 'Haut du corps · Push', meta: '45 min · 6 exercices', at: '18:00' },
+      { id: 'velo', name: 'Cardio · Vélo', meta: '30 min · 1 exercice', at: '' }
+    ].map((w) => ({ ...w, time: w.at || '--:--', timeColor: w.at ? '#5fd4ff' : '#5f7a94', timeTitle: w.at ? 'Prévue à ' + w.at : 'Sans horaire', done: !!wd[w.id], todo: !wd[w.id], titleColor: wd[w.id] ? '#7d95ad' : '#e6f1ff',
+      start: () => this.setState({ wdone: Object.assign({}, wd, { [w.id]: true }) }) }));
+    return {
+      wsPlanned: ws === 'prévue', wsRest: ws === 'repos', wsNone: ws === 'aucune', workouts,
+      xpLabel: xp + ' / ' + max + ' XP', xpLeft: Math.max(0, max - xp),
+      xpSegs: Array.from({ length: 25 }, (_, i) => ({ on: (i + 1) * 20 <= xp, off: (i + 1) * 20 > xp })),
+      activeCount: all.filter((q) => !done[q.id]).length,
+      today, todayDone, todayTotal: today.length, todayXp, cats,
+      water, waterSegs: Array.from({ length: 6 }, (_, i) => ({ on: (i + 1) * 250 <= water, off: (i + 1) * 250 > water })),
+      add250: () => this.setState({ water: Math.min(3000, water + 250) }),
+      habits: [
+        { id: 'lire', name: 'Lire', freq: 'Lun, mer, ven · série 4', manual: true, days: ['done', 'off', 'today', 'off', 'planned', 'off', 'off'] },
+        { id: 'marche', name: 'Marcher 5000 pas', freq: 'Tous les jours · via le podomètre', manual: false, days: ['done', 'missed', 'today', 'planned', 'planned', 'planned', 'planned'] }
+      ].map((h) => { const d = !!this.state.hdone[h.id]; return Object.assign({}, h, { done: d, auto: !h.manual,
+        checkBg: d ? '#5fd4ff' : 'transparent', checkStroke: d ? '#06101d' : '#5fd4ff', toggle: () => this.flip('hdone', h.id),
+        days: mk(h.days.map((x) => (x === 'today' && d ? 'done' : x))) }); })
+    };
+  }
+}
+</script>
+</body>
+</html>

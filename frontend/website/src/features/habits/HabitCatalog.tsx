@@ -1,5 +1,6 @@
-import { Button, Chip, EmptyState, ListItem, Loader, Stack } from '../../components'
-import { iconFor } from './habitIcons'
+import type { HabitCatalogItem } from '../../api/types'
+import { Button, Chip, DataList, ListItem } from '../../components'
+import { groupByCategoryIfAny } from '../categories/groupByCategory'
 import { useHabitCatalog, useSubscribeHabit, useUnsubscribeHabit } from './queries'
 
 /**
@@ -14,45 +15,32 @@ export function HabitCatalog() {
     const pending = subscribe.isPending || unsubscribe.isPending
 
     return (
-        <Stack>
-            {catalog.isPending && <Loader />}
-
-            {catalog.isSuccess && catalog.data.length === 0 && (
-                <EmptyState>Aucune habitude au catalogue pour le moment.</EmptyState>
-            )}
-
-            {catalog.isSuccess &&
-                catalog.data.map((item) => {
-                    const Icon = iconFor(item.icon)
-
-                    return (
+        // Under their category, like the panel the habits land in; the chip would repeat the heading.
+        <DataList<HabitCatalogItem>
+            groups={groupByCategoryIfAny(catalog.data ?? [], (item) => item.category)}
+            keyOf={(item) => item.habitId}
+            loading={catalog.isPending}
+            error={catalog.isError ? 'Le System ne répond pas. Réessaie dans un instant.' : null}
+            emptyText="Aucune habitude au catalogue pour le moment."
+            renderItem={(item) => {
+                return (
                     <ListItem
-                        key={item.habitId}
                         title={item.name}
-                        icon={<Icon size={26} strokeWidth={1.6} aria-hidden />}
                         meta={item.sourceKind === 'tracker' ? <Chip>Automatique</Chip> : undefined}
                         actions={
                             item.isSubscribed ? (
-                                <Button
-                                    variant="quiet"
-                                    disabled={pending}
-                                    onClick={() => unsubscribe.mutate(item.habitId)}
-                                >
+                                <Button variant="quiet" disabled={pending} onClick={() => unsubscribe.mutate(item.habitId)}>
                                     Retirer
                                 </Button>
                             ) : (
-                                <Button
-                                    variant="primary"
-                                    disabled={pending}
-                                    onClick={() => subscribe.mutate(item.habitId)}
-                                >
+                                <Button variant="primary" disabled={pending} onClick={() => subscribe.mutate(item.habitId)}>
                                     Suivre
                                 </Button>
                             )
                         }
                     />
-                    )
-                })}
-        </Stack>
+                )
+            }}
+        />
     )
 }

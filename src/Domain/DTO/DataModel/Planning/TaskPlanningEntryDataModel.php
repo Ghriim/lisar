@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\DTO\DataModel\Planning;
 
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\DataModelInterface;
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;

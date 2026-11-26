@@ -8,10 +8,13 @@ for the same reason.
 
 A row in the catalogue carries:
 
-- **a name and an icon** — the icon a code from a fixed vocabulary, drawn its own way by each
-  front end (as the hydration shortcut icons are);
+- **a name**. A habit has **no icon of its own**: it wears its category's, so a habit in no
+  category is drawn without one;
 - **how it is kept**: either **manual** (the person ticks it) or **fed by a tracker** — Steps,
   Hydration, Workouts — which keeps it on their behalf;
+- **a category, or none** — always a [common one](categories.md): the catalogue is everyone's,
+  so a personal label, the administrator's own included, has no place on it. The person does not
+  change it; their own categories are for their own things, their tasks;
 - **for a tracker-fed habit, the mark to cross**: the value the tracker must reach that day for the
   habit to count as kept — 10000 steps, 1500 mL, 1 workout. Below the mark the day is not kept; at
   or above it, it is. The workout tracker's figure is **how many workouts were finished that day**:
@@ -25,7 +28,7 @@ addition.
 The page lists the catalogue and lets an administrator create, rename and reconfigure, and remove
 a habit — the same list-plus-form shape as the hydration shortcuts.
 
-- **Creating** one names it, picks its icon, and chooses its source: manual, or a tracker with a
+- **Creating** one names it, files it in a category if it belongs to one — which gives it its icon — and chooses its source: manual, or a tracker with a
   mark to cross.
 - **Editing** one changes any of those. Changing a tracker's mark from 10000 to 8000 changes what
   the next days need; it does not rewrite the days already kept, whose mark was frozen into them

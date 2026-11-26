@@ -11,7 +11,8 @@ beside it than to the list below: a per-day record against a recurring intent.
 
 The habits themselves are a **catalogue an administrator maintains** (see the back-office page).
 The person does not create habits yet — they **subscribe** to the ones they want to keep, from a
-window opened off the panel, and unsubscribe from the ones they drop.
+window opened off the panel, and unsubscribe from the ones they drop. The window groups them
+**under their category**, as the panel does (flat while none has one).
 
 Unsubscribing **keeps the history**: it stops the habit appearing in the list and stops its run
 counting, but the days already kept are not erased — the day habits earn experience, a dropped-then-resumed
@@ -19,11 +20,16 @@ habit must not have had its past wiped.
 
 ## The panel
 
+The habits are **grouped under their category**, like the tasks: the categories in the order
+they come, then « Sans catégorie ». A habit's category is the catalogue's — a common one, set in the
+back-office — and the person does not change it. While none of their habits has a category, the
+list is flat: one heading over every line would say nothing.
+
 One row per subscribed habit, laid out in two lines: the first holds, on the left, the name with
 the days it counts under it, and on the right the actions; the second, across the full width, the
 last seven days.
 
-- **its name**, and under it, dimmed, **the days it counts**: its planning in words — « quotidien »,
+- **its name** — no icon: the category's label already heads the group it sits in — and under it, dimmed, **the days it counts**: its planning in words — « quotidien »,
   « lundi, mercredi et vendredi · 07:00 », several entries one after the other.
   Every kept habit has one ([planning](planning.md#a-habit-entry)): taken on, it counts every day;
 - **the last seven days**, today included: a circle a day, empty for a day not kept, checked for a

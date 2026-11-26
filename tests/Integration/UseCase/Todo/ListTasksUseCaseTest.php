@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\UseCase\Todo;
 
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\DTO\Input\Todo\ListTasksDataInput;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Registry\Todo\TaskStateRegistry;
-use App\Fixtures\Todo\CategoryFixtures;
+use App\Fixtures\Category\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;

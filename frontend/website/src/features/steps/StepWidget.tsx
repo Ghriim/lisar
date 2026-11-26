@@ -1,43 +1,33 @@
 import { Footprints } from 'lucide-react'
 import { useState } from 'react'
-import { Loader, Modal, ProgressBar, SystemPanel } from '../../components'
+import { Button, Modal, SegmentedBar, SystemPanel } from '../../components'
 import { useStepsToday } from './queries'
 import { StepPanel } from './StepPanel'
 
-/**
- * The day's steps against the day's goal, on the task list. A running total, glanced at: a click
- * anywhere on the widget opens the window where the number is set.
- */
+/** The day's steps against the day's goal. The count is set in a window. */
 export function StepWidget() {
     const today = useStepsToday()
     const [opened, setOpened] = useState(false)
 
-    const recorded = today.data?.countInSteps ?? null
+    const count = today.data?.countInSteps ?? 0
+    const goal = today.data?.goalInSteps ?? 0
 
     return (
         <>
-            <SystemPanel
-                ariaLabel="Pas du jour"
-                onActivate={today.isSuccess ? () => setOpened(true) : undefined}
-            >
-                {today.isPending && <Loader />}
-
-                {today.isSuccess && (
-                    <div className="tracker">
-                        <Footprints size={45} strokeWidth={1.6} className="tracker-icon" aria-hidden />
-                        <div className="tracker-body">
-                            <span className="tracker-value">{recorded ?? 0} pas</span>
-
-                            <div className="tracker-aux">Objectif {today.data.goalInSteps} pas</div>
-
-                            <ProgressBar
-                                value={recorded ?? 0}
-                                max={today.data.goalInSteps}
-                                label={`${recorded ?? 0} sur ${today.data.goalInSteps} pas`}
-                            />
-                        </div>
+            <SystemPanel className="tracker">
+                <div className="tracker-head">
+                    <Footprints size={36} strokeWidth={1.4} className="tracker-icon" role="img" aria-label="Pas" />
+                    <div className="tracker-body">
+                        <span className="tracker-value">{count} pas</span>
+                        <span className="tracker-aux">objectif {goal}</span>
                     </div>
-                )}
+                </div>
+
+                <SegmentedBar value={count} max={goal} segments={6} label={`Pas : ${count} / ${goal}`} thin />
+
+                <Button variant="secondary" disabled={!today.isSuccess} onClick={() => setOpened(true)}>
+                    Saisir mes pas
+                </Button>
             </SystemPanel>
 
             {opened && today.isSuccess && (

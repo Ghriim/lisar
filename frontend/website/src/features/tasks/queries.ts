@@ -8,6 +8,9 @@ const TASKS = ['tasks'] as const
 /** The planning's key, spelt here rather than imported: a task made by a planning entry is a date of it. */
 const PLANNING = ['planning'] as const
 
+/** The status' key, likewise: ticking a task off is what will earn experience. */
+const STATUS = ['status'] as const
+
 export function useTasks(isDone: boolean) {
     return useQuery({
         queryKey: [...TASKS, isDone],
@@ -28,14 +31,6 @@ export function useTask(id: number, fallback: Task) {
     })
 }
 
-export function useCategories() {
-    return useQuery({
-        queryKey: ['categories'],
-        queryFn: api.fetchCategories,
-        staleTime: 5 * 60 * 1000,
-    })
-}
-
 function useTaskMutation<TVariables, TResult>(mutationFn: (variables: TVariables) => Promise<TResult>) {
     const queryClient = useQueryClient()
 
@@ -43,42 +38,15 @@ function useTaskMutation<TVariables, TResult>(mutationFn: (variables: TVariables
         mutationFn,
         onSuccess: async () => {
             // Both lists move together: ticking a task off takes it out of one and into the
-            // other. A planned task's date follows it on the planning.
-            await Promise.all([queryClient.invalidateQueries({ queryKey: TASKS }), queryClient.invalidateQueries({ queryKey: PLANNING })])
+            // other. A planned task's date follows it on the planning, and the status bar what
+            // it earned.
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: TASKS }),
+                queryClient.invalidateQueries({ queryKey: PLANNING }),
+                queryClient.invalidateQueries({ queryKey: STATUS }),
+            ])
         },
     })
-}
-
-/**
- * A category the person owns: renaming one changes how every task reads, so the task lists go
- * with it.
- */
-function useCategoryMutation<TVariables, TResult>(
-    mutationFn: (variables: TVariables) => Promise<TResult>,
-) {
-    const queryClient = useQueryClient()
-
-    return useMutation({
-        mutationFn,
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: ['categories'] })
-            await queryClient.invalidateQueries({ queryKey: TASKS })
-        },
-    })
-}
-
-export function useCreateCategory() {
-    return useCategoryMutation((label: string) => api.createCategory(label))
-}
-
-export function useUpdateCategory() {
-    return useCategoryMutation(({ id, label }: { id: number; label: string }) =>
-        api.updateCategory(id, label),
-    )
-}
-
-export function useDeleteCategory() {
-    return useCategoryMutation((id: number) => api.deleteCategory(id))
 }
 
 export function useCreateTask() {

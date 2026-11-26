@@ -26,13 +26,12 @@
     flex-direction: column;
     flex-shrink: 0;
     gap: calc(var(--step) * 3);
-    width: 232px;
+    width: 240px;
     height: 100vh;
-    padding: calc(var(--step) * 3) calc(var(--step) * 1.5);
-    background: var(--panel);
-    border-right: var(--border);
-    box-shadow: var(--shadow-panel);
-    backdrop-filter: blur(6px);
+    overflow-y: auto;
+    padding: calc(var(--step) * 4) calc(var(--step) * 2.25);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-sidebar);
     transition: width 0.15s ease;
 }
 
@@ -47,7 +46,7 @@
     justify-content: space-between;
     gap: var(--step);
     padding-bottom: calc(var(--step) * 2);
-    border-bottom: 1px solid rgba(77, 210, 255, 0.16);
+    border-bottom: 1px solid var(--border-sidebar);
 }
 
 .side-nav-collapsed .side-nav-head {
@@ -80,9 +79,12 @@
     list-style: none;
 }
 
-/* The bottom group is pushed down by the space, not by a count of what sits above it. */
+/* The bottom group is pushed down by the space, not by a count of what sits above it, and set
+   apart by a rule. */
 .side-nav-bottom {
     margin-top: auto;
+    padding-top: calc(var(--step) * 2);
+    border-top: 1px solid var(--border-sidebar);
 }
 
 .side-nav-item {
@@ -95,28 +97,30 @@
     border: 1px solid transparent;
     border-left: 2px solid transparent;
     border-radius: var(--radius);
-    color: var(--text-dim);
-    font-family: var(--font-system);
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    color: var(--text-2);
+    font-family: var(--font-body);
+    font-size: 15px;
     white-space: nowrap;
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .side-nav-item:hover {
-    background: rgba(143, 176, 216, 0.1);
+    background: rgba(157, 180, 204, 0.08);
     color: var(--text);
     text-decoration: none;
 }
 
-/* Where the person is: the accent, and the same left edge a list row carries. */
+/* Where the person is: the button's fill and a 2px accent edge on the left. */
 .side-nav-item.active {
-    background: var(--accent-soft);
+    background: var(--btn-bg);
     border-left-color: var(--accent);
+    color: var(--text);
+    font-weight: 500;
+}
+
+.side-nav-item.active svg {
     color: var(--accent);
-    box-shadow: var(--shadow-glow);
 }
 
 .side-nav-item svg {
@@ -159,10 +163,8 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow-glow);
     color: var(--text);
-    font-family: var(--font-system);
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-size: 12px;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.12s ease;

@@ -14,8 +14,8 @@ final class HabitPlanningEntryDataOutput
 
     public string $habitName;
 
-    /** One of HabitIconRegistry's codes. */
-    public string $habitIcon;
+    /** The habit's category's icon, one of CategoryIconRegistry's codes; null without a category. */
+    public ?string $habitIcon = null;
 
     public PlanningScheduleDataOutput $schedule;
 }

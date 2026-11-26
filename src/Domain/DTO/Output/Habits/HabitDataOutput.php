@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\DTO\Output\Habits;
 
+use App\Domain\DTO\Output\Category\CategoryDataOutput;
+
 /**
- * One subscribed habit, as its line on the panel: its name and icon, whether it is the person's to
- * tick, whether today is kept, and the last seven days to draw.
+ * One subscribed habit, as its line on the panel: its name and its category, whose icon it wears;
+ * whether it is the person's to tick, whether today is kept, and the last seven days to draw.
  */
 final class HabitDataOutput
 {
@@ -15,11 +17,11 @@ final class HabitDataOutput
 
     public string $name;
 
-    /** One of HabitIconRegistry's codes; each front end draws its own glyph for it. */
-    public string $icon;
-
     /** manual | tracker — the front shows a tick button only for a manual habit. */
     public string $sourceKind;
+
+    /** A common category, or null; set by the back-office on the catalogue habit. */
+    public ?CategoryDataOutput $category = null;
 
     public bool $isCompletedToday;
 

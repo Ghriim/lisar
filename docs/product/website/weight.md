@@ -10,7 +10,8 @@ The **last known weight and the day it was recorded** — not today's, the last 
 skipped three days still sees where they stand; showing nothing until they step on the scale
 would tell them the least on the day they most want to know.
 
-Beside it, one icon opens the window where the number is written.
+It reads `72,40 kg`, with `le 22/11` under it — `aujourd’hui à 07:45` when it is today's. At
+the bottom, the button **`Nouvelle pesée`** opens the window where the number is written.
 
 ## The window
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Gateway\Provider\Habits;
 
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
 
 interface HabitProviderGateway
@@ -24,4 +25,7 @@ interface HabitProviderGateway
      * @return list<HabitDataModel>
      */
     public function findAllActive(): array;
+
+    /** How many catalogue habits, retired ones included, sit in that category. */
+    public function countForCategory(CategoryDataModel $category): int;
 }

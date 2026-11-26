@@ -6,7 +6,6 @@ namespace App\Tests\Integration\UseCase\Habits;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Habits\CreateHabitDataInput;
-use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Fixtures\Habits\HabitSubscriptionFixtures;
 use App\Fixtures\User\UserFixtures;
@@ -72,8 +71,8 @@ final class ListHabitCatalogUseCaseTest extends KernelTestCase
             fn () => $this->currentUser($aliceId),
             fn (UserDataModel $currentUser) => $this->catalog->execute($currentUser),
             function () use ($create): void {
-                $create->execute($this->currentAdmin(), new CreateHabitDataInput('Écrire', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL));
-                $create->execute($this->currentAdmin(), new CreateHabitDataInput('Courir', HabitIconRegistry::RUN, HabitSourceRegistry::MANUAL));
+                $create->execute($this->currentAdmin(), new CreateHabitDataInput('Écrire', HabitSourceRegistry::MANUAL));
+                $create->execute($this->currentAdmin(), new CreateHabitDataInput('Courir', HabitSourceRegistry::MANUAL));
             },
         );
 

@@ -6,11 +6,16 @@ namespace App\Domain\Factory\OutputFactory\Habits;
 
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
 use App\Domain\DTO\Output\Habits\HabitCatalogItemDataOutput;
+use App\Domain\Factory\OutputFactory\Category\CategoryOutputFactory;
 
 use function in_array;
 
 final readonly class HabitCatalogItemOutputFactory
 {
+    public function __construct(private CategoryOutputFactory $categoryOutputFactory)
+    {
+    }
+
     /**
      * @param list<HabitDataModel> $habits
      * @param list<int>            $subscribedHabitIds the ids the person actively keeps
@@ -32,11 +37,13 @@ final readonly class HabitCatalogItemOutputFactory
         $output = new HabitCatalogItemDataOutput();
         $output->habitId = $habit->id ?? 0;
         $output->name = $habit->name;
-        $output->icon = $habit->icon;
         $output->sourceKind = $habit->sourceKind;
         $output->trackerKind = $habit->trackerKind;
         $output->trackerThreshold = $habit->trackerThreshold;
         $output->isSubscribed = $isSubscribed;
+        $output->category = null === $habit->category
+            ? null
+            : $this->categoryOutputFactory->buildOne($habit->category);
 
         return $output;
     }

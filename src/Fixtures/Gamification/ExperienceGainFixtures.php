@@ -24,9 +24,11 @@ final class ExperienceGainFixtures extends Fixture implements DependentFixtureIn
     /** stat, amount */
     private const array ALICE = [
         [StatRegistry::STRENGTH, 200],
-        [StatRegistry::STRENGTH, 120],
         [StatRegistry::ENDURANCE, 60],
+        [StatRegistry::AGILITY, 60],
         [StatRegistry::INTELLIGENCE, 40],
+        [StatRegistry::SPIRIT, 120],
+        [StatRegistry::WILLPOWER, 40],
     ];
 
     public function __construct(private readonly ExperienceGainPersisterGateway $experienceGainPersisterGateway)

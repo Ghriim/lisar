@@ -6,7 +6,6 @@ namespace App\Tests\Integration\UseCase\Habits\Admin;
 
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Habits\CreateHabitDataInput;
-use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Registry\Habits\HabitTrackerRegistry;
 use App\Fixtures\Habits\HabitFixtures;
@@ -73,8 +72,8 @@ final class ListHabitsForAdminUseCaseTest extends KernelTestCase
             fn () => $this->currentAdmin(),
             fn (UserDataModel $currentUser) => $this->list->execute($currentUser),
             function (): void {
-                $this->create->execute($this->currentAdmin(), new CreateHabitDataInput('Écrire', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL));
-                $this->create->execute($this->currentAdmin(), new CreateHabitDataInput('Marcher', HabitIconRegistry::RUN, HabitSourceRegistry::TRACKER, HabitTrackerRegistry::STEPS, 8000));
+                $this->create->execute($this->currentAdmin(), new CreateHabitDataInput('Écrire', HabitSourceRegistry::MANUAL));
+                $this->create->execute($this->currentAdmin(), new CreateHabitDataInput('Marcher', HabitSourceRegistry::TRACKER, HabitTrackerRegistry::STEPS, 8000));
             },
         );
 

@@ -40,6 +40,8 @@ export function SelectField({
                 mode={multiple ? 'multiple' : undefined}
                 placeholder={placeholder}
                 showSearch={searchable ? { optionFilterProp: 'label' } : false}
+                // An optional single choice can be taken back: the cross empties it.
+                allowClear={!isMandatory && !multiple}
             />
         </AntForm.Item>
     )

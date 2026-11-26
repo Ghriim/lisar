@@ -29,3 +29,14 @@ export function formatWhen(day: string, recordedAt: string | null, isFromToday: 
 
     return `le ${dayOfMonth}/${month}/${year}`
 }
+
+/** The same, shorter, for the dashboard: an older weight by its day and month alone — « le 22/11 ». */
+export function formatWhenShort(day: string, recordedAt: string | null, isFromToday: boolean): string {
+    if (isFromToday) {
+        return formatWhen(day, recordedAt, isFromToday)
+    }
+
+    const [, month, dayOfMonth] = day.split('-')
+
+    return `le ${dayOfMonth}/${month}`
+}

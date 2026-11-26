@@ -6,6 +6,7 @@ namespace App\Domain\Factory\OutputFactory\Todo;
 
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\Output\Todo\TaskDataOutput;
+use App\Domain\Factory\OutputFactory\Category\CategoryOutputFactory;
 use App\Domain\Todo\TaskState;
 use Symfony\Component\ObjectMapper\ObjectMapperInterface;
 

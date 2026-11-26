@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\DTO\Output\Todo;
 
 use App\Domain\DataTransformer\DateDataTransformer;
+use App\Domain\DTO\Output\Category\CategoryDataOutput;
 use Symfony\Component\ObjectMapper\Attribute\Map;
 
 final class TaskDataOutput

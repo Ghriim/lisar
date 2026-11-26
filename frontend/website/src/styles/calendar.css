@@ -54,7 +54,7 @@
     margin-bottom: calc(var(--calendar-tail, 0) * var(--calendar-hour-height));
     background: repeating-linear-gradient(
         to bottom,
-        rgba(143, 176, 216, 0.1) 0 1px,
+        rgba(157, 180, 204, 0.1) 0 1px,
         transparent 1px var(--calendar-hour-height)
     );
 }
@@ -200,4 +200,9 @@
     font-family: var(--font-system);
     font-size: 10px;
     color: var(--text-dim);
+}
+
+/* Listed in a window, under their category: one card under the other, a breath between them. */
+.list-group > div:has(> .planning-slot) + div:has(> .planning-slot) {
+    margin-top: var(--step);
 }

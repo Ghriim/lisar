@@ -40,10 +40,18 @@ export interface Category {
     id: number
     label: string
     isPersonal: boolean
+    /** Set on every common category: the icon of everything filed in it. */
+    icon: string | null
 }
 
-/** The habit-catalogue vocabularies, mirroring the backend registries. Kept in sync by hand. */
-export const HABIT_ICONS = [
+export interface CategoryPayload {
+    label: string
+    icon: string
+}
+
+/** The icons a common category wears, mirroring CategoryIconRegistry. Kept in sync by hand. */
+export const CATEGORY_ICONS = [
+    'home',
     'run',
     'book',
     'dumbbell',
@@ -57,25 +65,28 @@ export const HABIT_ICONS = [
     'notebook',
     'monitor',
 ] as const
+
+/** The habit-catalogue vocabularies, mirroring the backend registries. Kept in sync by hand. */
 export const HABIT_SOURCES = ['manual', 'tracker'] as const
 export const HABIT_TRACKERS = ['steps', 'hydration', 'workout'] as const
 
 export interface Habit {
     id: number
     name: string
-    icon: string
     sourceKind: string
     trackerKind: string | null
     trackerThreshold: number | null
+    /** Always a common category, or none. */
+    category: Category | null
     isActive: boolean
 }
 
 export interface HabitPayload {
     name: string
-    icon: string
     sourceKind: string
     trackerKind: string | null
     trackerThreshold: number | null
+    categoryId: number | null
 }
 
 export interface Equipment {

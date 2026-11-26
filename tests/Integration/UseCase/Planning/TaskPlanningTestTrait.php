@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\UseCase\Planning;
 
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Planning\ListPlanningDataInput;
@@ -14,8 +14,8 @@ use App\Domain\DTO\Input\Planning\SaveTaskPlanningEntryDataInput;
 use App\Domain\DTO\Output\Planning\TaskPlanningDataOutput;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
 use App\Domain\Tracking\DayClock;
+use App\Fixtures\Category\CategoryFixtures;
 use App\Fixtures\Planning\TaskPlanningEntryFixtures;
-use App\Fixtures\Todo\CategoryFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\SignedInUserTrait;

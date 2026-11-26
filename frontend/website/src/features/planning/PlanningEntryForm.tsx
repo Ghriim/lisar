@@ -17,7 +17,7 @@ import {
 } from '../../components'
 import { useHabits } from '../habits/queries'
 import { useRoutines } from '../routines/queries'
-import { useCategories } from '../tasks/queries'
+import { useCategories } from '../categories/queries'
 import { failureOf } from '../workouts/workoutFormat'
 import { DAILY, MONTH_WEEKS, RULES, ruleChoiceOf, scheduleRuleOf, WEEKDAYS } from './planningFormat'
 import type { KindedEntry, PlanningKind } from './planningKinds'

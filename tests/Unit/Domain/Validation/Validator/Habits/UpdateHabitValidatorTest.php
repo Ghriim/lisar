@@ -6,7 +6,6 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Habits;
 
 use App\Domain\DTO\Input\Habits\UpdateHabitDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
 use App\Domain\Validation\Validator\Habits\UpdateHabitValidator;
@@ -22,18 +21,18 @@ final class UpdateHabitValidatorTest extends TestCase
     {
         $this->expectNotToPerformAssertions();
 
-        $this->validator()->validate($this->currentAdmin(), new UpdateHabitDataInput('Lire', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL));
+        $this->validator()->validate($this->currentAdmin(), new UpdateHabitDataInput('Lire', HabitSourceRegistry::MANUAL), null);
     }
 
     /** A user's token on the back-office: refused on that alone, however wrong the payload. */
     public function testItRefusesANonAdministrator(): void
     {
-        $this->assertRefused(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], fn () => $this->validator()->validate($this->anyCurrentUser(), new UpdateHabitDataInput('', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL)));
+        $this->assertRefused(['currentUser' => [IsAdminConstraint::NOT_ALLOWED]], fn () => $this->validator()->validate($this->anyCurrentUser(), new UpdateHabitDataInput('', HabitSourceRegistry::MANUAL), null));
     }
 
     public function testItRefusesAnInvalidPayload(): void
     {
-        $this->assertRefused(['name' => ['name_required']], fn () => $this->validator()->validate($this->currentAdmin(), new UpdateHabitDataInput('', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL)));
+        $this->assertRefused(['name' => ['name_required']], fn () => $this->validator()->validate($this->currentAdmin(), new UpdateHabitDataInput('', HabitSourceRegistry::MANUAL), null));
     }
 
     /** @param array<string, list<string>> $violations */

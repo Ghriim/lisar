@@ -1,9 +1,9 @@
 /* The task list: the list, its rows, and the shapes that carry a task's state. */
 
 .app-shell {
-    max-width: 1200px;
+    max-width: 1160px;
     margin: 0 auto;
-    padding: calc(var(--step) * 5) calc(var(--step) * 2) calc(var(--step) * 10);
+    padding: 32px 40px;
 }
 
 .app-header {
@@ -12,8 +12,8 @@
 
 .wordmark {
     font-family: var(--font-system);
-    font-size: 22px;
-    letter-spacing: 0.4em;
+    font-size: 24px;
+    letter-spacing: 8px;
     color: var(--accent);
     text-shadow: 0 0 18px var(--accent-glow);
 }
@@ -21,35 +21,38 @@
 .wordmark-sub {
     display: block;
     margin-top: 2px;
-    font-size: 10px;
-    letter-spacing: 0.3em;
-    color: var(--text-faint);
+    font-size: 12px;
+    color: var(--text-2);
 }
 
+/* Tabs on a rule: the current one in the text colour, underlined 2px in the accent. */
 .tabs {
     display: flex;
-    gap: calc(var(--step) * 1.5);
+    gap: 4px;
     margin-bottom: calc(var(--step) * 3);
+    border-bottom: 1px solid var(--row-border);
 }
 
 .tab {
-    padding: 8px 16px;
+    min-height: 40px;
+    padding: 0 16px;
+    margin-bottom: -1px;
     background: transparent;
-    border: 1px solid transparent;
-    border-bottom-color: rgba(143, 176, 216, 0.18);
-    color: var(--text-faint);
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--text-2);
+    font-size: 14px;
     cursor: pointer;
 }
 
+.tab:hover {
+    color: var(--text);
+}
+
 .tab[aria-selected='true'] {
-    border-color: var(--accent-line);
     border-bottom-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-soft);
+    color: var(--text);
+    font-weight: 500;
 }
 
 /* How far a task has got through its subtasks, in the terms the System counts in. */
@@ -71,7 +74,7 @@
     align-items: center;
     gap: 6px;
     padding: 3px 8px;
-    border: 1px solid rgba(143, 176, 216, 0.24);
+    border: 1px solid rgba(157, 180, 204, 0.24);
     border-radius: var(--radius);
     color: var(--text-dim);
 }
@@ -108,7 +111,7 @@
 }
 
 .chip-overdue {
-    border-color: rgba(255, 84, 112, 0.5);
+    border-color: rgba(255, 107, 120, 0.5);
     color: var(--danger);
 }
 
@@ -119,7 +122,7 @@
     align-items: center;
     justify-content: center;
     background: transparent;
-    border: 1px solid rgba(143, 176, 216, 0.24);
+    border: 1px solid rgba(157, 180, 204, 0.24);
     border-radius: var(--radius);
     color: var(--text-dim);
     cursor: pointer;
@@ -140,13 +143,13 @@
 /* Red from the start, not on hover: a destructive action announces itself before it is
    reached, otherwise it looks like every other icon until it is too late. */
 .icon-button-danger {
-    border-color: rgba(255, 84, 112, 0.3);
+    border-color: rgba(255, 107, 120, 0.3);
     color: var(--danger);
 }
 
 .icon-button-danger:hover:not(:disabled) {
-    background: rgba(255, 84, 112, 0.14);
-    border-color: rgba(255, 84, 112, 0.5);
+    background: rgba(255, 107, 120, 0.14);
+    border-color: rgba(255, 107, 120, 0.5);
     color: var(--danger);
 }
 
@@ -154,7 +157,7 @@
 .subtasks {
     margin: var(--step) 0 0 calc(var(--step) * 2);
     padding-left: calc(var(--step) * 2);
-    border-left: 1px dashed rgba(77, 210, 255, 0.24);
+    border-left: 1px dashed rgba(95, 212, 255, 0.24);
 }
 
 .empty {
@@ -196,9 +199,9 @@
 
 .alert {
     padding: 10px 12px;
-    border: 1px solid rgba(255, 84, 112, 0.45);
+    border: 1px solid rgba(255, 107, 120, 0.45);
     border-radius: var(--radius);
-    background: rgba(255, 84, 112, 0.1);
+    background: rgba(255, 107, 120, 0.1);
     color: var(--danger);
     font-family: var(--font-system);
     font-size: 11px;
@@ -301,10 +304,8 @@ button.chip[aria-pressed='true'] {
     border-radius: var(--radius);
     box-shadow: var(--shadow-glow);
     color: var(--text);
-    font-family: var(--font-system);
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-size: 12px;
     text-align: center;
     pointer-events: none;
     animation: tooltip-in 0.12s ease;
@@ -393,7 +394,7 @@ button.chip[aria-pressed='true'] {
     width: 100%;
     height: 6px;
     background: rgba(3, 8, 20, 0.6);
-    border: 1px solid rgba(143, 176, 216, 0.22);
+    border: 1px solid rgba(157, 180, 204, 0.22);
     border-radius: var(--radius);
     overflow: hidden;
 }
@@ -433,7 +434,7 @@ button.chip[aria-pressed='true'] {
 }
 
 .shortcut:hover:not(:disabled) {
-    background: rgba(77, 210, 255, 0.26);
+    background: rgba(95, 212, 255, 0.26);
     box-shadow: var(--shadow-glow);
 }
 
@@ -444,49 +445,66 @@ button.chip[aria-pressed='true'] {
 
 /* ------------------------------------------------------------ the trackers */
 
-/* A tracker widget: a big glyph and the day's figure on one line, its details a size down
-   beneath. Every tracker on the task list speaks this vocabulary, and whatever comes next will
-   too. */
+/* A tracker widget: a big glyph with the day's figure beside it and what it is measured against
+   beneath, a segmented bar when there is a goal, and the action pinned to the bottom. No label: the
+   glyph names the tracker to a screen reader. */
 .tracker {
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+}
+
+.tracker-head {
+    display: flex;
     align-items: center;
-    gap: calc(var(--step) * 2);
+    gap: 14px;
 }
 
-/* The glyph that says which tracker this is — its own full-height column, nothing beneath it. */
 .tracker-icon {
+    flex: none;
     color: var(--accent);
-    flex-shrink: 0;
+    filter: drop-shadow(0 0 6px rgba(95, 212, 255, 0.4));
 }
 
-/* The figure and its details, stacked beside the glyph. */
 .tracker-body {
     display: flex;
     flex-direction: column;
-    gap: calc(var(--step) * 1.5);
-    flex: 1;
+    gap: 2px;
     min-width: 0;
 }
 
 .tracker-value {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--step);
     font-family: var(--font-system);
-    font-size: 20px;
-    letter-spacing: 0.08em;
-    color: var(--accent);
+    font-size: 22px;
+    line-height: 1.1;
 }
 
+/* A figure that is not one — « Non notée »: words, so not in the monospace. */
+.tracker-word {
+    font-size: 17px;
+    line-height: 1.2;
+}
+
+/* A quiet aside, wherever one is needed. */
 .tracker-note {
     color: var(--text-faint);
     font-size: 13px;
 }
 
-/* The line under the figure: times, a date, a mood — everything that is not the headline number. */
 .tracker-aux {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--step) * 1.5);
-    color: var(--text-faint);
-    font-size: 12px;
+    color: var(--text-2);
+    font-size: 13px;
+}
+
+/* The action sits at the bottom whatever is above it, so the four line up across the row. */
+.tracker > .button {
+    margin-top: auto;
+    width: 100%;
+    font-size: 13px;
 }
 
 /* The face beside a night's times: the same quiet colour as them, never louder than the line. */
@@ -532,13 +550,28 @@ button.chip[aria-pressed='true'] {
     opacity: 0.5;
 }
 
-/* The task list and the habits, side by side: two thirds for the log, one for the habits. They
-   align at the top rather than stretching to the same height, and stack on a narrow screen. */
+/* The dashboard, top to bottom: the status, the trackers, then the tasks beside a column holding
+   the training and the habits. 24px between blocks, everywhere. */
+.dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Two thirds for the tasks, one for the column beside them. They align at the top rather than
+   stretching to the same height, and stack on a narrow screen. */
 .main-columns {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: calc(var(--step) * 2);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 24px;
     align-items: start;
+}
+
+.side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
 }
 
 @media (max-width: 860px) {
@@ -589,23 +622,15 @@ button.chip[aria-pressed='true'] {
     border-style: dashed;
 }
 
-/* Four across on the task list, folding to two then one as the screen narrows. */
+/* Four across, each at least 200px, wrapping as the screen narrows. 16px between them. */
 .tracker-row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: calc(var(--step) * 2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
 }
 
-@media (max-width: 860px) {
-    .tracker-row {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 520px) {
-    .tracker-row {
-        grid-template-columns: 1fr;
-    }
+.tracker-row > * {
+    flex: 1 1 200px;
 }
 
 /* ------------------------------------------------------------ the workouts */
@@ -714,4 +739,462 @@ button.chip[aria-pressed='true'] {
     .rest-timer-label {
         display: none;
     }
+}
+
+/* --------------------------------------------------------- the segmented bar */
+
+.segmented-bar {
+    display: flex;
+    gap: 3px;
+    width: 100%;
+}
+
+.segment {
+    flex: 1;
+    height: 8px;
+    background: var(--seg-off);
+}
+
+.segment-on {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
+}
+
+/* A tracker's bar: thinner, and without the glow experience gets. */
+.segmented-bar-thin .segment {
+    height: 6px;
+}
+
+.segmented-bar-thin .segment-on {
+    box-shadow: none;
+}
+
+/* ------------------------------------------------- icon buttons, large ones */
+
+/* A section's action beside its title: 44px, framed like a secondary button. */
+.icon-button-large {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    background: var(--btn-bg);
+    border-color: var(--btn-border);
+    color: #b9cbe0;
+}
+
+/* The section's main action: the accent's frame and glyph. */
+.icon-button-primary {
+    background: var(--btn-primary-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* --------------------------------------------------------------- chips, more */
+
+.chip-xp {
+    border-color: var(--xp-border);
+    color: var(--xp);
+}
+
+.chip-filled {
+    background: var(--chip-bg);
+    border-color: var(--chip-bg);
+    color: var(--chip-text);
+}
+
+/* ------------------------------------------------------------ the check box */
+
+/* Ticked and unticked by the same gesture: an accent frame, then the accent filled with a dark
+   check. Square — the round one belongs to something already done that cannot be undone here. */
+.check-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: #06101d;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.check-toggle:hover:not(:disabled) {
+    box-shadow: var(--shadow-glow);
+}
+
+.check-toggle[aria-pressed='true'] {
+    background: var(--accent);
+}
+
+.check-toggle-danger {
+    border-color: var(--danger);
+}
+
+.check-toggle-small {
+    width: 40px;
+    height: 40px;
+}
+
+.check-toggle:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* --------------------------------------------------------- the section title */
+
+/* A titled block: its title on a line of its own, then its card, 12px apart. */
+.board-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-height: 44px;
+}
+
+.section-title {
+    margin: 0;
+    color: var(--accent);
+    font-family: var(--font-system);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 3px;
+}
+
+.section-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ------------------------------------------------------------ a text button */
+
+/* A name that opens what it names: it reads as the text it is, and underlines under the pointer. */
+.text-button {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+
+.text-button:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--accent-line);
+    text-underline-offset: 3px;
+}
+
+.text-button-muted {
+    color: var(--text-done);
+}
+
+/* ------------------------------------------------------------- a fold group */
+
+.fold-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fold-group-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--row-border);
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.fold-group-chevron {
+    flex: none;
+    color: var(--text-2);
+    transition: transform 0.15s ease;
+}
+
+.fold-group-chevron-open {
+    transform: rotate(90deg);
+}
+
+.fold-group-label {
+    font-family: var(--font-system);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.fold-group-count {
+    color: var(--text-2);
+    font-size: 13px;
+}
+
+.fold-group-note {
+    margin-left: auto;
+    color: var(--accent);
+    font-size: 12px;
+}
+
+/* ------------------------------------------------------------ the task board */
+
+.task-board {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 28px 24px;
+}
+
+.task-board > .tabs {
+    margin-bottom: 0;
+}
+
+.task-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* « Aujourd'hui »: a category's heading, lit — a star, the accent, an accent rule. */
+.task-today-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 40px;
+    border-bottom: 1px solid var(--accent);
+}
+
+.task-today-star {
+    fill: var(--accent);
+    color: var(--accent);
+    filter: drop-shadow(0 0 4px var(--accent));
+}
+
+.task-today-title {
+    color: var(--accent);
+    font-family: var(--font-system);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 8px rgba(95, 212, 255, 0.53);
+}
+
+.task-today-date {
+    color: var(--text-2);
+    font-size: 13px;
+}
+
+.task-today-progress {
+    margin-left: auto;
+    font-family: var(--font-system);
+    font-size: 14px;
+}
+
+.task-today-done {
+    color: var(--accent);
+}
+
+.task-today-total {
+    color: var(--text-2);
+}
+
+.task-today-xp {
+    color: var(--xp);
+}
+
+/* A task's line. */
+.task-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    background: var(--row-bg);
+    border: 1px solid var(--row-border);
+}
+
+.task-row-today {
+    background: var(--row-today-bg);
+    border-color: var(--row-today-border);
+}
+
+/* Late: red, and only for that. */
+.task-row-late {
+    background: var(--danger-bg);
+    border-color: var(--danger-border);
+}
+
+.task-row-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.task-row-headline {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.task-row-subtasks {
+    color: var(--text-2);
+    font-size: 13px;
+}
+
+.task-row-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.task-row-chips .chip {
+    padding: 1px 8px;
+}
+
+.task-row-xp {
+    color: var(--xp);
+    font-family: var(--font-system);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ the training */
+
+.training-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 22px;
+}
+
+.training-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.training-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--row-bg);
+    border: 1px solid var(--row-border);
+}
+
+.training-time {
+    flex: none;
+    width: 48px;
+    color: var(--accent);
+    font-family: var(--font-system);
+    font-size: 14px;
+}
+
+.training-time-off {
+    color: var(--text-off);
+}
+
+/* The name and what it holds, set off from the time by a rule. */
+.training-row-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+    padding-left: 12px;
+    border-left: 1px solid var(--row-border);
+}
+
+.training-name {
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.training-name-done {
+    color: var(--text-done);
+}
+
+/* Start: a filled triangle, the accent's. */
+.training-row .icon-button-primary svg {
+    fill: currentColor;
+}
+
+.training-done {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+}
+
+.training-done-disc {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: var(--accent);
+    border-radius: 50%;
+    color: #06101d;
+}
+
+.training-empty {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.training-empty-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.training-empty-icon {
+    flex: none;
+    color: #7fa7c7;
+}
+
+.training-empty-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.training-next {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--row-bg);
+    border: 1px solid var(--row-border);
+    font-size: 13px;
+}
+
+.training-next-label {
+    color: var(--text-2);
+}
+
+/* An icon link: no underline under the pointer, the frame lights up instead. */
+a.icon-button:hover {
+    text-decoration: none;
 }

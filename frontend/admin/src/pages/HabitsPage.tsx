@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import * as api from '../api/endpoints'
-import { habitIconWord, habitTrackerWord } from '../api/habitWords'
-import { HABIT_ICONS, HABIT_SOURCES, HABIT_TRACKERS, type Habit, type HabitPayload } from '../api/types'
+import { habitTrackerWord } from '../api/habitWords'
+import { HABIT_SOURCES, HABIT_TRACKERS, type Habit, type HabitPayload } from '../api/types'
 import {
     ActiveFilter,
     Button,
     ConfirmButton,
     DataTable,
     FormModal,
-    HabitIcon,
+    CategoryIcon,
     ListToolbar,
     NumberField,
     Page,
@@ -20,6 +20,9 @@ import {
     useActiveFilter,
     useNotifier,
 } from '../components'
+
+/** The form holds the category as a select value: its id written out, or nothing. */
+type HabitFormValues = Omit<HabitPayload, 'categoryId'> & { categoryId: string | null }
 
 const SOURCE_LABELS: Record<string, string> = { manual: 'Manuelle', tracker: 'Automatique (tracker)' }
 
@@ -34,6 +37,9 @@ export function HabitsPage() {
         queryKey: ['habits', status.status],
         queryFn: () => api.fetchHabits(status.isActive),
     })
+
+    // Only the common ones: the catalogue is everyone's, a personal label has no place on it.
+    const categories = useQuery({ queryKey: ['categories'], queryFn: api.fetchCategories })
 
     const refresh = () => queryClient.invalidateQueries({ queryKey: ['habits'] })
 
@@ -82,10 +88,15 @@ export function HabitsPage() {
                         title: 'Habitude',
                         render: (habit) => (
                             <Row gap={8}>
-                                <HabitIcon code={habit.icon} />
+                                {habit.category?.icon != null && <CategoryIcon code={habit.category.icon} />}
                                 {habit.name}
                             </Row>
                         ),
+                    },
+                    {
+                        key: 'category',
+                        title: 'Catégorie',
+                        render: (habit) => habit.category?.label ?? '—',
                     },
                     {
                         key: 'source',
@@ -130,7 +141,7 @@ export function HabitsPage() {
             />
 
             {editing !== undefined && (
-                <FormModal<HabitPayload>
+                <FormModal<HabitFormValues>
                     title={editing === null ? 'Nouvelle habitude' : 'Modifier l’habitude'}
                     submitLabel="Enregistrer"
                     pending={save.isPending}
@@ -140,35 +151,31 @@ export function HabitsPage() {
                             id: editing?.id ?? null,
                             payload: {
                                 name: values.name,
-                                icon: values.icon,
                                 sourceKind: values.sourceKind,
                                 trackerKind: values.trackerKind ?? null,
                                 trackerThreshold: values.trackerThreshold ?? null,
+                                categoryId: values.categoryId ? Number(values.categoryId) : null,
                             },
                         })
                     }
                     initialValues={{
                         name: editing?.name ?? '',
-                        icon: editing?.icon ?? HABIT_ICONS[0],
                         sourceKind: editing?.sourceKind ?? HABIT_SOURCES[0],
                         trackerKind: editing?.trackerKind ?? null,
                         trackerThreshold: editing?.trackerThreshold ?? null,
+                        categoryId: editing?.category ? String(editing.category.id) : null,
                     }}
                 >
                     <TextField name="name" label="Nom" isMandatory autoFocus />
 
                     <SelectField
-                        name="icon"
-                        label="Icône"
-                        isMandatory
-                        options={HABIT_ICONS.map((code) => ({
-                            value: code,
-                            label: (
-                                <Row gap={8}>
-                                    <HabitIcon code={code} size={16} />
-                                    {habitIconWord(code)}
-                                </Row>
-                            ),
+                        name="categoryId"
+                        label="Catégorie"
+                        hint="Son icône est celle de l’habitude."
+                        placeholder="Aucune"
+                        options={(categories.data ?? []).map((category) => ({
+                            value: String(category.id),
+                            label: category.label,
                         }))}
                     />
 

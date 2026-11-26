@@ -64,6 +64,8 @@ final class HabitSubscriptionRepository extends ServiceEntityRepository implemen
         return $this->createQueryBuilder('subscription')
             ->innerJoin('subscription.habit', 'habit')
             ->addSelect('habit')
+            ->leftJoin('habit.category', 'category')
+            ->addSelect('category')
             ->andWhere('subscription.owner = :owner')
             ->andWhere('subscription.isActive = :active')
             ->andWhere('habit.isActive = :active')

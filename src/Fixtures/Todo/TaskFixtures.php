@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Fixtures\Todo;
 
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
+use App\Fixtures\Category\CategoryFixtures;
 use App\Fixtures\User\UserFixtures;
 use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;

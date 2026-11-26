@@ -20,17 +20,14 @@ page needs the width more than the menu needs its words.
 At the top, the name of the app and its subtitle — `LISAR`, *Life is a RPG*. Clicking it goes
 to the dashboard.
 
-Under it, **the global level**, `Niv. 1`, with a thin bar towards the next level; folded, the
-number alone. Clicking it opens the [Statut](status.md) window, which has no other entry.
-
 Below it, aligned at the top — the screens the app is for:
 
 | Entry | Icon | Route | Today |
 | --- | --- | --- | --- |
-| Dashboard | house | `/` | the [dashboard](dashboard.md) |
-| Todo | list with a check | `/todo` | the [task list](tasks.md) on its own |
+| Tableau de bord | house | `/` | the [dashboard](dashboard.md) |
+| Tâches | list with a check | `/todo` | the [task list](tasks.md) on its own |
 | Planning | calendar | `/planning` | the [week](planning.md): training, tasks and habits planned |
-| Workouts | dumbbell | `/workouts` | the [workouts](workouts.md): the one in progress, the history, the [routines](routines.md) |
+| Entraînements | dumbbell | `/workouts` | the [workouts](workouts.md): the one in progress, the history, the [routines](routines.md) |
 | Records | trophy | `/records` | the [personal bests](records.md) |
 | Statistiques | chart | `/statistiques` | empty |
 

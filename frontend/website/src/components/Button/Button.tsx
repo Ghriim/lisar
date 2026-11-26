@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-export type ButtonVariant = 'primary' | 'quiet' | 'danger'
+export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'danger'
 
 interface ButtonProps {
     /** A verb, and nothing but the verb. See docs/dev/frontend-conventions.md. */
@@ -16,6 +16,7 @@ interface ButtonProps {
 
 const CLASSES: Record<ButtonVariant, string> = {
     primary: 'button',
+    secondary: 'button button-secondary',
     quiet: 'button button-quiet',
     danger: 'button button-danger',
 }

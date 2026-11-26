@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Factory\DataModelFactory\Planning;
 
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Planning\SaveTaskPlanningEntryDataInput;
 

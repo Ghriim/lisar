@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Validation\Validator\Todo;
 
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Validation\Constraint\Todo\CategoryUsableConstraint;
+use App\Domain\Validation\Constraint\Category\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\ParentTaskUsableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 

@@ -1,28 +1,4 @@
-/* The Statut window and the level under the app's name. */
-
-.level-badge {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: var(--step);
-    padding: 0 var(--step);
-    color: var(--accent);
-}
-
-.level-badge:hover {
-    text-decoration: none;
-}
-
-.level-badge-level {
-    font-family: var(--font-system);
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-}
-
-.side-nav-collapsed .level-badge {
-    align-items: center;
-}
+/* The Statut window. */
 
 .status-groups {
     display: grid;
@@ -58,4 +34,117 @@
     font-size: 10px;
     color: var(--text-dim);
     text-align: right;
+}
+
+/* ------------------------------------------------------ the dashboard's card */
+
+/* Full width and compact: the player on the left, the six stats on the right. */
+.status-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px 32px;
+    padding: 12px 24px;
+}
+
+.status-card-player {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1 1 320px;
+    min-width: 0;
+}
+
+/* A 46px square turned a quarter, its number turned back upright inside. */
+.status-medallion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 46px;
+    height: 46px;
+    margin: 10px;
+    background: var(--btn-bg);
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 12px -2px var(--accent-glow);
+    transform: rotate(45deg);
+}
+
+.status-medallion:hover {
+    text-decoration: none;
+    background: var(--btn-primary-bg);
+}
+
+.status-medallion-level {
+    transform: rotate(-45deg);
+    color: var(--accent);
+    font-family: var(--font-system);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.status-card-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    max-width: 380px;
+}
+
+.status-card-identity {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.status-card-name {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* The title, in amber like everything experience. */
+.status-card-title {
+    padding: 1px 8px;
+    background: var(--xp-bg);
+    border: 1px solid var(--xp-border);
+    color: var(--xp);
+    font-size: 12px;
+}
+
+.status-card-xp {
+    font-family: var(--font-system);
+    font-size: 13px;
+}
+
+.status-card-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* A stat: its three letters over its level. The full name is the tooltip. */
+.status-stat {
+    display: flex;
+    flex-direction: column;
+    min-width: 92px;
+    padding: 6px 12px;
+    background: #081629;
+    border: 1px solid var(--card-border);
+    font-family: var(--font-system);
+    cursor: default;
+}
+
+.status-stat-abbr {
+    color: var(--text-2);
+    font-size: 11px;
+}
+
+.status-stat-value {
+    font-size: 16px;
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Validation\Validator\Planning;
 
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Planning\CreatePlannedTasksDataInput;
 use App\Domain\DTO\Input\Planning\ListPlanningDataInput;
@@ -12,10 +12,10 @@ use App\Domain\DTO\Input\Planning\PlanningScheduleDataInput;
 use App\Domain\DTO\Input\Planning\SaveTaskPlanningEntryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
+use App\Domain\Validation\Constraint\Category\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Planning\PlanningRangeConstraint;
 use App\Domain\Validation\Constraint\Planning\PlanningScheduleConstraint;
-use App\Domain\Validation\Constraint\Todo\CategoryUsableConstraint;
 use App\Domain\Validation\Validator\Planning\CreatePlannedTasksValidator;
 use App\Domain\Validation\Validator\Planning\CreateTaskPlanningEntryValidator;
 use App\Domain\Validation\Validator\Planning\DeleteTaskPlanningEntryValidator;

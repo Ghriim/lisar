@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Fixtures\Planning;
 
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Planning\PlanningScheduleDataInput;
 use App\Domain\DTO\Input\Planning\SaveTaskPlanningEntryDataInput;
 use App\Domain\Factory\DataModelFactory\Planning\TaskPlanningEntryDataModelFactory;
 use App\Domain\Gateway\Persister\Planning\TaskPlanningEntryPersisterGateway;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
-use App\Fixtures\Todo\CategoryFixtures;
+use App\Fixtures\Category\CategoryFixtures;
 use App\Fixtures\User\UserFixtures;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;

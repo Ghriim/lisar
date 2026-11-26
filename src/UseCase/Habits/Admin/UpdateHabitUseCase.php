@@ -11,6 +11,7 @@ use App\Domain\DTO\Output\Habits\HabitAdminDataOutput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\OutputFactory\Habits\HabitAdminOutputFactory;
 use App\Domain\Gateway\Persister\Habits\HabitPersisterGateway;
+use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
 use App\Domain\Gateway\Provider\Habits\HabitProviderGateway;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Validation\Validator\Habits\UpdateHabitValidator;
@@ -27,6 +28,7 @@ final readonly class UpdateHabitUseCase implements UseCaseInterface
         private UpdateHabitValidator $validator,
         private HabitProviderGateway $habitProviderGateway,
         private HabitPersisterGateway $habitPersisterGateway,
+        private CategoryProviderGateway $categoryProviderGateway,
         private HabitAdminOutputFactory $outputFactory,
     ) {
     }
@@ -42,11 +44,15 @@ final readonly class UpdateHabitUseCase implements UseCaseInterface
             throw new DataModelNotFoundException(HabitDataModel::class);
         }
 
-        $this->validator->validate($currentUser, $input);
+        $category = null === $input->categoryId
+            ? null
+            : $this->categoryProviderGateway->findOneById($input->categoryId);
+
+        $this->validator->validate($currentUser, $input, $category);
 
         $habit->name = $input->name;
-        $habit->icon = $input->icon;
         $habit->sourceKind = $input->sourceKind;
+        $habit->category = $category;
 
         if (HabitSourceRegistry::TRACKER === $input->sourceKind) {
             $habit->trackerKind = $input->trackerKind;

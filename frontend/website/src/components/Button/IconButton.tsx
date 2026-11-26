@@ -14,10 +14,13 @@ interface IconButtonProps {
      */
     subject?: string
     onClick: () => void
-    variant?: 'default' | 'danger'
+    /** `primary` wears the accent: the section's main action — « Créer ». */
+    variant?: 'default' | 'primary' | 'danger'
     disabled?: boolean
     /** Smaller, for a control that sits inside a line of text rather than beside it. */
     small?: boolean
+    /** 44px, framed: a section's action beside its title. */
+    large?: boolean
     /**
      * Set only on a button that folds something away: it tells a screen reader whether what it
      * controls is open, which an icon alone never could.
@@ -33,14 +36,21 @@ export function IconButton({
     variant = 'default',
     disabled = false,
     small = false,
+    large = false,
     expanded,
 }: IconButtonProps) {
     const classes = ['icon-button']
     if (variant === 'danger') {
         classes.push('icon-button-danger')
     }
+    if (variant === 'primary') {
+        classes.push('icon-button-primary')
+    }
     if (small) {
         classes.push('icon-button-small')
+    }
+    if (large) {
+        classes.push('icon-button-large')
     }
 
     return (
@@ -53,7 +63,7 @@ export function IconButton({
                 disabled={disabled}
                 onClick={onClick}
             >
-                <Icon size={small ? 13 : 15} strokeWidth={2} aria-hidden />
+                <Icon size={small ? 13 : large ? 18 : 15} strokeWidth={2} aria-hidden />
             </button>
         </Tooltip>
     )

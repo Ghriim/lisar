@@ -1,15 +1,12 @@
 import { BedDouble } from 'lucide-react'
 import { useState } from 'react'
-import { Loader, Modal, SystemPanel, Tooltip } from '../../components'
+import { Button, Modal, SystemPanel, Tooltip } from '../../components'
 import { SleepPanel } from './SleepPanel'
 import { useSleepToday } from './queries'
-import { formatDuration, timeOf } from './sleepFormat'
+import { formatDuration, nightOf } from './sleepFormat'
 import { moodFor } from './sleepMoods'
 
-/**
- * This morning's night, or nothing. Its length on the line, how one woke and the hours it spanned
- * a size down beneath — a click anywhere on the widget opens the window.
- */
+/** This morning's night, or « Non notée ». Rating it is the card's main action. */
 export function SleepWidget() {
     const today = useSleepToday()
     const [opened, setOpened] = useState(false)
@@ -20,41 +17,29 @@ export function SleepWidget() {
 
     return (
         <>
-            <SystemPanel
-                ariaLabel="Nuit dernière"
-                onActivate={today.isSuccess ? () => setOpened(true) : undefined}
-            >
-                {today.isPending && <Loader />}
-
-                {today.isSuccess && (
-                    <div className="tracker">
-                        <BedDouble size={45} strokeWidth={1.6} className="tracker-icon" aria-hidden />
-                        <div className="tracker-body">
-                            {noted === null ? (
-                                <span className="tracker-note">Nuit non notée</span>
-                            ) : (
-                                <>
-                                    <span className="tracker-value">{formatDuration(noted)}</span>
-                                    <div className="tracker-aux">
-                                        {mood !== undefined && (
-                                            <Tooltip label={mood.label}>
-                                                <mood.icon
-                                                    size={18}
-                                                    strokeWidth={1.8}
-                                                    className="tracker-mood"
-                                                    aria-label={mood.label}
-                                                />
-                                            </Tooltip>
-                                        )}
-                                        <span>
-                                            {timeOf(today.data.bedtimeAt)} → {timeOf(today.data.wakeUpAt)}
-                                        </span>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+            <SystemPanel className="tracker">
+                <div className="tracker-head">
+                    <BedDouble size={36} strokeWidth={1.4} className="tracker-icon" role="img" aria-label="Sommeil" />
+                    <div className="tracker-body">
+                        {noted === null ? (
+                            <span className="tracker-word">Non notée</span>
+                        ) : (
+                            <span className="tracker-value">
+                                {formatDuration(noted)}
+                                {mood !== undefined && (
+                                    <Tooltip label={mood.label}>
+                                        <mood.icon size={20} strokeWidth={1.6} aria-label={mood.label} />
+                                    </Tooltip>
+                                )}
+                            </span>
+                        )}
+                        {today.data !== undefined && <span className="tracker-aux">{nightOf(today.data.day)}</span>}
                     </div>
-                )}
+                </div>
+
+                <Button disabled={!today.isSuccess} onClick={() => setOpened(true)}>
+                    Noter ma nuit
+                </Button>
             </SystemPanel>
 
             {opened && today.isSuccess && (

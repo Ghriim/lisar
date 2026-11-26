@@ -11,7 +11,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Factory\DataModelFactory\Planning\TaskPlanningEntryDataModelFactory;
 use App\Domain\Factory\OutputFactory\Planning\TaskPlanningOutputFactory;
 use App\Domain\Gateway\Persister\Planning\TaskPlanningEntryPersisterGateway;
-use App\Domain\Gateway\Provider\Todo\CategoryProviderGateway;
+use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
 use App\Domain\Validation\Validator\Planning\CreateTaskPlanningEntryValidator;
 use App\UseCase\UseCaseInterface;
 

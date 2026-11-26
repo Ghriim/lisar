@@ -1,12 +1,12 @@
 import { CalendarDays, Check, RotateCcw, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import type { Habit } from '../../api/types'
-import { EmptyState, IconButton, ListItem, Loader, Modal, SystemPanel } from '../../components'
+import { DataList, IconButton, ListItem, Modal, SystemPanel } from '../../components'
+import { groupByCategoryIfAny } from '../categories/groupByCategory'
 import { formatHabitRhythm } from '../planning/planningFormat'
 import { useHabitPlanningEntries } from '../planning/queries'
 import { HabitCatalog } from './HabitCatalog'
 import { HabitSchedule } from './HabitSchedule'
-import { iconFor } from './habitIcons'
 import { HabitStreak } from './HabitStreak'
 import { useCompleteHabit, useHabits, useUncompleteHabit } from './queries'
 
@@ -26,26 +26,24 @@ export function HabitPanel() {
 
     const pending = complete.isPending || uncomplete.isPending
 
+    // Under their category, like the tasks.
+    const groups = groupByCategoryIfAny(habits.data ?? [], (habit) => habit.category)
+
     return (
         <SystemPanel
             title="Habitudes"
             actions={<IconButton icon={Settings2} label="Gérer" onClick={() => setManaging(true)} />}
         >
-            {habits.isPending && <Loader />}
-
-            {habits.isSuccess && habits.data.length === 0 && (
-                <EmptyState>Aucune habitude suivie. Ouvre « Gérer » pour en choisir.</EmptyState>
-            )}
-
-            {habits.isSuccess &&
-                habits.data.map((habit) => {
-                    const Icon = iconFor(habit.icon)
-
+            <DataList<Habit>
+                groups={groups}
+                keyOf={(habit) => habit.habitId}
+                loading={habits.isPending}
+                error={habits.isError ? 'Le System ne répond pas. Réessaie dans un instant.' : null}
+                emptyText="Aucune habitude suivie. Ouvre « Gérer » pour en choisir."
+                renderItem={(habit) => {
                     return (
                         <ListItem
-                            key={habit.habitId}
                             title={habit.name}
-                            icon={<Icon size={26} strokeWidth={1.6} aria-hidden />}
                             description={formatHabitRhythm(habit.habitId, planning.data ?? [])}
                             footer={<HabitStreak days={habit.days} />}
                             actions={
@@ -73,7 +71,8 @@ export function HabitPanel() {
                             }
                         />
                     )
-                })}
+                }}
+            />
 
             {scheduling !== null && (
                 <Modal title={`Planifier · ${scheduling.name}`} onClose={() => setScheduling(null)}>

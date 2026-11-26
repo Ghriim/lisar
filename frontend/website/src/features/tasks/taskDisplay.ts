@@ -48,23 +48,38 @@ export function formatDay(day: string): string {
     return `${date}/${month}/${year}`
 }
 
-/**
- * The list arrives sorted by category; this is what turns that order into visible groups without
- * re-sorting anything the API already decided.
- */
-export function groupByCategory(tasks: Task[]): { label: string; tasks: Task[] }[] {
-    const groups: { label: string; tasks: Task[] }[] = []
+/** "2026-09-30" said short, on a row: « 30/09 ». */
+export function formatDayShort(day: string): string {
+    const [, month, date] = day.split('-')
 
-    for (const task of tasks) {
-        const label = task.category?.label ?? 'Sans catégorie'
-        const current = groups.at(-1)
+    return `${date}/${month}`
+}
 
-        if (current !== undefined && current.label === label) {
-            current.tasks.push(task)
-        } else {
-            groups.push({ label, tasks: [task] })
-        }
-    }
+const WEEKDAYS_SHORT = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.']
 
-    return groups
+/** A day ahead, with its weekday: « ven. 28/11 ». */
+export function formatDayWithWeekday(day: string): string {
+    const [year, month, date] = day.split('-').map(Number)
+
+    return `${WEEKDAYS_SHORT[new Date(year, month - 1, date).getDay()]} ${formatDayShort(day)}`
+}
+
+/** Today, as the heading of its section says it: « mer. 25 nov. ». */
+export function formatTodayHeading(now: Date = new Date()): string {
+    return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).format(now)
+}
+
+/** Whether a task belongs to « Aujourd'hui »: still open, and due today or before. */
+export function isForToday(task: Task, day: string = today()): boolean {
+    return task.state !== 'done' && task.dueDate !== null && task.dueDate <= day
+}
+
+/** A task of today's that was ticked off today — it stays in « Aujourd'hui », ticked. */
+export function isDoneToday(task: Task, day: string = today()): boolean {
+    return task.state === 'done' && task.dueDate !== null && task.dueDate <= day && task.completedAt !== null && task.completedAt.slice(0, 10) === day
+}
+
+/** « 1 tâche », « 2 tâches ». */
+export function countTasks(count: number): string {
+    return count <= 1 ? `${count} tâche` : `${count} tâches`
 }

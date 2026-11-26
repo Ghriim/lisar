@@ -6,7 +6,6 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Habits;
 
 use App\Domain\DTO\Input\Habits\CreateHabitDataInput;
 use App\Domain\Exception\ValidationException;
-use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Registry\Habits\HabitTrackerRegistry;
 use App\Domain\Validation\Constraint\Common\IsAdminConstraint;
@@ -34,7 +33,8 @@ final class CreateHabitValidatorTest extends TestCase
     {
         $this->validatorUnderTest()->validate(
             $this->currentAdmin(),
-            new CreateHabitDataInput('Lire', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL),
+            new CreateHabitDataInput('Lire', HabitSourceRegistry::MANUAL),
+            null,
         );
 
         $this->expectNotToPerformAssertions();
@@ -46,11 +46,10 @@ final class CreateHabitValidatorTest extends TestCase
         try {
             $this->validatorUnderTest()->validate($this->anyCurrentUser(), new CreateHabitDataInput(
                 'Marcher',
-                HabitIconRegistry::RUN,
                 HabitSourceRegistry::TRACKER,
                 HabitTrackerRegistry::STEPS,
                 5000,
-            ));
+            ), null);
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateHabitValidator::ERROR_CODE, $exception->errorCode);
@@ -62,27 +61,12 @@ final class CreateHabitValidatorTest extends TestCase
     {
         $this->validatorUnderTest()->validate($this->currentAdmin(), new CreateHabitDataInput(
             'Marcher',
-            HabitIconRegistry::RUN,
             HabitSourceRegistry::TRACKER,
             HabitTrackerRegistry::STEPS,
             5000,
-        ));
+        ), null);
 
         $this->expectNotToPerformAssertions();
-    }
-
-    public function testItRefusesAnUnknownIcon(): void
-    {
-        try {
-            $this->validatorUnderTest()->validate(
-                $this->currentAdmin(),
-                new CreateHabitDataInput('Lire', 'unicorn', HabitSourceRegistry::MANUAL),
-            );
-            self::fail('Expected ValidationException');
-        } catch (ValidationException $exception) {
-            self::assertSame(CreateHabitValidator::ERROR_CODE, $exception->errorCode);
-            self::assertArrayHasKey('icon', $exception->violations);
-        }
     }
 
     /** A tracker habit that names no tracker and no mark is incoherent — and both are reported at once. */
@@ -91,7 +75,8 @@ final class CreateHabitValidatorTest extends TestCase
         try {
             $this->validatorUnderTest()->validate(
                 $this->currentAdmin(),
-                new CreateHabitDataInput('Marcher', HabitIconRegistry::RUN, HabitSourceRegistry::TRACKER),
+                new CreateHabitDataInput('Marcher', HabitSourceRegistry::TRACKER),
+                null,
             );
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
@@ -105,7 +90,8 @@ final class CreateHabitValidatorTest extends TestCase
         try {
             $this->validatorUnderTest()->validate(
                 $this->currentAdmin(),
-                new CreateHabitDataInput('', HabitIconRegistry::BOOK, HabitSourceRegistry::MANUAL),
+                new CreateHabitDataInput('', HabitSourceRegistry::MANUAL),
+                null,
             );
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {

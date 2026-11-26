@@ -5,9 +5,8 @@ goal, glanced at rather than opened.
 
 ## The widget
 
-A footprint, the count so far and the day's goal, and a progress bar between them. One icon opens
-the window where the number is set: a pencil to correct a count already recorded, a plus to record
-the first of the day.
+A footprint, the count so far (`0 pas`) and the goal under it (`objectif 5000`), a bar of six
+segments, and the button **`Saisir mes pas`**, which opens the window where the number is set.
 
 That is all it shows. Like the others, the point of the widget is to be glanceable and to stay out
 of the way of the task list it sits next to.

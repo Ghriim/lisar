@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\DTO\DataModel\Habits;
 
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\DataModelInterface;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
@@ -31,10 +32,6 @@ class HabitDataModel implements DataModelInterface
     #[ORM\Column(length: 128)]
     public string $name;
 
-    // One of HabitIconRegistry's codes; each front end draws its own glyph for it.
-    #[ORM\Column(length: 32)]
-    public string $icon;
-
     // manual | tracker — see HabitSourceRegistry.
     #[ORM\Column(length: 16)]
     public string $sourceKind;
@@ -46,6 +43,13 @@ class HabitDataModel implements DataModelInterface
     // The figure the tracker must reach that day for the habit to count as kept; null when manual.
     #[ORM\Column(nullable: true)]
     public ?int $trackerThreshold = null;
+
+    // Always a common category: the catalogue is everyone's, so a personal label has no place on
+    // it. Its icon is the habit's — a habit has none of its own. RESTRICT, like a task's: a
+    // category still in use cannot be deleted.
+    #[ORM\ManyToOne(targetEntity: CategoryDataModel::class)]
+    #[ORM\JoinColumn(name: 'category_id', nullable: true, onDelete: 'RESTRICT')]
+    public ?CategoryDataModel $category = null;
 
     // Removing a habit clears this rather than dropping the row, so subscribed history survives.
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]

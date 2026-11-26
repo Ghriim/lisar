@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\DTO\DataModel\Todo;
 
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\DataModelInterface;
 use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;

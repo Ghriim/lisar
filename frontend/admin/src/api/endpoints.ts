@@ -1,6 +1,7 @@
 import { request, setAccessToken } from './client'
 import type {
     Category,
+    CategoryPayload,
     Equipment,
     EquipmentPayload,
     Habit,
@@ -93,12 +94,12 @@ export function fetchCategories(): Promise<Category[]> {
     return request<Category[]>('/api/admin/categories')
 }
 
-export function createCategory(label: string): Promise<Category> {
-    return request<Category>('/api/admin/categories', { method: 'POST', body: { label } })
+export function createCategory(payload: CategoryPayload): Promise<Category> {
+    return request<Category>('/api/admin/categories', { method: 'POST', body: payload })
 }
 
-export function updateCategory(id: number, label: string): Promise<Category> {
-    return request<Category>(`/api/admin/categories/${id}`, { method: 'PUT', body: { label } })
+export function updateCategory(id: number, payload: CategoryPayload): Promise<Category> {
+    return request<Category>(`/api/admin/categories/${id}`, { method: 'PUT', body: payload })
 }
 
 export function deleteCategory(id: number): Promise<void> {

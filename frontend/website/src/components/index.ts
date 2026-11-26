@@ -8,7 +8,9 @@
  * none of them sits at the root.
  */
 export { Button, type ButtonVariant } from './Button/Button'
+export { CheckToggle } from './Button/CheckToggle'
 export { IconButton } from './Button/IconButton'
+export { TextButton } from './Button/TextButton'
 
 export { ChoiceField, type Choice, type ChoiceGroup } from './Form/ChoiceField'
 export { DateField } from './Form/DateField'
@@ -29,11 +31,13 @@ export { useViolations, type Violations } from './Form/useViolations'
 
 export { DataList, type ListGroup } from './List/DataList'
 export { DefinitionList, type Definition } from './List/DefinitionList'
+export { FoldGroup } from './List/FoldGroup'
 export { ListItem } from './List/ListItem'
 
 export { ConfirmDialog } from './Modal/ConfirmDialog'
 export { Modal } from './Modal/Modal'
 
+export { IconLink } from './Navigation/IconLink'
 export { LinkChip } from './Navigation/LinkChip'
 export { SideNav, type NavItem } from './Navigation/SideNav'
 export { Tabs, type Tab } from './Navigation/Tabs'
@@ -44,6 +48,8 @@ export { IndexBadge } from './IndexBadge'
 export { Row, Stack } from './Layout'
 export { AuthShell, PageShell } from './PageShell'
 export { ProgressBar } from './ProgressBar'
+export { SectionHeading } from './SectionHeading'
+export { SegmentedBar } from './SegmentedBar'
 export { SystemPanel } from './SystemPanel'
 export { Tooltip } from './Tooltip'
 export { WeekCalendar, type CalendarDay, type CalendarItem } from './WeekCalendar'

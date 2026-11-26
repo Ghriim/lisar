@@ -54,7 +54,6 @@ trait PlanningEntryTrait
         $habit = new HabitDataModel();
         $habit->id = $habitId;
         $habit->name = 'Lire';
-        $habit->icon = 'book';
         $habit->sourceKind = HabitSourceRegistry::MANUAL;
 
         $subscription = new HabitSubscriptionDataModel();

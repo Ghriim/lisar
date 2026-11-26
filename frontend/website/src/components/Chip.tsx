@@ -4,14 +4,25 @@ interface ChipProps {
     children: ReactNode
     /** Overrides the chip's own colour: a priority carries its own. */
     colour?: string
-    tone?: 'default' | 'danger'
+    /**
+     * `danger`: late. `xp`: amber, for high priority. `filled`: a category, set on a fill rather
+     * than in a frame.
+     */
+    tone?: 'default' | 'danger' | 'xp' | 'filled'
+}
+
+const TONES: Record<NonNullable<ChipProps['tone']>, string> = {
+    default: 'chip',
+    danger: 'chip chip-overdue',
+    xp: 'chip chip-xp',
+    filled: 'chip chip-filled',
 }
 
 /** The small pill the app says everything in: a state, a rank, a due date. */
 export function Chip({ children, colour, tone = 'default' }: ChipProps) {
     return (
         <span
-            className={tone === 'danger' ? 'chip chip-overdue' : 'chip'}
+            className={TONES[tone]}
             style={colour === undefined ? undefined : ({ color: colour } as CSSProperties)}
         >
             {children}

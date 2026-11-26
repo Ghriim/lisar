@@ -67,11 +67,10 @@ level lost when an action is taken back is not announced.
 **It comes with the gains**: nothing earns experience yet, so nothing is announced. The answer of
 the write that earned it will say which levels went up, enriched through a Symfony event.
 
-## In the menu
+## Its entry
 
-The global level sits under the app's name, `Niv. 1`, with a thin bar towards the next; folded,
-the menu shows the number alone. Clicking it opens `/statut` — it is the window's entry, there is
-no other ([navigation](navigation.md)).
+The menu no longer carries the level. The [dashboard](dashboard.md)'s status card shows it, and
+opens `/statut`: that card is the window's only entry.
 
 ## Not here yet
 

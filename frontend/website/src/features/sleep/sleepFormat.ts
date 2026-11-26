@@ -17,3 +17,12 @@ export function formatDuration(durationInMinutes: number): string {
 export function timeOf(moment: string | null): string {
     return moment === null ? '' : moment.slice(11, 16)
 }
+
+const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+
+/** A night named by the day one wakes on, as the API counts it: « nuit de mercredi ». */
+export function nightOf(day: string): string {
+    const [year, month, date] = day.split('-').map(Number)
+
+    return `nuit de ${WEEKDAYS[new Date(year, month - 1, date).getDay()]}`
+}

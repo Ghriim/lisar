@@ -7,7 +7,6 @@ namespace App\Tests\Integration\UseCase\Habits\Admin;
 use App\Domain\DTO\DataModel\Habits\HabitDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Habits\UpdateHabitDataInput;
-use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Fixtures\Habits\HabitFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
@@ -41,12 +40,28 @@ final class UpdateHabitUseCaseTest extends KernelTestCase
         $output = $this->update->execute(
             $this->currentAdmin(),
             $walk->id ?? 0,
-            new UpdateHabitDataInput('Bouger', HabitIconRegistry::RUN, HabitSourceRegistry::MANUAL),
+            new UpdateHabitDataInput('Bouger', HabitSourceRegistry::MANUAL),
         );
 
         self::assertSame(HabitSourceRegistry::MANUAL, $output->sourceKind);
         self::assertNull($output->trackerKind);
         self::assertNull($output->trackerThreshold);
+    }
+
+    /** The update is the whole habit: a category left out of the payload is taken off. */
+    public function testUpdatingAHabitWithoutACategoryTakesItsCategoryOff(): void
+    {
+        $this->loadFixtures(HabitFixtures::class);
+        $reading = $this->getReference(HabitFixtures::READING, HabitDataModel::class);
+        self::assertNotNull($reading->category);
+
+        $output = $this->update->execute(
+            $this->currentAdmin(),
+            $reading->id ?? 0,
+            new UpdateHabitDataInput('Lire', HabitSourceRegistry::MANUAL),
+        );
+
+        self::assertNull($output->category);
     }
 
     public function testUpdatingAHabitStaysWithinItsQueryBudget(): void
@@ -56,7 +71,7 @@ final class UpdateHabitUseCaseTest extends KernelTestCase
 
         $this->assertQueryCountAtMost(
             fn () => $this->currentAdmin(),
-            fn (UserDataModel $currentUser) => $this->update->execute($currentUser, $walkId, new UpdateHabitDataInput('Bouger', HabitIconRegistry::RUN, HabitSourceRegistry::MANUAL)),
+            fn (UserDataModel $currentUser) => $this->update->execute($currentUser, $walkId, new UpdateHabitDataInput('Bouger', HabitSourceRegistry::MANUAL)),
         );
     }
 }

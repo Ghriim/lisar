@@ -1,9 +1,10 @@
-import { ArrowLeft, ArrowRight, Dumbbell, ListChecks, Plus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarCheck, Dumbbell, ListChecks, Plus } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import type { HabitPlanningSlot } from '../api/types'
 import {
     Alert,
     type CalendarDay,
+    DataList,
     Form,
     IconButton,
     Loader,
@@ -14,7 +15,8 @@ import {
     SystemPanel,
     WeekCalendar,
 } from '../components'
-import { iconFor } from '../features/habits/habitIcons'
+import { categoryIconOf, iconForCode } from '../features/categories/categoryIcons'
+import { groupByCategoryIfAny } from '../features/categories/groupByCategory'
 import { useCompleteHabit, useHabits, useUncompleteHabit } from '../features/habits/queries'
 import { PlanningEntryDetail } from '../features/planning/PlanningEntryDetail'
 import { PlanningEntryForm } from '../features/planning/PlanningEntryForm'
@@ -68,6 +70,7 @@ export function PlanningPage() {
     const uncompleteHabit = useUncompleteHabit()
     const completing = completeTask.isPending || reopenTask.isPending || completeHabit.isPending || uncompleteHabit.isPending
     const completionError = failureOf(completeTask.error ?? reopenTask.error ?? completeHabit.error ?? uncompleteHabit.error)
+    const categoryOfHabit = new Map((kept.data ?? []).map((habit) => [habit.habitId, habit.category]))
     const manualHabits = new Set((kept.data ?? []).filter((habit) => habit.sourceKind === 'manual').map((habit) => habit.habitId))
     const [panel, setPanel] = useState<Panel>(null)
     const close = () => setPanel(null)
@@ -122,7 +125,7 @@ export function PlanningPage() {
                 durationInMinutes: entry.schedule.durationInMinutes,
                 content: (
                     <PlanningSlotCard
-                        icon={ListChecks}
+                        icon={categoryIconOf(entry.category) ?? ListChecks}
                         title={entry.title}
                         time={formatTimeSpan(entry.schedule)}
                         state={state}
@@ -171,7 +174,8 @@ export function PlanningPage() {
     // Listed in the day's window, a habit also says the days it counts: the card on the grid has no room for it.
     const habitCard = ({ slot, entry, habit }: (typeof habitSlots)[number], withRhythm = false) => (
         <PlanningSlotCard
-            icon={iconFor(habit.habitIcon)}
+            // Its category's icon; a habit in none keeps the planning's mark for a habit.
+            icon={iconForCode(habit.habitIcon) ?? CalendarCheck}
             title={habit.habitName}
             time={entry === undefined ? null : formatTimeSpan(entry.schedule)}
             rhythm={withRhythm ? formatHabitRhythm(slot.habitId, habits.data?.entries ?? []) : null}
@@ -262,11 +266,13 @@ export function PlanningPage() {
                         {panel.kind === 'create' && <CreateEntry today={todayKey} onDone={close} />}
 
                         {panel.kind === 'habits' && (
-                            <Stack>
-                                {untimedHabitsOf(panel.day).map((one) => (
-                                    <div key={`${one.slot.entryId ?? 'unplanned'}-${one.slot.habitId}`}>{habitCard(one, true)}</div>
-                                ))}
-                            </Stack>
+                            // Under their category, as on the dashboard: the category comes with the kept habit.
+                            <DataList<(typeof habitSlots)[number]>
+                                groups={groupByCategoryIfAny(untimedHabitsOf(panel.day), (one) => categoryOfHabit.get(one.slot.habitId) ?? null)}
+                                keyOf={(one) => `${one.slot.entryId ?? 'unplanned'}-${one.slot.habitId}`}
+                                emptyText="Aucune habitude ce jour-là."
+                                renderItem={(one) => habitCard(one, true)}
+                            />
                         )}
 
                         {panel.kind === 'view' && (

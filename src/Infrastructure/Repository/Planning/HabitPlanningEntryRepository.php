@@ -28,6 +28,9 @@ final class HabitPlanningEntryRepository extends ServiceEntityRepository impleme
             ->addSelect('subscription')
             ->innerJoin('subscription.habit', 'habit')
             ->addSelect('habit')
+            // The habit's icon is its category's.
+            ->leftJoin('habit.category', 'category')
+            ->addSelect('category')
             ->andWhere('entry.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
@@ -42,6 +45,9 @@ final class HabitPlanningEntryRepository extends ServiceEntityRepository impleme
             ->addSelect('subscription')
             ->innerJoin('subscription.habit', 'habit')
             ->addSelect('habit')
+            // The habit's icon is its category's.
+            ->leftJoin('habit.category', 'category')
+            ->addSelect('category')
             ->andWhere('entry.owner = :owner')
             ->andWhere('subscription.isActive = true')
             ->andWhere('habit.isActive = true')

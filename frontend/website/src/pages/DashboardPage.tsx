@@ -1,8 +1,10 @@
 import { useReloadOnDayChange } from '../components'
 import { HabitPanel } from '../features/habits/HabitPanel'
+import { TrainingToday } from '../features/planning/TrainingToday'
 import { HydrationWidget } from '../features/hydration/HydrationWidget'
 import { useHydrationToday } from '../features/hydration/queries'
 import { SleepWidget } from '../features/sleep/SleepWidget'
+import { StatusCard } from '../features/status/StatusCard'
 import { StepWidget } from '../features/steps/StepWidget'
 import { TaskList } from '../features/tasks/TaskList'
 import { WeightWidget } from '../features/weight/WeightWidget'
@@ -17,9 +19,13 @@ export function DashboardPage() {
     const hydration = useHydrationToday()
     useReloadOnDayChange(hydration.data?.day, hydration.refetch)
 
+    // Top to bottom: the status, the trackers, then the tasks — two thirds — beside a column for
+    // the training and the habits (docs/design/dashboard-v2-spec.md).
     return (
-        <>
-            <div className="tracker-row" style={{ marginBottom: 'calc(var(--step) * 3)' }}>
+        <div className="dashboard">
+            <StatusCard />
+
+            <div className="tracker-row">
                 <HydrationWidget />
                 <StepWidget />
                 <SleepWidget />
@@ -28,8 +34,11 @@ export function DashboardPage() {
 
             <div className="main-columns">
                 <TaskList />
-                <HabitPanel />
+                <div className="side-column">
+                    <TrainingToday />
+                    <HabitPanel />
+                </div>
             </div>
-        </>
+        </div>
     )
 }

@@ -10,7 +10,6 @@ use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
 use App\Domain\DTO\Input\Habits\CreateHabitDataInput;
 use App\Domain\DTO\Input\Training\AddWorkoutSetDataInput;
 use App\Domain\DTO\Input\Training\UpdateWorkoutDataInput;
-use App\Domain\Registry\Habits\HabitIconRegistry;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Registry\Habits\HabitTrackerRegistry;
 use App\Fixtures\Training\MovementFixtures;
@@ -42,7 +41,7 @@ final class SyncWorkoutHabitsEventHandlerTest extends KernelTestCase
         $this->loadWorkoutFixtures();
 
         $this->habitId = $this->useCase(CreateHabitUseCase::class)->execute($this->currentAdmin(), new CreateHabitDataInput(
-            'Une séance', HabitIconRegistry::DUMBBELL, HabitSourceRegistry::TRACKER, HabitTrackerRegistry::WORKOUT, 1,
+            'Une séance', HabitSourceRegistry::TRACKER, HabitTrackerRegistry::WORKOUT, 1,
         ))->id;
         $this->useCase(SubscribeHabitUseCase::class)->execute($this->currentUser($this->aliceId), $this->habitId);
     }

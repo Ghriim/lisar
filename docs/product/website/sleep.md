@@ -20,8 +20,11 @@ today, and showing them would be showing a number that has stopped being true.
 
 So the widget holds one of two things:
 
-- nothing noted yet, and the way to note it;
+- « Non notée »;
 - the night's **duration** and the **face** that was picked, if one was.
+
+Under it, the night it is: `nuit de mercredi`, named by the day one wakes on. At the bottom, the
+card's main button, **`Noter ma nuit`**, opens the window.
 
 ## The window
 

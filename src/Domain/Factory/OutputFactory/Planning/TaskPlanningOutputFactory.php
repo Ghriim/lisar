@@ -10,7 +10,7 @@ use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\Output\Planning\TaskPlanningDataOutput;
 use App\Domain\DTO\Output\Planning\TaskPlanningEntryDataOutput;
 use App\Domain\DTO\Output\Planning\TaskPlanningSlotDataOutput;
-use App\Domain\Factory\OutputFactory\Todo\CategoryOutputFactory;
+use App\Domain\Factory\OutputFactory\Category\CategoryOutputFactory;
 use DateTimeImmutable;
 
 final readonly class TaskPlanningOutputFactory

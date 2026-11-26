@@ -1,5 +1,4 @@
 import { LogOut, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 
 export interface NavItem {
@@ -16,8 +15,6 @@ interface SideNavProps {
     /** Pushed to the bottom: everything around them. The way out always comes last. */
     secondary: NavItem[]
     collapsed: boolean
-    /** Under the app's name: what the person stands at — their level. */
-    badge?: ReactNode
     /** Absent when the width decides on its own — a phone always gets icons only. */
     onToggle?: () => void
     onSignOut: () => void
@@ -27,7 +24,7 @@ interface SideNavProps {
  * The menu down the left edge. Folded, it keeps only the icons, and each one names itself on
  * hover like any other icon-only control.
  */
-export function SideNav({ primary, secondary, collapsed, badge, onToggle, onSignOut }: SideNavProps) {
+export function SideNav({ primary, secondary, collapsed, onToggle, onSignOut }: SideNavProps) {
     return (
         <nav className={collapsed ? 'side-nav side-nav-collapsed' : 'side-nav'} aria-label="Menu principal">
             <div className="side-nav-head">
@@ -52,8 +49,6 @@ export function SideNav({ primary, secondary, collapsed, badge, onToggle, onSign
                     />
                 )}
             </div>
-
-            {badge}
 
             <ul className="side-nav-list">
                 {primary.map((item) => (

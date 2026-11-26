@@ -29,6 +29,8 @@ export interface Category {
     id: number
     label: string
     isPersonal: boolean
+    /** A common category's icon code — the icon of what is filed in it; null on a personal one. */
+    icon: string | null
 }
 
 export type TaskState = 'to_do' | 'in_progress' | 'ready_to_close' | 'done'
@@ -147,11 +149,11 @@ export interface HabitDay {
 export interface Habit {
     habitId: number
     name: string
-    /** One of the codes the API knows; this front end draws its own glyph for it. */
-    icon: string
     /** A manual habit is ticked by hand; a tracker habit is kept on its own. */
     sourceKind: HabitSource
     isCompletedToday: boolean
+    /** Always a common one, set by the back-office; or none. */
+    category: Category | null
     /** Last seven days, oldest first, today last. */
     days: HabitDay[]
 }
@@ -160,10 +162,10 @@ export interface Habit {
 export interface HabitCatalogItem {
     habitId: number
     name: string
-    icon: string
     sourceKind: HabitSource
     trackerKind: string | null
     trackerThreshold: number | null
+    category: Category | null
     isSubscribed: boolean
 }
 
@@ -484,7 +486,8 @@ export interface HabitPlanningEntry {
     id: number
     habitId: number
     habitName: string
-    habitIcon: string
+    /** The habit's category's icon code; null when it sits in none. */
+    habitIcon: string | null
     schedule: PlanningSchedule
 }
 

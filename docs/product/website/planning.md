@@ -107,9 +107,9 @@ today; nothing else is chosen for the person. A duration is asked only once a st
 Narrower than a laptop, the seven columns stack, one day under the other, each listing its dates
 in order rather than on an hour grid.
 
-The plus asks between the three kinds. A task entry's dates show the task list's icon and the
-task's title; an open task of a day gone by shows as « En retard ». A habit entry's dates show the
-habit's icon and name; a day kept unplanned shows as « Bonus », with no eye, since no entry asks
+The plus asks between the three kinds. A task entry's dates show **its category's icon** — the task list's
+when it has none, or only a personal one — and the task's title; an open task of a day gone by shows as « En retard ». A habit entry's dates show **its
+category's icon** — the habits' calendar mark when it has none — and the habit's name; a day kept unplanned shows as « Bonus », with no eye, since no entry asks
 for it.
 
 ## A training entry
@@ -169,8 +169,9 @@ are not part of a model.
   were kept (bonus days included) out of how many the day holds. Every habit is planned, most of
   them every day: one card each would bury the rest of the week. The card's border says how the
   day went — green when all were kept, red when one was missed, the accent otherwise — and its eye
-  opens a window listing them, each with its state, **the days it counts** (« quotidien »,
-  « lundi et jeudi »), and its own eye on its entry. The entry opens in the same window,
+  opens a window listing them **under their category**, as on the dashboard (flat while none has
+  one), each with its state, **the days it counts** (« quotidien », « lundi, jeudi »), and its own
+  eye on its entry. The entry opens in the same window,
   which changes what it holds rather than closing and opening again. **A habit planned
   at an hour keeps its own card** on the hour grid, like any timed entry.
 

@@ -1,0 +1,128 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Integration\UseCase\Category;
+
+use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Input\Category\CreateCategoryDataInput;
+use App\Domain\Exception\ValidationException;
+use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
+use App\Domain\Validation\Constraint\Category\CategoryLabelAvailableConstraint;
+use App\Fixtures\Category\CategoryFixtures;
+use App\Fixtures\User\UserFixtures;
+use App\Tests\Integration\LoadFixturesTrait;
+use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\SignedInUserTrait;
+use App\UseCase\Category\CreateCategoryUseCase;
+use App\UseCase\Category\ListCategoriesUseCase;
+use LogicException;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+
+final class CreateCategoryUseCaseTest extends KernelTestCase
+{
+    use LoadFixturesTrait;
+    use QueryCountTrait;
+    use SignedInUserTrait;
+
+    private CreateCategoryUseCase $useCase;
+    private CategoryProviderGateway $categoryProviderGateway;
+    private UserDataModel $alice;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->useCase = self::getContainer()->get(CreateCategoryUseCase::class);
+        $this->categoryProviderGateway = self::getContainer()->get(CategoryProviderGateway::class);
+
+        $this->loadFixtures(CategoryFixtures::class);
+
+        $this->alice = $this->getReference(UserFixtures::ALICE, UserDataModel::class);
+    }
+
+    public function testItCreatesAPersonalCategory(): void
+    {
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateCategoryDataInput('Sport'));
+
+        self::assertSame('Sport', $output->label);
+        self::assertTrue($output->isPersonal);
+
+        // Re-read through the gateway: assert it was really persisted, and to the right account.
+        $category = $this->categoryProviderGateway->findOneById($output->id);
+        self::assertNotNull($category);
+        self::assertSame($this->alice->id, $category->owner?->id);
+    }
+
+    public function testItAppearsInTheAccountsListAndNowhereElse(): void
+    {
+        $this->useCase->execute($this->currentUser($this->aliceId()), new CreateCategoryDataInput('Sport'));
+
+        $list = self::getContainer()->get(ListCategoriesUseCase::class);
+        $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
+
+        self::assertContains('Sport', array_map(
+            static fn ($category) => $category->label,
+            $list->execute($this->currentUser($this->aliceId())),
+        ));
+        self::assertNotContains('Sport', array_map(
+            static fn ($category) => $category->label,
+            $list->execute($this->currentUser($admin->id ?? 0)),
+        ));
+    }
+
+    public function testItRefusesALabelAReferenceCategoryAlreadyHas(): void
+    {
+        $this->assertRejects('Home');
+    }
+
+    public function testItRefusesALabelTheAccountAlreadyHas(): void
+    {
+        $this->useCase->execute($this->currentUser($this->aliceId()), new CreateCategoryDataInput('Sport'));
+
+        $this->assertRejects('Sport');
+    }
+
+    /**
+     * Two accounts may each have a category called the same thing: the lists never meet.
+     */
+    public function testTwoAccountsMayUseTheSameLabel(): void
+    {
+        $admin = $this->getReference(UserFixtures::ADMIN, UserDataModel::class);
+
+        $this->useCase->execute($this->currentUser($this->aliceId()), new CreateCategoryDataInput('Sport'));
+        $output = $this->useCase->execute($this->currentUser($admin->id ?? 0), new CreateCategoryDataInput('Sport'));
+
+        self::assertSame('Sport', $output->label);
+    }
+
+    public function testItRejectsABlankLabel(): void
+    {
+        $this->assertRejects('', 'label_required');
+    }
+
+    public function testCreatingACategoryStaysWithinItsQueryBudget(): void
+    {
+        $aliceId = $this->aliceId();
+
+        $this->assertQueryCountAtMost(
+            fn () => $this->currentUser($aliceId),
+            fn (UserDataModel $currentUser) => $this->useCase->execute($currentUser, new CreateCategoryDataInput('Sport')),
+        );
+    }
+
+    private function assertRejects(string $label, string $errorCode = CategoryLabelAvailableConstraint::LABEL_ALREADY_USED): void
+    {
+        try {
+            $this->useCase->execute($this->currentUser($this->aliceId()), new CreateCategoryDataInput($label));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertContains($errorCode, $exception->violations['label']);
+        }
+    }
+
+    private function aliceId(): int
+    {
+        return $this->alice->id ?? throw new LogicException('Alice was not seeded.');
+    }
+}

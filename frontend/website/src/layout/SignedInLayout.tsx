@@ -3,13 +3,12 @@ import { useState, useSyncExternalStore } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { type NavItem, PageShell, SideNav } from '../components'
-import { LevelBadge } from '../features/status/LevelBadge'
 
 const PRIMARY: NavItem[] = [
-    { to: '/', label: 'Dashboard', icon: House },
-    { to: '/todo', label: 'Todo', icon: ListChecks },
+    { to: '/', label: 'Tableau de bord', icon: House },
+    { to: '/todo', label: 'Tâches', icon: ListChecks },
     { to: '/planning', label: 'Planning', icon: CalendarDays },
-    { to: '/workouts', label: 'Workouts', icon: Dumbbell, alsoUnder: ['/routines'] },
+    { to: '/workouts', label: 'Entraînements', icon: Dumbbell, alsoUnder: ['/routines'] },
     { to: '/records', label: 'Records', icon: Trophy },
     { to: '/statistiques', label: 'Statistiques', icon: ChartColumn },
 ]
@@ -43,7 +42,6 @@ export function SignedInLayout() {
                     primary={PRIMARY}
                     secondary={SECONDARY}
                     collapsed={narrow || collapsed}
-                    badge={<LevelBadge collapsed={narrow || collapsed} />}
                     onToggle={narrow ? undefined : toggle}
                     onSignOut={() => void signOut()}
                 />

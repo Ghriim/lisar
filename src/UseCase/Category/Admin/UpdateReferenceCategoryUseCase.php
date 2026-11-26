@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\UseCase\Category\Admin;
+
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
+use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\DTO\Input\Category\Admin\UpdateReferenceCategoryDataInput;
+use App\Domain\DTO\Output\Category\CategoryDataOutput;
+use App\Domain\Exception\ValidationException;
+use App\Domain\Factory\OutputFactory\Category\CategoryOutputFactory;
+use App\Domain\Gateway\Persister\Category\CategoryPersisterGateway;
+use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
+use App\Domain\Validation\Validator\Category\Admin\UpdateReferenceCategoryValidator;
+use App\Infrastructure\Exception\DataModelNotFoundException;
+use App\UseCase\UseCaseInterface;
+
+final readonly class UpdateReferenceCategoryUseCase implements UseCaseInterface
+{
+    public function __construct(
+        private UpdateReferenceCategoryValidator $validator,
+        private CategoryProviderGateway $categoryProviderGateway,
+        private CategoryPersisterGateway $categoryPersisterGateway,
+        private CategoryOutputFactory $outputFactory,
+    ) {
+    }
+
+    /**
+     * @throws DataModelNotFoundException
+     * @throws ValidationException
+     */
+    public function execute(UserDataModel $currentUser, int $id, UpdateReferenceCategoryDataInput $input): CategoryDataOutput
+    {
+        $category = $this->categoryProviderGateway->findOneById($id);
+
+        // A personal category is not part of this surface at all: to the back-office it does not
+        // exist, which is the same answer it gives for anything belonging to an account.
+        if (null === $category || true === $category->isPersonal()) {
+            throw new DataModelNotFoundException(CategoryDataModel::class);
+        }
+
+        $this->validator->validate(
+            $currentUser,
+            $input,
+            $category,
+            $this->categoryProviderGateway->findOneByLabelForOwner($input->label, null),
+        );
+
+        $category->label = $input->label;
+        $category->icon = $input->icon;
+        $this->categoryPersisterGateway->update($category);
+
+        return $this->outputFactory->buildOne($category);
+    }
+}

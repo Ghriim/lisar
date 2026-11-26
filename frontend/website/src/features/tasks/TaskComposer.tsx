@@ -11,7 +11,8 @@ import {
     TextField,
     useViolations,
 } from '../../components'
-import { useCategories, useCreateTask, useUpdateTask } from './queries'
+import { useCategories } from '../categories/queries'
+import { useCreateTask, useUpdateTask } from './queries'
 import { priorityDisplay } from './taskDisplay'
 
 interface TaskComposerProps {

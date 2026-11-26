@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Factory\OutputFactory\Todo;
 
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
-use App\Domain\Factory\OutputFactory\Todo\CategoryOutputFactory;
+use App\Domain\Factory\OutputFactory\Category\CategoryOutputFactory;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Registry\Todo\TaskStateRegistry;

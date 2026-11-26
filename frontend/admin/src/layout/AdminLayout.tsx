@@ -18,9 +18,10 @@ const SECTIONS: Section[] = [
         children: [{ key: '/comptes', label: 'Comptes' }],
     },
     {
-        key: 'todo',
-        label: 'Todo',
-        children: [{ key: '/categories', label: 'Catégories' }],
+        // Not the todo list's any more: every domain that sorts things draws from it.
+        key: 'categories',
+        label: 'Catégories',
+        children: [{ key: '/categories', label: 'Communes' }],
     },
     {
         key: 'hydration',

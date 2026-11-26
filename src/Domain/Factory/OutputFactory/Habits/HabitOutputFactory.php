@@ -8,6 +8,7 @@ use App\Domain\DTO\DataModel\Habits\HabitEntryDataModel;
 use App\Domain\DTO\DataModel\Habits\HabitSubscriptionDataModel;
 use App\Domain\DTO\Output\Habits\HabitDataOutput;
 use App\Domain\DTO\Output\Habits\HabitDayDataOutput;
+use App\Domain\Factory\OutputFactory\Category\CategoryOutputFactory;
 use DateTimeImmutable;
 
 use function sprintf;
@@ -22,6 +23,10 @@ final readonly class HabitOutputFactory
 {
     /** The window the panel draws: today and the six days before it. */
     public const int WINDOW_IN_DAYS = 7;
+
+    public function __construct(private CategoryOutputFactory $categoryOutputFactory)
+    {
+    }
 
     /**
      * @param list<HabitSubscriptionDataModel> $subscriptions
@@ -78,9 +83,11 @@ final readonly class HabitOutputFactory
         $output = new HabitDataOutput();
         $output->habitId = $subscription->habit->id ?? 0;
         $output->name = $subscription->habit->name;
-        $output->icon = $subscription->habit->icon;
         $output->sourceKind = $subscription->habit->sourceKind;
         $output->days = $days;
+        $output->category = null === $subscription->habit->category
+            ? null
+            : $this->categoryOutputFactory->buildOne($subscription->habit->category);
         $output->isCompletedToday = $isCompletedToday;
 
         return $output;

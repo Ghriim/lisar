@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Factory\DataModelFactory\Todo;
 
-use App\Domain\DTO\DataModel\Todo\CategoryDataModel;
+use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\Factory\DataModelFactory\Todo\TaskDataModelFactory;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Tests\CurrentUserTrait;
