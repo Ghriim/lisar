@@ -13,9 +13,12 @@ use App\Infrastructure\HttpKernel\Attribute\MapDataInput;
 use App\UseCase\Todo\CompleteTaskUseCase;
 use App\UseCase\Todo\CreateTaskUseCase;
 use App\UseCase\Todo\DeleteTaskUseCase;
+use App\UseCase\Todo\FavoriteTaskUseCase;
 use App\UseCase\Todo\GetTaskUseCase;
+use App\UseCase\Todo\ListTaskOverviewUseCase;
 use App\UseCase\Todo\ListTasksUseCase;
 use App\UseCase\Todo\ReopenTaskUseCase;
+use App\UseCase\Todo\UnfavoriteTaskUseCase;
 use App\UseCase\Todo\UpdateTaskUseCase;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
@@ -38,9 +41,15 @@ final class TaskController extends AbstractBaseController
         description: 'False (the default) for the list, true for the completed view.',
         schema: new OA\Schema(type: 'boolean', default: false),
     )]
+    #[OA\Parameter(
+        name: 'todoId',
+        in: 'query',
+        description: 'The TODO to list, active; the account\'s default when left out.',
+        schema: new OA\Schema(type: 'integer'),
+    )]
     #[OA\Response(
         response: Response::HTTP_OK,
-        description: 'Root tasks with their subtasks nested, by category then by priority.',
+        description: 'Root tasks of that TODO with their subtasks nested, by category then by priority.',
         content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: TaskDataOutput::class))),
     )]
     public function listTasks(
@@ -48,6 +57,17 @@ final class TaskController extends AbstractBaseController
         ListTasksUseCase $useCase,
     ): JsonResponse {
         return new JsonResponse($useCase->execute($this->getCurrentUser(), $input));
+    }
+
+    #[Route('/api/tasks/overview', methods: Request::METHOD_GET)]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'Across the active TODOs: open tasks due today or late, open favourite ones, and those due by today done today. Root tasks, subtasks nested, by category then by priority.',
+        content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: TaskDataOutput::class))),
+    )]
+    public function listTaskOverview(ListTaskOverviewUseCase $useCase): JsonResponse
+    {
+        return new JsonResponse($useCase->execute($this->getCurrentUser()));
     }
 
     #[Route('/api/tasks', methods: Request::METHOD_POST)]
@@ -114,6 +134,26 @@ final class TaskController extends AbstractBaseController
     #[OA\Response(response: Response::HTTP_OK, description: 'The task, back on the list.', content: new OA\JsonContent(ref: new Model(type: TaskDataOutput::class)))]
     #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such task on this account.')]
     public function reopenTask(int $id, ReopenTaskUseCase $useCase): JsonResponse
+    {
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
+    }
+
+    #[Route('/api/tasks/{id}/favorite', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
+    #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: Response::HTTP_OK, description: 'The task, starred.', content: new OA\JsonContent(ref: new Model(type: TaskDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such task on this account.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A subtask, or a task in an archived TODO.')]
+    public function favoriteTask(int $id, FavoriteTaskUseCase $useCase): JsonResponse
+    {
+        return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
+    }
+
+    #[Route('/api/tasks/{id}/unfavorite', requirements: ['id' => '\d+'], methods: Request::METHOD_POST)]
+    #[OA\Parameter(name: 'id', in: 'path', schema: new OA\Schema(type: 'integer'))]
+    #[OA\Response(response: Response::HTTP_OK, description: 'The task, its star taken back.', content: new OA\JsonContent(ref: new Model(type: TaskDataOutput::class)))]
+    #[OA\Response(response: Response::HTTP_NOT_FOUND, description: 'No such task on this account.')]
+    #[OA\Response(response: Response::HTTP_UNPROCESSABLE_ENTITY, description: 'A subtask, or a task in an archived TODO.')]
+    public function unfavoriteTask(int $id, UnfavoriteTaskUseCase $useCase): JsonResponse
     {
         return new JsonResponse($useCase->execute($this->getCurrentUser(), $id));
     }

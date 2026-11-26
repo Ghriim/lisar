@@ -9,6 +9,7 @@ use App\Domain\DTO\Event\Habits\HabitSubscriptionUpdatedEvent;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryCreatedEvent;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryDeletedEvent;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryUpdatedEvent;
+use App\Domain\DTO\Event\Todo\TodoUpdatedEvent;
 use App\Domain\DTO\Event\Tracking\HydrationEntryCreatedEvent;
 use App\Domain\DTO\Event\Tracking\HydrationEntryDeletedEvent;
 use App\Domain\DTO\Event\Tracking\HydrationEntryUpdatedEvent;
@@ -22,13 +23,16 @@ use App\Domain\DTO\Event\Training\WorkoutSetCreatedEvent;
 use App\Domain\DTO\Event\Training\WorkoutSetDeletedEvent;
 use App\Domain\DTO\Event\Training\WorkoutSetUpdatedEvent;
 use App\Domain\DTO\Event\Training\WorkoutUpdatedEvent;
+use App\Domain\DTO\Event\User\UserCreatedEvent;
 use App\Infrastructure\EventHandler\Habits\SyncHydrationHabitsEventHandler;
 use App\Infrastructure\EventHandler\Habits\SyncStepHabitsEventHandler;
 use App\Infrastructure\EventHandler\Habits\SyncWorkoutHabitsEventHandler;
 use App\Infrastructure\EventHandler\Planning\CreateDefaultHabitPlanningEntryEventHandler;
 use App\Infrastructure\EventHandler\Planning\DeleteHabitPlanningEntriesEventHandler;
+use App\Infrastructure\EventHandler\Planning\DeleteTodoPlanningEntriesEventHandler;
 use App\Infrastructure\EventHandler\Planning\SyncPlannedTasksEventHandler;
 use App\Infrastructure\EventHandler\SynchronousEventDispatcher;
+use App\Infrastructure\EventHandler\Todo\CreateDefaultTodoEventHandler;
 use App\Infrastructure\EventHandler\Training\RefreshPersonalBestsEventHandler;
 use App\Infrastructure\EventHandler\Training\RefreshWorkoutSummaryEventHandler;
 use App\Tests\Integration\Event\RecordingEventDispatcher;
@@ -67,6 +71,8 @@ final class SynchronousEventDispatcherTest extends KernelTestCase
             TaskPlanningEntryCreatedEvent::class => [SyncPlannedTasksEventHandler::class],
             TaskPlanningEntryDeletedEvent::class => [SyncPlannedTasksEventHandler::class],
             TaskPlanningEntryUpdatedEvent::class => [SyncPlannedTasksEventHandler::class],
+            TodoUpdatedEvent::class => [DeleteTodoPlanningEntriesEventHandler::class],
+            UserCreatedEvent::class => [CreateDefaultTodoEventHandler::class],
             WorkoutBlockDeletedEvent::class => [$records, $summary],
             WorkoutCreatedEvent::class => [$summary],
             WorkoutDeletedEvent::class => [SyncWorkoutHabitsEventHandler::class, $records],

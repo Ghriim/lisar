@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace App\Tests\Integration\UseCase\Todo;
 
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\DTO\Input\Todo\ListTasksDataInput;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Registry\Todo\TaskStateRegistry;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoUsableConstraint;
 use App\Fixtures\Category\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
+use App\Fixtures\Todo\TodoFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
@@ -47,14 +52,14 @@ final class ListTasksUseCaseTest extends KernelTestCase
 
         $titles = array_map(static fn ($task) => $task->title, $tasks);
 
-        // "Send the invoice" is done, and the two subtasks are nested rather than listed. Both
-        // sit in "Home" with the same priority, so the newest comes first.
-        self::assertSame(['Move the flat', 'Buy a birthday present'], $titles);
+        // Alice's « A faire », the default: "Send the invoice" is done, and "Move the flat" sits in
+        // « Maison ».
+        self::assertSame(['Buy a birthday present'], $titles);
     }
 
     public function testItNestsTheSubtasksAndDerivesTheState(): void
     {
-        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
+        $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput(todoId: $this->todoIdOf(TodoFixtures::ALICE_HOME)));
 
         $move = $tasks[0];
         self::assertSame('Move the flat', $move->title);
@@ -68,11 +73,11 @@ final class ListTasksUseCaseTest extends KernelTestCase
 
     public function testItSortsByCategoryThenByPriority(): void
     {
-        // Both fixtures sit in "Home"; a third one in "Work" must come after them.
+        // The default's one open task sits in "Home"; one in "Work" must come after it.
         $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
-        self::assertSame(['Home', 'Home'], array_map(static fn ($task) => $task->category?->label, $tasks));
+        self::assertSame(['Home'], array_map(static fn ($task) => $task->category?->label, $tasks));
 
-        // A third task, in "Work", sorts after them.
+        // A second task, in "Work", sorts after it.
         self::getContainer()->get(CreateTaskUseCase::class)->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput(
             title: 'Water the plants',
             categoryId: $this->getReference(CategoryFixtures::WORK, CategoryDataModel::class)->id,
@@ -81,7 +86,7 @@ final class ListTasksUseCaseTest extends KernelTestCase
         $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
 
         self::assertSame(
-            ['Home', 'Home', 'Work'],
+            ['Home', 'Work'],
             array_map(static fn ($task) => $task->category?->label, $tasks),
         );
     }
@@ -102,9 +107,9 @@ final class ListTasksUseCaseTest extends KernelTestCase
 
         $tasks = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput());
 
-        // The two seeded ones are high.
+        // The seeded one is high.
         self::assertSame(
-            ['Move the flat', 'Buy a birthday present', 'Sooner', 'Later'],
+            ['Buy a birthday present', 'Sooner', 'Later'],
             array_map(static fn ($task) => $task->title, $tasks),
         );
     }
@@ -168,6 +173,34 @@ final class ListTasksUseCaseTest extends KernelTestCase
         );
 
         self::assertCount(count($fewer) + 3, $more);
+    }
+
+    /** One TODO at a time: « Maison » holds the flat, the default the rest. */
+    public function testItListsTheTodoNamed(): void
+    {
+        $home = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput(todoId: $this->todoIdOf(TodoFixtures::ALICE_HOME)));
+        $default = $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput(todoId: $this->todoIdOf(TodoFixtures::ALICE_DEFAULT)));
+
+        self::assertSame(['Move the flat'], array_map(static fn ($task) => $task->title, $home));
+        self::assertSame(['Buy a birthday present'], array_map(static fn ($task) => $task->title, $default));
+    }
+
+    /** An archived TODO's tasks show nowhere; someone else's TODO is not found. */
+    public function testItRefusesAnArchivedTodoOrSomeoneElses(): void
+    {
+        foreach ([[TodoFixtures::ALICE_ARCHIVED, TodoActiveConstraint::TODO_ARCHIVED], [TodoFixtures::ADMIN_DEFAULT, TodoUsableConstraint::TODO_NOT_FOUND]] as [$todo, $error]) {
+            try {
+                $this->useCase->execute($this->currentUser($this->aliceId()), new ListTasksDataInput(todoId: $this->todoIdOf($todo)));
+                self::fail('Expected ValidationException');
+            } catch (ValidationException $exception) {
+                self::assertSame(['todoId' => [$error]], $exception->violations);
+            }
+        }
+    }
+
+    private function todoIdOf(string $reference): int
+    {
+        return $this->getReference($reference, TodoDataModel::class)->id ?? 0;
     }
 
     private function aliceId(): int

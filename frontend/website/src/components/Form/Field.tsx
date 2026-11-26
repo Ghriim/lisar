@@ -10,6 +10,11 @@ export interface FieldProps {
     /** The error codes the API returned for this field, worded underneath. */
     errors?: string[]
     disabled?: boolean
+    /**
+     * Said to a screen reader, not shown: for a field whose purpose the window already says — the
+     * movements of « Ajouter un exercice », right under its search.
+     */
+    hideLabel?: boolean
 }
 
 interface FieldFrameProps extends Omit<FieldProps, 'disabled'> {
@@ -25,12 +30,12 @@ interface FieldFrameProps extends Omit<FieldProps, 'disabled'> {
  * The frame every field is drawn in: its label, the asterisk when it is mandatory, the control,
  * then whatever the API had to say about it. Only the fields of this folder use it.
  */
-export function FieldFrame({ label, isMandatory = false, errors = [], group = false, children }: FieldFrameProps) {
+export function FieldFrame({ label, isMandatory = false, errors = [], group = false, hideLabel = false, children }: FieldFrameProps) {
     useMandatory(isMandatory)
     const labelId = useId()
 
     const heading = (
-        <span className="field-label" id={labelId}>
+        <span className={hideLabel ? 'field-label visually-hidden' : 'field-label'} id={labelId}>
             {label}
             {isMandatory && (
                 <span className="field-required" aria-hidden="true">

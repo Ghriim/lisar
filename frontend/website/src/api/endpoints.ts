@@ -26,6 +26,8 @@ import type {
     SleepNight,
     StepDay,
     Task,
+    Todo,
+    TodoStatus,
     UpdateTaskPayload,
     User,
     Weight,
@@ -73,8 +75,51 @@ export function fetchCurrentUser(): Promise<User> {
     return request<User>('/api/users/me')
 }
 
-export function fetchTasks(isDone: boolean): Promise<Task[]> {
-    return request<Task[]>(`/api/tasks?isDone=${isDone ? 'true' : 'false'}`)
+/** One TODO's tasks — the account's default when none is named. */
+export function fetchTasks(isDone: boolean, todoId: number | null = null): Promise<Task[]> {
+    const todo = todoId === null ? '' : `&todoId=${todoId}`
+
+    return request<Task[]>(`/api/tasks?isDone=${isDone ? 'true' : 'false'}${todo}`)
+}
+
+/** Across the active TODOs: due today or late, starred, and those due by today done today. */
+export function fetchTaskOverview(): Promise<Task[]> {
+    return request<Task[]>('/api/tasks/overview')
+}
+
+export function favoriteTask(id: number): Promise<Task> {
+    return request<Task>(`/api/tasks/${id}/favorite`, { method: 'POST' })
+}
+
+export function unfavoriteTask(id: number): Promise<Task> {
+    return request<Task>(`/api/tasks/${id}/unfavorite`, { method: 'POST' })
+}
+
+/** The default first, then by title. Every TODO when no status is named. */
+export function fetchTodos(status: TodoStatus | null = null): Promise<Todo[]> {
+    return request<Todo[]>(status === null ? '/api/todos' : `/api/todos?status=${status}`)
+}
+
+export function createTodo(title: string): Promise<Todo> {
+    return request<Todo>('/api/todos', { method: 'POST', body: { title } })
+}
+
+export function updateTodo(id: number, title: string): Promise<Todo> {
+    return request<Todo>(`/api/todos/${id}`, { method: 'PUT', body: { title } })
+}
+
+/** Puts it away: its tasks show nowhere, and its planning entries are deleted. */
+export function archiveTodo(id: number): Promise<Todo> {
+    return request<Todo>(`/api/todos/${id}/archive`, { method: 'POST' })
+}
+
+export function reactivateTodo(id: number): Promise<Todo> {
+    return request<Todo>(`/api/todos/${id}/reactivate`, { method: 'POST' })
+}
+
+/** Deletes it, its tasks and its planning entries with it. */
+export function deleteTodo(id: number): Promise<void> {
+    return request<void>(`/api/todos/${id}`, { method: 'DELETE' })
 }
 
 export function fetchTask(id: number): Promise<Task> {

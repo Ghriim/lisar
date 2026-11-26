@@ -220,10 +220,103 @@
 }
 
 .modal {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     max-width: 560px;
     max-height: calc(100vh - var(--step) * 6);
+}
+
+/* The window's card: its head stays, its body scrolls under it. */
+.modal-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+}
+
+.modal-head {
+    flex: none;
+}
+
+.modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    /* Room for a focus ring at the edge, which the scroll would otherwise clip. */
+    margin: -3px;
+    padding: 3px;
+}
+
+/* A fixed height, filled by a form: its one part marked `.modal-scroll` — the list a search filters — grows and scrolls, the rest stays. */
+.modal-tall {
+    height: min(720px, calc(100vh - var(--step) * 6));
+}
+
+.modal-tall .modal-panel {
+    height: 100%;
+}
+
+.modal-tall .modal-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-tall .modal-body > .form-grid {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.modal-tall .modal-body > .form-grid > * {
+    flex: none;
+}
+
+.modal-tall .modal-body > .form-grid > .modal-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: -3px;
+    padding: 3px;
+}
+
+/* A scrollbar in the System's colours, thin, rather than the browser's grey. */
+.modal-body,
+.modal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--btn-border) transparent;
+}
+
+/* The same, for a window that is not a form: a wrapper whose `.modal-scroll` alone scrolls. */
+.modal-tall .modal-body > .modal-fill {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 2);
+    flex: 1;
+    min-height: 0;
+}
+
+.modal-tall .modal-body > .modal-fill > .modal-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: -3px;
+    padding: 3px;
+}
+
+/* Kept for a screen reader, not drawn. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 @keyframes window-in {
@@ -439,29 +532,59 @@ button.chip[aria-pressed='true'] {
    beneath, a segmented bar when there is a goal, and the action pinned to the bottom. No label: the
    glyph names the tracker to a screen reader. */
 .tracker {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px 18px;
-}
-
-.tracker-head {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 18px;
+    padding: 20px 20px 20px 18px;
 }
 
+/* A large line icon, lit: the rest day's moon in « Entraînement ». */
 .tracker-icon {
     flex: none;
     color: var(--accent);
     filter: drop-shadow(0 0 6px rgba(95, 212, 255, 0.4));
 }
 
+/* The « ⋯ » in the card's top right corner, out of the way of what the card shows. */
+.tracker > .menu-button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}
+
 .tracker-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.tracker-reading {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    min-width: 0;
+}
+
+/* The line a bar would hold, for a tracker without one: a figure over the last seven days. */
+.tracker-trend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 6px;
+    color: var(--text-2);
+    font-size: 12px;
+    line-height: 6px;
+}
+
+.tracker-trend-value {
+    color: var(--chip-text);
+    font-family: var(--font-system);
+}
+
+.tracker-trend-accent {
+    color: var(--accent);
 }
 
 .tracker-value {
@@ -471,11 +594,12 @@ button.chip[aria-pressed='true'] {
     font-family: var(--font-system);
     font-size: 22px;
     line-height: 1.1;
+    white-space: nowrap;
 }
 
 /* A figure that is not one — « Non notée »: words, so not in the monospace. */
 .tracker-word {
-    font-size: 17px;
+    font-size: 18px;
     line-height: 1.2;
 }
 
@@ -487,13 +611,6 @@ button.chip[aria-pressed='true'] {
 
 .tracker-aux {
     color: var(--text-2);
-    font-size: 13px;
-}
-
-/* The action sits at the bottom whatever is above it, so the four line up across the row. */
-.tracker > .button {
-    margin-top: auto;
-    width: 100%;
     font-size: 13px;
 }
 
@@ -588,7 +705,7 @@ button.chip[aria-pressed='true'] {
 }
 
 .tracker-row > * {
-    flex: 1 1 200px;
+    flex: 1 1 230px;
 }
 
 /* ------------------------------------------------------------ the workouts */
@@ -937,7 +1054,7 @@ button.chip[aria-pressed='true'] {
     border-bottom: 1px solid var(--accent);
 }
 
-.task-today-star {
+.task-today-icon {
     fill: var(--accent);
     color: var(--accent);
     filter: drop-shadow(0 0 4px var(--accent));
@@ -1071,6 +1188,55 @@ button.chip[aria-pressed='true'] {
     color: var(--text-off);
 }
 
+/* The workout under way: lit in green, above the plan, the one line to go back to. */
+.training-row-live {
+    background: var(--success-bg);
+    border-color: var(--success);
+    box-shadow: 0 0 14px -4px rgba(56, 240, 168, 0.45);
+}
+
+.training-row-live .training-time {
+    color: var(--success);
+}
+
+.training-row-live .training-row-body {
+    border-left-color: var(--success-border);
+}
+
+.training-row-live .icon-button-primary {
+    background: var(--success-bg);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.training-live-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--success);
+    font-size: 13px;
+}
+
+.training-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: training-live 1.6s ease-in-out infinite;
+}
+
+@keyframes training-live {
+    50% {
+        opacity: 0.35;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .training-live-dot {
+        animation: none;
+    }
+}
+
 /* The name and what it holds, set off from the time by a rule. */
 .training-row-body {
     display: flex;
@@ -1166,6 +1332,104 @@ a.icon-button:hover {
 .icon-button-medium {
     width: 40px;
     height: 40px;
+}
+
+/* A tracker's one action: its thing drawn large, lit from inside, a badge saying what it does. */
+.icon-button.icon-button-hero {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    flex: none;
+    background: var(--btn-primary-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(95, 212, 255, 0.2) inset;
+}
+
+.icon-button-hero > svg {
+    filter: drop-shadow(0 0 5px rgba(95, 212, 255, 0.4));
+}
+
+.icon-button-hero:hover:not(:disabled) {
+    background: var(--btn-primary-bg);
+    box-shadow: 0 0 16px rgba(95, 212, 255, 0.35) inset;
+}
+
+.icon-button-badge {
+    position: absolute;
+    right: -7px;
+    bottom: -7px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--accent);
+    background: var(--card-bg);
+    color: var(--accent);
+}
+
+.icon-button.icon-button-bare {
+    width: 28px;
+    height: 24px;
+    border: 0;
+    background: transparent;
+    color: #6f8aa5;
+}
+
+.icon-button.icon-button-bare:hover:not(:disabled),
+.icon-button.icon-button-bare[aria-expanded='true'] {
+    background: transparent;
+    color: var(--accent);
+}
+
+/* On, for a button that toggles — a task's star: the accent, filled. */
+.icon-button.icon-button-pressed,
+.icon-button.icon-button-pressed:hover:not(:disabled) {
+    color: var(--accent);
+    border-color: var(--accent-line);
+}
+
+.icon-button-pressed svg {
+    fill: currentColor;
+}
+
+/* -------------------------------------------------------------- the menu */
+
+.menu-button {
+    position: relative;
+}
+
+.menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    padding: 4px;
+    background: var(--card-bg);
+    border: 1px solid var(--btn-border);
+    box-shadow: var(--shadow-panel);
+}
+
+.menu-item {
+    padding: 10px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+    background: var(--btn-bg);
+    color: var(--accent);
+    outline: none;
 }
 
 /* ------------------------------------------------------------ the habits */
@@ -1283,4 +1547,114 @@ a.icon-button:hover {
     width: 8px;
     height: 1px;
     background: #3a5670;
+}
+
+/* ------------------------------------------------------------ the TODOs page */
+
+/* The TODO shown, and the list of them on its right. */
+.todos-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 960px) {
+    .todos-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.todos-main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.todo-list-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* A TODO in the list: its title, which opens it, then what can be done to it. */
+.todo-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px 4px 0;
+    background: var(--row-bg);
+    border: 1px solid var(--row-border);
+    border-left: 2px solid transparent;
+}
+
+.todo-row-current {
+    background: var(--btn-bg);
+    border-left-color: var(--accent);
+}
+
+.todo-link {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 14px;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.todo-link:hover,
+.todo-row-current .todo-link {
+    color: var(--accent);
+}
+
+.todo-archived-title {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    color: var(--text-done);
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A task group with nothing in it: one line, the height of a task's, rather than a tall blank. */
+.task-group-empty {
+    display: flex;
+    align-items: center;
+    min-height: 66px;
+    margin: 0;
+    padding: 0 16px;
+    border: 1px dashed var(--row-border);
+    color: var(--text-2);
+    font-size: 13px;
+}
+
+/* A habit of the catalogue with its planning unfolded under it, as one card. */
+.habit-catalog-item-open {
+    border: 1px solid var(--btn-border);
+    margin-bottom: var(--step);
+}
+
+.habit-catalog-item-open > .list-item {
+    margin-bottom: 0;
+    border-color: transparent;
+}
+
+.habit-catalog-schedule {
+    padding: 12px 16px 16px;
+    border-top: 1px dashed var(--row-border);
 }

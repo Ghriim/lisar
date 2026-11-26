@@ -2,7 +2,7 @@
 
 `/planning` is where a person lays out their weeks: **which routine on which day, which task to do
 when, which days a habit counts**. Each of the three keeps its own page — the routines on
-`/workouts`, the task list on `/todo`, the habits on the dashboard — and this page is the one place
+`/workouts`, the TODOs on `/todos`, the habits on the dashboard — and this page is the one place
 where they are scheduled and seen side by side.
 
 A planning entry is **a rule, not a list of things already made**. Planning « Push every Tuesday »
@@ -18,7 +18,7 @@ the page filter by kind:
 | Kind | Ties | See |
 | --- | --- | --- |
 | **training** | a routine of the person's | [A training entry](#a-training-entry) |
-| **task** | a task model: title, description, category | [A task entry](#a-task-entry) |
+| **task** | a task model: title, description, category, the TODO it goes in | [A task entry](#a-task-entry) |
 | **habit** | a habit the person is subscribed to | [A habit entry](#a-habit-entry) |
 
 Every kind carries the same schedule:
@@ -131,7 +131,9 @@ for it.
 ## A task entry
 
 A task entry makes **tasks from a model** it holds: a title, a description, a category. Subtasks
-are not part of a model.
+are not part of a model. It makes them **in a TODO** — a field of its form, « A faire » chosen
+until another is — and its window names it. **Archiving that TODO deletes the entry**, deleting
+the TODO too; the tasks already made stay where they are ([TODOs](todos.md#a-todo)).
 
 - **Recurring**: each date gets **its own task, created that day** (from midnight), with that date
   as its due date. Before the day, it shows only on the planning, as to come.

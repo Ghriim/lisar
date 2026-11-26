@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\UseCase\User\Admin;
 
+use App\Domain\DTO\Event\User\UserCreatedEvent;
 use App\Domain\DTO\Input\User\Admin\CreateAdminDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
@@ -13,6 +14,7 @@ use App\Domain\User\PasswordHasherInterface;
 use App\Domain\Validation\Constraint\User\EmailAvailableConstraint;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\User\Admin\CreateAdminUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -20,6 +22,7 @@ final class CreateAdminUseCaseTest extends KernelTestCase
 {
     use LoadFixturesTrait;
     use QueryCountTrait;
+    use RecordedEventsTrait;
 
     private CreateAdminUseCase $useCase;
     private UserProviderGateway $userProviderGateway;
@@ -40,6 +43,14 @@ final class CreateAdminUseCaseTest extends KernelTestCase
             fn () => null,
             fn () => $this->useCase->execute($this->buildInput()),
         );
+    }
+
+    /** What every account starts with follows from its creation: its « A faire » (CreateDefaultTodoEventHandler). */
+    public function testItSaysTheAccountWasCreated(): void
+    {
+        $output = $this->useCase->execute($this->buildInput());
+
+        self::assertSame($output->id, $this->assertEventRaised(UserCreatedEvent::class)->user->id);
     }
 
     public function testItCreatesAnAdministrator(): void

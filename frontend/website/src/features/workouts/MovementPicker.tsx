@@ -74,17 +74,20 @@ export function MovementPicker({ max, pending, failure, restFieldOf, onSubmit, o
                 </p>
             )}
 
-            <ChoiceField
-                label={max === 1 ? 'Mouvement' : 'Mouvements'}
-                isMandatory
-                choices={families.map((family) => ({
-                    label: family.name,
-                    choices: family.movements.map((movement) => ({ value: movement.id, label: movement.name })),
-                }))}
-                chosen={picked}
-                onToggle={toggle}
-                empty={movements.isPending ? <Loader /> : <EmptyState>Aucun mouvement ne correspond.</EmptyState>}
-            />
+            {/* What scrolls, in its fixed-height window: the search above and the buttons below stay put. */}
+            <div className="modal-scroll">
+                <ChoiceField
+                    label={max === 1 ? 'Mouvement' : 'Mouvements'}
+                    hideLabel
+                    choices={families.map((family) => ({
+                        label: family.name,
+                        choices: family.movements.map((movement) => ({ value: movement.id, label: movement.name })),
+                    }))}
+                    chosen={picked}
+                    onToggle={toggle}
+                    empty={movements.isPending ? <Loader /> : <EmptyState>Aucun mouvement ne correspond.</EmptyState>}
+                />
+            </div>
 
             {picked.map((id, index) => (
                 <DurationField

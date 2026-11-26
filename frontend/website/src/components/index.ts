@@ -10,6 +10,7 @@
 export { Button, type ButtonVariant } from './Button/Button'
 export { CheckToggle } from './Button/CheckToggle'
 export { IconButton } from './Button/IconButton'
+export { MenuButton, type MenuItem } from './Button/MenuButton'
 export { TextButton } from './Button/TextButton'
 
 export { ChoiceField, type Choice, type ChoiceGroup } from './Form/ChoiceField'

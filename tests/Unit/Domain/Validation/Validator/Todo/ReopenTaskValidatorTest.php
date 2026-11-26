@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Domain\Validation\Validator\Todo;
 
 use App\Domain\Exception\ValidationException;
+use App\Domain\Registry\Todo\TodoStatusRegistry;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
 use App\Domain\Validation\Validator\Todo\ReopenTaskValidator;
 use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
@@ -29,6 +31,20 @@ final class ReopenTaskValidatorTest extends TestCase
         } catch (ValidationException $exception) {
             self::assertSame(ReopenTaskValidator::ERROR_CODE, $exception->errorCode);
             self::assertSame(['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]], $exception->violations);
+        }
+    }
+
+    /** Nothing in an archived TODO changes until it is made active again. */
+    public function testItRefusesATaskInAnArchivedTodo(): void
+    {
+        $task = $this->taskOf($this->currentUser(1), $this->todoOf($this->currentUser(1), status: TodoStatusRegistry::ARCHIVED));
+
+        try {
+            (new ReopenTaskValidator())->validate($this->currentUser(1), $task);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(ReopenTaskValidator::ERROR_CODE, $exception->errorCode);
+            self::assertSame(['id' => [TodoActiveConstraint::TODO_ARCHIVED]], $exception->violations);
         }
     }
 }

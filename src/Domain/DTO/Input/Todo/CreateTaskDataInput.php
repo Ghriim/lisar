@@ -36,6 +36,11 @@ final readonly class CreateTaskDataInput implements DataInputInterface
 
         #[Assert\Positive(message: 'parent_task_invalid')]
         public ?int $parentId = null,
+
+        // The TODO it goes in; the account's default when none is named. Ignored on a subtask,
+        // which always sits in its parent's.
+        #[Assert\Positive(message: 'todo_invalid')]
+        public ?int $todoId = null,
     ) {
     }
 

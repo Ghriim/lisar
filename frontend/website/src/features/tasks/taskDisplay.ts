@@ -74,9 +74,21 @@ export function isForToday(task: Task, day: string = today()): boolean {
     return task.state !== 'done' && task.dueDate !== null && task.dueDate <= day
 }
 
-/** A task of today's that was ticked off today — it stays in « Aujourd'hui », ticked. */
+/** A task due today or before, open or done: what « Aujourd'hui » holds of what is listed. */
+export function isDueByToday(task: Task, day: string = today()): boolean {
+    return task.dueDate !== null && task.dueDate <= day
+}
+
+/** A task ticked off today: it stays listed, ticked, wherever it sat — the day's work in sight. */
 export function isDoneToday(task: Task, day: string = today()): boolean {
-    return task.state === 'done' && task.dueDate !== null && task.dueDate <= day && task.completedAt !== null && task.completedAt.slice(0, 10) === day
+    return task.state === 'done' && task.completedAt !== null && localDay(new Date(task.completedAt)) === day
+}
+
+/** The calendar day an instant falls on here, "YYYY-MM-DD": an instant comes from the API in UTC. */
+function localDay(moment: Date): string {
+    const pad = (value: number) => `${value}`.padStart(2, '0')
+
+    return `${moment.getFullYear()}-${pad(moment.getMonth() + 1)}-${pad(moment.getDate())}`
 }
 
 /** « 1 tâche », « 2 tâches ». */

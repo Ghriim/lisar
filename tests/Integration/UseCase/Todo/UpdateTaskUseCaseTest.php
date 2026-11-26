@@ -6,19 +6,23 @@ namespace App\Tests\Integration\UseCase\Todo;
 
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\UpdateTaskDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
 use App\Fixtures\Category\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
+use App\Fixtures\Todo\TodoFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
 use App\Tests\Integration\SignedInUserTrait;
 use App\UseCase\Todo\UpdateTaskUseCase;
+use Doctrine\ORM\EntityManagerInterface;
 use LogicException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -135,6 +139,62 @@ final class UpdateTaskUseCaseTest extends KernelTestCase
                 categoryId: $categoryId,
             )),
         );
+    }
+
+    /** Moved, a task takes its subtasks with it. */
+    public function testItMovesATaskWithItsSubtasksToAnotherTodo(): void
+    {
+        $task = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class);
+        $default = $this->todoIdOf(TodoFixtures::ALICE_DEFAULT);
+
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput(title: 'Move the flat', todoId: $default));
+
+        self::assertSame($default, $output->todoId);
+        self::assertSame([$default, $default], array_map(static fn ($subtask) => $subtask->todoId, $output->subtasks));
+
+        self::getContainer()->get(EntityManagerInterface::class)->clear();
+        $subtask = $this->taskProviderGateway->findOneById($this->getReference(TaskFixtures::ALICE_SUBTASK_OPEN, TaskDataModel::class)->id ?? 0);
+        self::assertSame($default, $subtask?->todo->id);
+    }
+
+    /** A subtask follows its parent: the TODO named is not its to change. */
+    public function testASubtaskStaysInItsParentsTodo(): void
+    {
+        $subtask = $this->getReference(TaskFixtures::ALICE_SUBTASK_OPEN, TaskDataModel::class);
+
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), $subtask->id ?? 0, new UpdateTaskDataInput(title: 'Pack the kitchen', todoId: $this->todoIdOf(TodoFixtures::ALICE_DEFAULT)));
+
+        self::assertSame($this->todoIdOf(TodoFixtures::ALICE_HOME), $output->todoId);
+    }
+
+    public function testItRefusesAMoveToAnArchivedTodo(): void
+    {
+        $task = $this->getReference(TaskFixtures::ALICE_PLAIN, TaskDataModel::class);
+
+        try {
+            $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput(title: 'Buy a present', todoId: $this->todoIdOf(TodoFixtures::ALICE_ARCHIVED)));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['todoId' => [TodoActiveConstraint::TODO_ARCHIVED]], $exception->violations);
+        }
+    }
+
+    /** Nothing in an archived TODO changes until it is made active again. */
+    public function testItRefusesATaskInAnArchivedTodo(): void
+    {
+        $task = $this->getReference(TaskFixtures::ALICE_ARCHIVED, TaskDataModel::class);
+
+        try {
+            $this->useCase->execute($this->currentUser($this->aliceId()), $task->id ?? 0, new UpdateTaskDataInput(title: 'Learn the guitar'));
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['id' => [TodoActiveConstraint::TODO_ARCHIVED]], $exception->violations);
+        }
+    }
+
+    private function todoIdOf(string $reference): int
+    {
+        return $this->getReference($reference, TodoDataModel::class)->id ?? 0;
     }
 
     private function aliceId(): int

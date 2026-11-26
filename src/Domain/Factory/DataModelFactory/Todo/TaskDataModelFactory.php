@@ -24,6 +24,7 @@ final readonly class TaskDataModelFactory
 
         $task = new TaskDataModel();
         $task->owner = $entry->owner;
+        $task->todo = $entry->todo;
         $task->title = $entry->title;
         $task->description = $entry->description;
         $task->category = $entry->category;

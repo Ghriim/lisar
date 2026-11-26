@@ -6,6 +6,7 @@ namespace App\Domain\DTO\DataModel\Planning;
 
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\DataModelInterface;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
@@ -30,6 +31,11 @@ class TaskPlanningEntryDataModel implements DataModelInterface
     #[ORM\ManyToOne(targetEntity: UserDataModel::class)]
     #[ORM\JoinColumn(name: 'owner_id', nullable: false, onDelete: 'CASCADE')]
     public UserDataModel $owner;
+
+    // The TODO its tasks are made in. Archiving the TODO deletes the entry, deleting it too.
+    #[ORM\ManyToOne(targetEntity: TodoDataModel::class)]
+    #[ORM\JoinColumn(name: 'todo_id', nullable: false, onDelete: 'CASCADE')]
+    public TodoDataModel $todo;
 
     // The model each task is made from: title, description, category. Subtasks are not part of it.
     #[ORM\Column(length: 255)]

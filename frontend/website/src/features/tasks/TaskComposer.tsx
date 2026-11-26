@@ -12,6 +12,7 @@ import {
     useViolations,
 } from '../../components'
 import { useCategories } from '../categories/queries'
+import { useActiveTodos } from '../todos/queries'
 import { useCreateTask, useUpdateTask } from './queries'
 import { priorityDisplay } from './taskDisplay'
 
@@ -20,6 +21,8 @@ interface TaskComposerProps {
     parent: Task | null
     /** Set when editing rather than creating. */
     editing: Task | null
+    /** The TODO a new task starts in: the one the list shows, or « A faire » on the dashboard. */
+    defaultTodoId: number | null
     onDone: () => void
 }
 
@@ -29,23 +32,29 @@ interface FormState {
     dueDate: string
     priority: TaskPriority | ''
     categoryId: string
+    todoId: string
 }
 
 /**
- * What a new task starts as: no category, no rank. The only default anywhere is the
- * priority, and it is the server that applies it — Normale, once the form is submitted without
- * one.
+ * What a new task starts as: no category, no rank, and the TODO it is created from — the one
+ * exception to « nothing is chosen for the person »: a task always sits in a TODO, and the one on
+ * screen is the one meant. The priority's default is the server's — Normale, once the form is
+ * submitted without one.
  */
-const EMPTY: FormState = {
-    title: '',
-    description: '',
-    dueDate: '',
-    priority: '',
-    categoryId: '',
+function empty(todoId: number | null): FormState {
+    return {
+        title: '',
+        description: '',
+        dueDate: '',
+        priority: '',
+        categoryId: '',
+        todoId: todoId === null ? '' : String(todoId),
+    }
 }
 
 function fromTask(task: Task): FormState {
     return {
+        todoId: String(task.todoId),
         title: task.title,
         description: task.description ?? '',
         dueDate: task.dueDate ?? '',
@@ -58,9 +67,12 @@ function fromTask(task: Task): FormState {
  * Mounted by the modal that holds it, and unmounted when that window closes — so the state below
  * starts from the right task without an effect syncing props into state.
  */
-export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
-    const [form, setForm] = useState<FormState>(() => (editing === null ? EMPTY : fromTask(editing)))
+export function TaskComposer({ parent, editing, defaultTodoId, onDone }: TaskComposerProps) {
+    const [form, setForm] = useState<FormState>(() => (editing === null ? empty(defaultTodoId) : fromTask(editing)))
     const categories = useCategories()
+    const todos = useActiveTodos()
+    // A subtask sits in its parent's TODO: nothing to choose.
+    const isSubtask = parent !== null || (editing !== null && editing.parentId !== null)
     const create = useCreateTask()
     const update = useUpdateTask()
 
@@ -77,6 +89,7 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
             dueDate: form.dueDate === '' ? null : form.dueDate,
             priority: form.priority === '' ? null : form.priority,
             categoryId: form.categoryId === '' ? null : Number(form.categoryId),
+            todoId: isSubtask || form.todoId === '' ? null : Number(form.todoId),
         }
 
         try {
@@ -86,7 +99,6 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
                 await create.mutateAsync({ ...payload, parentId: parent?.id ?? null })
             }
 
-            setForm(EMPTY)
             onDone()
         } catch {
             // The violations are on the mutation, and the fields below read them.
@@ -106,6 +118,19 @@ export function TaskComposer({ parent, editing, onDone }: TaskComposerProps) {
             />
 
             <TextAreaField label="Détail" errors={violations.for('description')} value={form.description} onChange={set('description')} />
+
+            {!isSubtask && (
+                <SelectField
+                    label="TODO"
+                    isMandatory
+                    errors={violations.for('todoId')}
+                    value={form.todoId}
+                    onChange={set('todoId')}
+                    placeholder="Choisir une TODO"
+                    // « A faire » first, then by title: the API's order.
+                    options={(todos.data ?? []).map((todo) => ({ value: String(todo.id), label: todo.title }))}
+                />
+            )}
 
             <FormGrid columns={2}>
                 <SelectField

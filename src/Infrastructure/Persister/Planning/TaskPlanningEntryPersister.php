@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persister\Planning;
 
 use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryCreatedEvent;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryDeletedEvent;
 use App\Domain\DTO\Event\Planning\TaskPlanningEntryUpdatedEvent;
@@ -62,6 +63,29 @@ final class TaskPlanningEntryPersister extends AbstractBaseMysqlPersister implem
             $this->unhookLoadedTasks($entry);
             $this->eventDispatcher->dispatch(new TaskPlanningEntryDeletedEvent($openTasks));
         });
+    }
+
+    public function deleteAllForTodo(TodoDataModel $todo): void
+    {
+        /** @var list<TaskPlanningEntryDataModel> $loadedEntries */
+        $loadedEntries = array_values(array_filter(
+            $this->entityManager->getUnitOfWork()->getIdentityMap()[TaskPlanningEntryDataModel::class] ?? [],
+            static fn (object $loaded): bool => $loaded instanceof TaskPlanningEntryDataModel && $loaded->todo === $todo,
+        ));
+
+        $this->entityManager->createQueryBuilder()
+            ->delete(TaskPlanningEntryDataModel::class, 'entry')
+            ->andWhere('entry.todo = :todo')
+            ->setParameter('todo', $todo)
+            ->getQuery()
+            ->execute();
+
+        // What the request had loaded of them is gone from the table: left in the identity map, a
+        // later flush would write them back, and the tasks pointing at them would follow.
+        foreach ($loadedEntries as $entry) {
+            $this->unhookLoadedTasks($entry);
+            $this->entityManager->detach($entry);
+        }
     }
 
     /**

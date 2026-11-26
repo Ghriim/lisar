@@ -55,8 +55,15 @@ The dashboard v2 (`docs/design/dashboard-v2-spec.md`) shows a few values the API
 yet. Each one has its slot in one place, rendered « — » until it is wired:
 
 - the player's title: `features/status/playerTitle.ts`.
-- what a task earns: `features/tasks/taskExperience.ts` (`+— XP` on each line and in « Aujourd'hui »).
+- what a task earns: `features/tasks/taskExperience.ts` (`+— XP` on each line).
 - a habit's run: `features/habits/habitStreak.ts` (« série — » on each line).
+
+- a week's sleep: `features/sleep/sleepWeekAverage.ts` (« Moy. 7 j — » under the sleep tracker).
+- a week's weight: `features/weight/weightWeekTrend.ts` (« 7 j — » under the weight tracker).
+
+Each tracker's **« ⋯ »** menu lists « Historique » and « Réglages », whose screens are still to be
+built. Meanwhile the items only close the menu — except hydration's « Réglages », which opens the
+day's drinks (`HydrationPanel`).
 
 ## Next steps
 

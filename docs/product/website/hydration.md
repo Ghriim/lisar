@@ -5,13 +5,14 @@ day, and sending someone to another page for it would mean they stop noting it.
 
 ## The widget
 
-A glass of water, what has been drunk today (`750 mL`) and the goal under it (`objectif 1500 mL`),
-a bar of six segments, and one button: **`+250 mL`**, which logs a glass in a single tap. A segment
-lights up for each 250 mL against a 1500 mL goal — whatever the goal, the bar has six.
+On the left, **the card's one button**: a glass of water drawn large, with a small plus on its
+corner — « Ajouter 250 mL », which logs a glass in a single tap. Beside it, what has been drunk
+today (`750 mL`), the goal under it (`objectif 1500 mL`) and a bar of six segments.
 
-For now, following the dashboard v2 mock-up (`docs/design/dashboard-v2-spec.md`), the widget does
-not open the window below: there is no way in to correct or remove an entry, or to log another
-volume, until that is decided.
+The **« ⋯ »** in the card's top right corner drops a menu: « Historique » and « Réglages ». Neither has its screen yet; « Réglages » opens the
+window below meanwhile, to correct or remove an entry, or log another volume.
+
+A segment lights up for each 250 mL against a 1500 mL goal — whatever the goal, the bar has six.
 
 That is all it shows. The point of the widget is to be glanceable and to stay out of the way of
 the task list it sits next to.

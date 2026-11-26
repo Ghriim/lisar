@@ -35,9 +35,25 @@ export interface Category {
 
 export type TaskState = 'to_do' | 'in_progress' | 'ready_to_close' | 'done'
 
+export type TodoStatus = 'active' | 'archived'
+
+/** A list tasks sit in. The account's default — « A faire » — is never archived nor deleted. */
+export interface Todo {
+    id: number
+    title: string
+    status: TodoStatus
+    isDefault: boolean
+    createdAt: string | null
+    updatedAt: string | null
+}
+
 export interface Task {
     id: number
     title: string
+    /** The TODO it sits in — a subtask, in its parent's. */
+    todoId: number
+    /** A root task only; it stays favourite once done. */
+    isFavorite: boolean
     description: string | null
     /** A calendar day, YYYY-MM-DD. */
     dueDate: string | null
@@ -58,6 +74,8 @@ export interface CreateTaskPayload {
     priority?: TaskPriority | null
     categoryId?: number | null
     parentId?: number | null
+    /** The account's default when left out; ignored on a subtask. On an update, moves the task. */
+    todoId?: number | null
 }
 
 export type UpdateTaskPayload = Omit<CreateTaskPayload, 'parentId'>
@@ -518,6 +536,8 @@ export interface TaskPlanningEntry {
     title: string
     description: string | null
     category: Category | null
+    /** The TODO its tasks are made in. */
+    todoId: number
     schedule: PlanningSchedule
 }
 
@@ -542,6 +562,7 @@ export interface TaskPlanningEntryPayload {
     title: string
     description: string | null
     categoryId: number | null
+    todoId: number | null
     schedule: PlanningSchedule
 }
 

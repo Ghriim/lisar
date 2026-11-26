@@ -1,10 +1,10 @@
-import { Footprints } from 'lucide-react'
+import { Footprints, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { Button, Modal, SegmentedBar, SystemPanel } from '../../components'
+import { IconButton, MenuButton, Modal, SegmentedBar, SystemPanel } from '../../components'
 import { useStepsToday } from './queries'
 import { StepPanel } from './StepPanel'
 
-/** The day's steps against the day's goal. The count is set in a window. */
+/** The day's steps against the day's goal. The count is set in a window; the « ⋯ » holds the rest. */
 export function StepWidget() {
     const today = useStepsToday()
     const [opened, setOpened] = useState(false)
@@ -15,19 +15,15 @@ export function StepWidget() {
     return (
         <>
             <SystemPanel className="tracker">
-                <div className="tracker-head">
-                    <Footprints size={36} strokeWidth={1.4} className="tracker-icon" role="img" aria-label="Pas" />
-                    <div className="tracker-body">
+                <MenuButton label="Options" subject="pas" items={[{ label: 'Historique' }, { label: 'Réglages' }]} />
+                <IconButton icon={Footprints} badge={Plus} hero label="Ajouter" subject="des pas" disabled={!today.isSuccess} onClick={() => setOpened(true)} />
+                <div className="tracker-body">
+                    <div className="tracker-reading">
                         <span className="tracker-value">{count} pas</span>
                         <span className="tracker-aux">objectif {goal}</span>
                     </div>
+                    <SegmentedBar value={count} max={goal} segments={6} label={`Pas : ${count} / ${goal}`} thin />
                 </div>
-
-                <SegmentedBar value={count} max={goal} segments={6} label={`Pas : ${count} / ${goal}`} thin />
-
-                <Button variant="secondary" disabled={!today.isSuccess} onClick={() => setOpened(true)}>
-                    Saisir mes pas
-                </Button>
             </SystemPanel>
 
             {opened && today.isSuccess && (

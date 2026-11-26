@@ -7,9 +7,11 @@ namespace App\Infrastructure\Repository\Todo;
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
+use App\Domain\Registry\Todo\TodoStatusRegistry;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -40,27 +42,55 @@ final class TaskRepository extends ServiceEntityRepository implements TaskProvid
     }
 
     /** @return list<TaskDataModel> */
-    public function findAllForOwnerList(UserDataModel $owner, bool $isDone): array
+    public function findAllForOwnerList(UserDataModel $owner, TodoDataModel $todo, bool $isDone): array
     {
         $queryBuilder = $this->buildTaskQuery()
             ->andWhere('task.owner = :owner')
+            ->andWhere('task.todo = :todo')
             // Root tasks only: subtasks come back nested under their parent.
             ->andWhere('task.parent IS NULL')
-            ->setParameter('owner', $owner);
+            ->setParameter('owner', $owner)
+            ->setParameter('todo', $todo);
 
         $queryBuilder->andWhere(
             true === $isDone ? 'task.completedAt IS NOT NULL' : 'task.completedAt IS NULL',
         );
 
-        // The default order: by category, then by priority within a category. A task without
-        // either sorts last rather than first, which is what a person expects to see.
+        return $this->inListOrder($queryBuilder)->getQuery()->getResult();
+    }
+
+    /** @return list<TaskDataModel> */
+    public function findOverviewForOwner(UserDataModel $owner, DateTimeImmutable $today, DateTimeImmutable $from, DateTimeImmutable $to): array
+    {
+        $queryBuilder = $this->buildTaskQuery()
+            ->andWhere('task.owner = :owner')
+            ->andWhere('task.parent IS NULL')
+            // An archived TODO's tasks show nowhere.
+            ->andWhere('todo.status = :active')
+            ->andWhere(
+                '(task.completedAt IS NULL AND (task.dueDate <= :today OR task.isFavorite = true))'
+                .' OR (task.completedAt >= :from AND task.completedAt < :to AND (task.dueDate <= :today OR task.isFavorite = true))',
+            )
+            ->setParameter('owner', $owner)
+            ->setParameter('active', TodoStatusRegistry::ACTIVE)
+            ->setParameter('today', $today, Types::DATE_IMMUTABLE)
+            ->setParameter('from', $from, Types::DATETIME_IMMUTABLE)
+            ->setParameter('to', $to, Types::DATETIME_IMMUTABLE);
+
+        return $this->inListOrder($queryBuilder)->getQuery()->getResult();
+    }
+
+    /**
+     * The default order: by category, then by priority within a category. A task without either
+     * sorts last rather than first, which is what a person expects to see.
+     */
+    private function inListOrder(QueryBuilder $queryBuilder): QueryBuilder
+    {
         return $queryBuilder
             ->addOrderBy('CASE WHEN category.id IS NULL THEN 1 ELSE 0 END', 'ASC')
             ->addOrderBy('category.label', 'ASC')
             ->addOrderBy($this->priorityRank(), 'ASC')
-            ->addOrderBy('task.id', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('task.id', 'DESC');
     }
 
     public function countForCategory(CategoryDataModel $category): int
@@ -151,13 +181,16 @@ final class TaskRepository extends ServiceEntityRepository implements TaskProvid
     }
 
     /**
-     * Everything the output carries is fetch-joined here: the state of a task is read off its
-     * subtasks, and each of them renders its own category. Lazy loading would
+     * Everything the output and the validators read is fetch-joined here: the state of a task is
+     * read off its subtasks, each of them renders its own category, and whether it may change is
+     * read off its TODO. Lazy loading would
      * turn one list into a few hundred queries.
      */
     private function buildTaskQuery(): QueryBuilder
     {
         return $this->createQueryBuilder('task')
+            ->innerJoin('task.todo', 'todo')
+            ->addSelect('todo')
             ->leftJoin('task.category', 'category')
             ->addSelect('category')
             ->leftJoin('task.subtasks', 'subtask')

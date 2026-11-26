@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests;
 
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\Tracking\HydrationDayDataModel;
 use App\Domain\DTO\DataModel\Tracking\HydrationEntryDataModel;
 use App\Domain\DTO\DataModel\Training\WorkoutDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
+use App\Domain\Registry\Todo\TodoStatusRegistry;
 use App\Domain\Registry\User\UserRoleRegistry;
 
 /**
@@ -46,12 +48,26 @@ trait CurrentUserTrait
         return $workout;
     }
 
-    private function taskOf(UserDataModel $owner): TaskDataModel
+    /** A task of theirs, in an active TODO of theirs unless another one is given. */
+    private function taskOf(UserDataModel $owner, ?TodoDataModel $todo = null): TaskDataModel
     {
         $task = new TaskDataModel();
         $task->owner = $owner;
+        $task->todo = $todo ?? $this->todoOf($owner);
 
         return $task;
+    }
+
+    private function todoOf(UserDataModel $owner, int $id = 1, string $status = TodoStatusRegistry::ACTIVE, bool $isDefault = false): TodoDataModel
+    {
+        $todo = new TodoDataModel();
+        $todo->id = $id;
+        $todo->owner = $owner;
+        $todo->title = 'A faire';
+        $todo->status = $status;
+        $todo->isDefault = $isDefault;
+
+        return $todo;
     }
 
     private function hydrationEntryOf(UserDataModel $owner): HydrationEntryDataModel

@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Alert, Button, ConfirmDialog, DefinitionList, LinkChip, Row, Stack } from '../../components'
+import { useTodos } from '../todos/queries'
 import { failureOf } from '../workouts/workoutFormat'
 import { formatRule, formatTimeSpan, parseDay } from './planningFormat'
 import { type KindedEntry, subjectOf } from './planningKinds'
@@ -18,6 +19,7 @@ interface PlanningEntryDetailProps {
 
 /** An entry read before it is changed: every field, filled in or not. */
 export function PlanningEntryDetail({ kinded, isLastOfHabit = false, onEdit, onDeleted }: PlanningEntryDetailProps) {
+    const todoTitles = new Map((useTodos().data ?? []).map((todo) => [todo.id, todo.title]))
     const removeTraining = useDeleteTrainingPlanningEntry()
     const removeTask = useDeleteTaskPlanningEntry()
     const removeHabit = useDeleteHabitPlanningEntry()
@@ -30,7 +32,7 @@ export function PlanningEntryDetail({ kinded, isLastOfHabit = false, onEdit, onD
         <Stack>
             <DefinitionList
                 items={[
-                    ...subjectItems(kinded),
+                    ...subjectItems(kinded, todoTitles),
                     { label: 'Quand', placeholder: '—', value: formatRule(schedule) },
                     {
                         label: schedule.rule === 'once' ? 'Date' : 'À partir du',
@@ -84,7 +86,7 @@ export function PlanningEntryDetail({ kinded, isLastOfHabit = false, onEdit, onD
 }
 
 /** What the entry ties: its routine, its task model, or its habit. */
-function subjectItems(kinded: KindedEntry) {
+function subjectItems(kinded: KindedEntry, todoTitles: Map<number, string>) {
     switch (kinded.kind) {
         case 'training':
             return [{ label: 'Routine', placeholder: '—', value: <LinkChip to={`/routines/${kinded.entry.routineId}`}>{kinded.entry.routineName}</LinkChip> }]
@@ -92,6 +94,7 @@ function subjectItems(kinded: KindedEntry) {
             return [
                 { label: 'Intitulé', placeholder: '—', value: kinded.entry.title },
                 { label: 'Détail', placeholder: 'Aucun', value: kinded.entry.description },
+                { label: 'TODO', placeholder: '—', value: todoTitles.get(kinded.entry.todoId) ?? null },
                 { label: 'Catégorie', placeholder: 'Aucune', value: kinded.entry.category?.label ?? null },
             ]
         case 'habit':

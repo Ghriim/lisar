@@ -40,6 +40,7 @@ final readonly class TaskOutputFactory
 
         $output->state = $this->taskState->resolve($task);
         $output->parentId = $task->parent?->id;
+        $output->todoId = (int) $task->todo->id;
 
         if (null !== $task->category) {
             $output->category = $this->categoryOutputFactory->buildOne($task->category);

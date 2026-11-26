@@ -12,8 +12,10 @@ use App\Domain\Factory\DataModelFactory\Planning\TaskPlanningEntryDataModelFacto
 use App\Domain\Factory\OutputFactory\Planning\TaskPlanningOutputFactory;
 use App\Domain\Gateway\Persister\Planning\TaskPlanningEntryPersisterGateway;
 use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
+use App\Domain\Gateway\Provider\Todo\TodoProviderGateway;
 use App\Domain\Validation\Validator\Planning\CreateTaskPlanningEntryValidator;
 use App\UseCase\UseCaseInterface;
+use LogicException;
 
 /**
  * A task model planned on a rule of dates. A single date's task is made at once, and today's if
@@ -25,6 +27,7 @@ final readonly class CreateTaskPlanningEntryUseCase implements UseCaseInterface
     public function __construct(
         private CreateTaskPlanningEntryValidator $validator,
         private CategoryProviderGateway $categoryProviderGateway,
+        private TodoProviderGateway $todoProviderGateway,
         private TaskPlanningEntryPersisterGateway $entryPersisterGateway,
         private TaskPlanningEntryDataModelFactory $entryFactory,
         private TaskPlanningOutputFactory $outputFactory,
@@ -39,9 +42,19 @@ final readonly class CreateTaskPlanningEntryUseCase implements UseCaseInterface
         // Whoever it belongs to: someone else's category is refused by the validator, as one not found.
         $category = null === $input->categoryId ? null : $this->categoryProviderGateway->findOneById($input->categoryId);
 
-        $this->validator->validate($currentUser, $input, $category);
+        // The TODO named — whoever's, refused by the validator as one not found — or the account's default.
+        $todo = null === $input->todoId
+            ? $this->todoProviderGateway->findDefaultForOwner($currentUser)
+            : $this->todoProviderGateway->findOneById($input->todoId);
 
-        $entry = $this->entryFactory->build($currentUser, $category, $input);
+        $this->validator->validate($currentUser, $input, $category, $todo);
+
+        $entry = $this->entryFactory->build(
+            $currentUser,
+            $todo ?? throw new LogicException('The validator lets no entry through without its TODO.'),
+            $category,
+            $input,
+        );
         $this->entryPersisterGateway->create($entry);
 
         return $this->outputFactory->buildOne($entry);

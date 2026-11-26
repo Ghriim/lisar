@@ -6,8 +6,10 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Todo;
 
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Registry\Todo\TodoStatusRegistry;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Todo\TaskClosableConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
 use App\Domain\Validation\Validator\Todo\CompleteTaskValidator;
 use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
@@ -40,6 +42,14 @@ final class CompleteTaskValidatorTest extends TestCase
         $this->assertRefused(['id' => [TaskClosableConstraint::TASK_HAS_OPEN_SUBTASKS]], fn () => (new CompleteTaskValidator())->validate($this->anyCurrentUser(), $this->task(true)));
     }
 
+    /** Nothing in an archived TODO changes, its tasks' ticks included. */
+    public function testItRefusesATaskInAnArchivedTodo(): void
+    {
+        $task = $this->taskOf($this->anyCurrentUser(), $this->todoOf($this->anyCurrentUser(), status: TodoStatusRegistry::ARCHIVED));
+
+        $this->assertRefused(['id' => [TodoActiveConstraint::TODO_ARCHIVED]], fn () => (new CompleteTaskValidator())->validate($this->anyCurrentUser(), $task));
+    }
+
     /** @param array<string, list<string>> $violations */
     private function assertRefused(array $violations, callable $validate): void
     {
@@ -54,8 +64,7 @@ final class CompleteTaskValidatorTest extends TestCase
 
     private function task(bool $withOpenSubtask): TaskDataModel
     {
-        $task = new TaskDataModel();
-        $task->owner = $this->anyCurrentUser();
+        $task = $this->taskOf($this->anyCurrentUser());
         if (true === $withOpenSubtask) {
             $task->subtasks->add(new TaskDataModel());
         }

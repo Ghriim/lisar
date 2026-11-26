@@ -25,7 +25,7 @@ Below it, aligned at the top — the screens the app is for:
 | Entry | Icon | Route | Today |
 | --- | --- | --- | --- |
 | Tableau de bord | house | `/` | the [dashboard](dashboard.md) |
-| Tâches | list with a check | `/todo` | the [task list](tasks.md) on its own |
+| TODOs | list with a check | `/todos` | the [TODOs](todos.md), « A faire » first, the others listed beside it |
 | Planning | calendar | `/planning` | the [week](planning.md): training, tasks and habits planned |
 | Entraînements | dumbbell | `/workouts` | the [workouts](workouts.md): the one in progress, the history, the [routines](routines.md) |
 | Records | trophy | `/records` | the [personal bests](records.md) |

@@ -1,7 +1,7 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import type { HabitPlanningEntry } from '../../api/types'
-import { Alert, Button, ConfirmDialog, DataList, FormActions, IconButton, ListItem, Stack } from '../../components'
+import { Alert, Button, ConfirmDialog, DataList, FormActions, IconButton, ListItem, Loader, Stack } from '../../components'
 import { PlanningEntryForm } from '../planning/PlanningEntryForm'
 import { dayKey, formatRule, formatTimeSpan } from '../planning/planningFormat'
 import { useDeleteHabitPlanningEntry, useHabitPlanningEntries } from '../planning/queries'
@@ -12,6 +12,11 @@ type View = { kind: 'list' } | { kind: 'create' } | { kind: 'edit'; entry: Habit
 interface HabitScheduleProps {
     habitId: number
     habitName: string
+    /**
+     * Opens on the form of its first entry rather than on the list: a habit taken on just now
+     * starts on « tous les jours », and this is where the person says which days it counts.
+     */
+    editFirst?: boolean
 }
 
 /**
@@ -19,15 +24,22 @@ interface HabitScheduleProps {
  * one deleted — but never the last, since a kept habit always has a planning. The same entries
  * the planning page shows, written through the same form.
  */
-export function HabitSchedule({ habitId, habitName }: HabitScheduleProps) {
+export function HabitSchedule({ habitId, habitName, editFirst = false }: HabitScheduleProps) {
     const entries = useHabitPlanningEntries()
     const remove = useDeleteHabitPlanningEntry()
-    const [view, setView] = useState<View>({ kind: 'list' })
+    // Null until the person moves: then the first entry's form, when asked for and once it has come.
+    const [chosen, setView] = useState<View | null>(editFirst ? null : { kind: 'list' })
     const [confirming, setConfirming] = useState<HabitPlanningEntry | null>(null)
     const back = () => setView({ kind: 'list' })
 
     const own = (entries.data ?? []).filter((entry) => entry.habitId === habitId)
     const isLast = own.length <= 1
+    const view: View = chosen ?? (own[0] === undefined ? { kind: 'list' } : { kind: 'edit', entry: own[0] })
+
+    // Taken on just now: its « tous les jours » is on its way back from the server.
+    if (chosen === null && own.length === 0 && entries.isFetching) {
+        return <Loader />
+    }
 
     if (view.kind !== 'list') {
         return (

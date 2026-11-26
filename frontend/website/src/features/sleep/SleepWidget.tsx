@@ -1,12 +1,13 @@
-import { BedDouble } from 'lucide-react'
+import { BedDouble, Pencil } from 'lucide-react'
 import { useState } from 'react'
-import { Button, Modal, SystemPanel, Tooltip } from '../../components'
+import { IconButton, MenuButton, Modal, SystemPanel, Tooltip } from '../../components'
 import { SleepPanel } from './SleepPanel'
 import { useSleepToday } from './queries'
 import { formatDuration, nightOf } from './sleepFormat'
 import { moodFor } from './sleepMoods'
+import { sleepWeekAverage } from './sleepWeekAverage'
 
-/** This morning's night, or « Non notée ». Rating it is the card's main action. */
+/** This morning's night, or « Non notée », and the week's average under it. Noting it is the card's main action. */
 export function SleepWidget() {
     const today = useSleepToday()
     const [opened, setOpened] = useState(false)
@@ -14,13 +15,15 @@ export function SleepWidget() {
     const noted = today.data?.durationInMinutes ?? null
     const rating = today.data?.moodRating ?? null
     const mood = rating === null ? undefined : moodFor(rating)
+    const average = today.data === undefined ? null : sleepWeekAverage(today.data)
 
     return (
         <>
             <SystemPanel className="tracker">
-                <div className="tracker-head">
-                    <BedDouble size={36} strokeWidth={1.4} className="tracker-icon" role="img" aria-label="Sommeil" />
-                    <div className="tracker-body">
+                <MenuButton label="Options" subject="sommeil" items={[{ label: 'Historique' }, { label: 'Réglages' }]} />
+                <IconButton icon={BedDouble} badge={Pencil} hero label="Noter" subject="ma nuit" disabled={!today.isSuccess} onClick={() => setOpened(true)} />
+                <div className="tracker-body">
+                    <div className="tracker-reading">
                         {noted === null ? (
                             <span className="tracker-word">Non notée</span>
                         ) : (
@@ -35,11 +38,11 @@ export function SleepWidget() {
                         )}
                         {today.data !== undefined && <span className="tracker-aux">{nightOf(today.data.day)}</span>}
                     </div>
+                    <span className="tracker-trend">
+                        <span>Moy. 7 j</span>
+                        <span className="tracker-trend-value">{average === null ? '—' : formatDuration(average)}</span>
+                    </span>
                 </div>
-
-                <Button disabled={!today.isSuccess} onClick={() => setOpened(true)}>
-                    Noter ma nuit
-                </Button>
             </SystemPanel>
 
             {opened && today.isSuccess && (

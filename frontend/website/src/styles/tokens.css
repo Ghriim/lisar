@@ -51,6 +51,8 @@
 
     /* Not in the dashboard's palette, still said elsewhere: a task ready to close. */
     --success: #38f0a8;
+    --success-border: #1f6b52;
+    --success-bg: #0a2420;
 
     /*
      * The names the rest of the CSS was written against, kept as aliases of the palette above so

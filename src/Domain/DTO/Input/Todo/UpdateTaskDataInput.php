@@ -32,6 +32,11 @@ final readonly class UpdateTaskDataInput implements DataInputInterface
 
         #[Assert\Positive(message: 'category_invalid')]
         public ?int $categoryId = null,
+
+        // Moves the task, its subtasks with it, to another of the account's active TODOs; null
+        // keeps it where it is. Ignored on a subtask, which follows its parent.
+        #[Assert\Positive(message: 'todo_invalid')]
+        public ?int $todoId = null,
     ) {
     }
 

@@ -22,7 +22,6 @@ export function StatusPage() {
         <Stack>
             <SystemPanel title="Statut">
                 <ProgressLine name="Niveau" progress={status.data.progress} />
-                <p className="tracker-note">{status.data.progress.experience} XP au total</p>
             </SystemPanel>
 
             <div className="status-groups">

@@ -37,15 +37,21 @@ app — the same action never wears two faces, and two actions never wear the sa
 
 | Icon | Action | Note |
 | --- | --- | --- |
+| `Star` | mettre en favori, retirer des favoris | a toggle: `IconButton` `pressed`, filled while on, with `aria-pressed` |
+| `Sun` | — | not an action: marks « Aujourd'hui » in the task list |
+| `Archive` | archiver | puts a TODO away; asks first |
 | `Check` | terminer, cocher | a box ticked and unticked by the same gesture is `CheckToggle`, with `aria-pressed` |
-| `RotateCcw` | rouvrir | the undo of `Check`, and only that |
+| `RotateCcw` | rouvrir, réactiver | the undo of `Check`, and of `Archive` |
 | `Eye` | consulter | opens something read-only |
 | `Play` | reprendre, démarrer | goes back to something under way, or starts it from its blueprint — a workout from a routine |
 | `Repeat` | refaire | starts something new laid out like a past one — a workout done again |
 | `Copy` | dupliquer | makes a second one of the same, to change on its own — a routine copied |
-| `Pencil` | modifier | |
-| `Plus` | créer, ajouter | |
-| `CalendarDays` | planifier | opens the planning of one thing — a habit's days, from its line |
+| `Pencil` | modifier, noter | noter: the day's value of a tracker, sleep or weight, written in its window |
+| `Plus` | créer, ajouter, suivre | suivre: take a habit of the catalogue on |
+| `Minus` | retirer | drop a habit one keeps — its history stays; always `variant="danger"` |
+| `Settings2` | gérer | opens what is set up around a thing — the habits to keep |
+| `Ellipsis` | options | not an action: opens a menu (`MenuButton`) of what lies around a thing — a tracker's « Historique », « Réglages » |
+| `CalendarDays` | planifier | unfolds the planning of one thing — a habit's days, in « Gérer les habitudes » |
 | `RefreshCw` | — | not an action: marks a habit a tracker keeps, « Validée automatiquement » |
 | `Calendar` | voir le planning | a link (`IconLink`) to the planning page, not an action |
 | `Trash2` | supprimer | **always `variant="danger"`**, red from the start |
@@ -61,6 +67,11 @@ the cross closes, and nothing else does either.
 **A destructive icon is red from the start**, not on hover: an action that cannot be undone
 announces itself before it is reached, otherwise it looks like every other icon until it is
 too late.
+
+**A tracker's one button** (`IconButton` `hero`, 60 px) is the exception that keeps the rule: it
+wears the tracker's own thing drawn large — a glass, footprints, a bed, a scale — and the action
+rides on its corner as a `badge`, from this table: `Plus` to add, `Pencil` to note. The badge is
+the verb; the big icon only says what the card is about.
 
 ### An icon that is not an action
 
@@ -132,6 +143,11 @@ content, and the form arrives over it.
 - a click that *started* inside the window and ended outside does not close it, so dragging a
   selection out of a field is harmless;
 - the window is mounted only while it is open, which is what resets the form between two uses.
+- **its title and its cross are inside the window, and stay put**: only what is under them scrolls;
+- a window whose content changes height as one types — a list filtered by a search, the movements
+  of « Ajouter un exercice » — is **`tall`**: one fixed height from the start, so it does not jump
+  about. Its form marks the one part that grows with `.modal-scroll`, and only that part scrolls:
+  the search above it and the buttons below stay where they are.
 
 ## 3.1 Reading before writing
 
@@ -146,7 +162,7 @@ A creation form starts empty: no category, no preselected option in a list. Wher
 default exists — the task priority — it is the **server** that applies it, once, on a payload
 that named none. A front end never guesses on the person's behalf.
 
-**Two exceptions, and only two.** The first: a field that records a **measurement** opens on the last value
+**Three exceptions, and only three.** The first: a field that records a **measurement** opens on the last value
 measured — the weight field is prefilled with the last known weight. It is not a guess among
 options, it is the same quantity measured again: a weight moves by hundreds of grams, so the
 previous number is almost the next one and retyping it in full is work for nothing. The test for
@@ -156,6 +172,11 @@ choice*; a category does not, and stays empty.
 The second, decided by the product owner: the **rule of a planning entry** opens on « Tous les
 jours ». It is what most plans are — and what every habit starts with — so the form offers it first
 and has it chosen; any other rule is one change away.
+
+The third, decided by the product owner too: **the TODO of a task or of a task planning entry**
+opens on the one meant — on a TODO's page, that TODO; from the dashboard and the planning, « A
+faire », the default. A task always sits in one, so the field is never empty, and the one on
+screen is the one the person is filling. The lists offer « A faire » first.
 
 ## 4.1 An active/inactive filter
 
@@ -196,7 +217,7 @@ Both front ends keep everything they draw with in `src/components/`, re-exported
 
 | Folder | Holds | Website | Back-office |
 | --- | --- | --- | --- |
-| `Button/` | what is clicked to act, confirmation included | `Button`, `IconButton`, `CheckToggle`, `TextButton` | `Button`, `ConfirmButton` |
+| `Button/` | what is clicked to act, confirmation included | `Button`, `IconButton`, `CheckToggle`, `TextButton`, `MenuButton` | `Button`, `ConfirmButton` |
 | `Form/` | `Form`, **one component per kind of field**, `FormActions` | `TextField`, `NumberField`, `DecimalField`, `DurationField`, `DateField`, `TimeField`, `EmailField`, `PasswordField`, `TextAreaField`, `SelectField`, `ChoiceField`, `RatingField`, `FormGrid`, `useViolations` | `TextField`, `NumberField`, `EmailField`, `PasswordField`, `TextAreaField`, `SelectField`, `SwitchField`, `TextArea` |
 | `List/` | a list of things, and what filters it | `DataList`, `ListItem`, `DefinitionList`, `FoldGroup` | `DataTable`, `ItemList`, `DescriptionList`, `ListToolbar`, `ActiveFilter`, `FilterSelect`, `useActiveFilter` |
 | `Modal/` | what opens over the screen | `Modal`, `ConfirmDialog` | `FormModal` (a `Form` shown in a window), `DetailDrawer` |

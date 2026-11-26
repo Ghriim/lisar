@@ -33,7 +33,7 @@ export function DashboardPage() {
             </div>
 
             <div className="main-columns">
-                <TaskList />
+                <TaskList source={{ kind: 'overview' }} />
                 <div className="side-column">
                     <TrainingToday />
                     <HabitPanel />

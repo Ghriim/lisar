@@ -31,8 +31,17 @@ class TaskDataModel implements DataModelInterface
     #[ORM\JoinColumn(name: 'owner_id', nullable: false, onDelete: 'CASCADE')]
     public UserDataModel $owner;
 
+    // The list it sits in. A subtask is always in its parent's. Deleting a TODO deletes its tasks.
+    #[ORM\ManyToOne(targetEntity: TodoDataModel::class)]
+    #[ORM\JoinColumn(name: 'todo_id', nullable: false, onDelete: 'CASCADE')]
+    public TodoDataModel $todo;
+
     #[ORM\Column(length: 255)]
     public string $title;
+
+    // A root task only. It stays favourite once done; the dashboard simply stops showing it.
+    #[ORM\Column(options: ['default' => false])]
+    public bool $isFavorite = false;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     public ?string $description = null;

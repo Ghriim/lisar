@@ -1,10 +1,11 @@
 import { ApiError } from '../../api/client'
 import type { Task } from '../../api/types'
 import { humanise } from '../../api/violations'
-import { CheckToggle, Chip, TextButton } from '../../components'
+import { Eye, Star } from 'lucide-react'
+import { CheckToggle, Chip, IconButton, TextButton } from '../../components'
 import { formatDayShort, formatDayWithWeekday, isOverdue } from './taskDisplay'
 import { formatExperience, taskExperience } from './taskExperience'
-import { useCompleteTask, useReopenTask } from './queries'
+import { useCompleteTask, useFavoriteTask, useReopenTask, useUnfavoriteTask } from './queries'
 
 interface TaskItemProps {
     task: Task
@@ -15,23 +16,26 @@ interface TaskItemProps {
 }
 
 /**
- * A task as a line: the box that ticks it off, the title that opens it, a line of chips, and what
- * it earns. Two actions and no more — everything else is in the task's window.
+ * A task as a line: the box that ticks it off, the title that opens it, a line of chips, what it
+ * earns, its star and the eye that opens it too. Everything else is in the task's window.
  */
 export function TaskItem({ task, onView, inToday = false }: TaskItemProps) {
     const complete = useCompleteTask()
     const reopen = useReopenTask()
+    const favorite = useFavoriteTask()
+    const unfavorite = useUnfavoriteTask()
 
     const done = task.state === 'done'
     const overdue = isOverdue(task)
     const busy = complete.isPending || reopen.isPending
+    const starring = favorite.isPending || unfavorite.isPending
 
     const subtaskCount = task.subtasks.length
     const doneSubtaskCount = task.subtasks.filter((subtask) => subtask.state === 'done').length
 
     // Refusing to close a task whose subtask is still open is the one error this line can raise,
     // and it belongs next to the line that raised it.
-    const failure = [complete.error, reopen.error].find((one) => one !== null)
+    const failure = [complete.error, reopen.error, favorite.error, unfavorite.error].find((one) => one !== null)
     const error =
         failure instanceof ApiError
             ? humanise(failure.violationsFor('id')[0] ?? failure.code ?? 'action_failed')
@@ -84,6 +88,20 @@ export function TaskItem({ task, onView, inToday = false }: TaskItemProps) {
             </div>
 
             <span className="task-row-xp">{formatExperience(taskExperience(task))}</span>
+
+            {task.parentId === null && (
+                <IconButton
+                    icon={Star}
+                    label={task.isFavorite ? 'Retirer des favoris' : 'Mettre en favori'}
+                    subject={task.title}
+                    pressed={task.isFavorite}
+                    disabled={starring}
+                    onClick={() => (task.isFavorite ? unfavorite.mutate(task.id) : favorite.mutate(task.id))}
+                />
+            )}
+
+            {/* The same as the title: a target that says what it does, for whoever does not think to click a name. */}
+            <IconButton icon={Eye} label="Consulter" subject={task.title} onClick={() => onView(task)} />
         </div>
     )
 }

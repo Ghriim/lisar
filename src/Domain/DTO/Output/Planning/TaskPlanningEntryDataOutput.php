@@ -17,5 +17,8 @@ final class TaskPlanningEntryDataOutput
 
     public ?CategoryDataOutput $category = null;
 
+    /** The TODO its tasks are made in. */
+    public int $todoId;
+
     public PlanningScheduleDataOutput $schedule;
 }

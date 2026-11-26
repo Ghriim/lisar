@@ -13,10 +13,12 @@ use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
 use App\Domain\Gateway\Persister\Todo\TaskPersisterGateway;
 use App\Domain\Gateway\Provider\Category\CategoryProviderGateway;
 use App\Domain\Gateway\Provider\Todo\TaskProviderGateway;
+use App\Domain\Gateway\Provider\Todo\TodoProviderGateway;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Validation\Validator\Todo\CreateTaskValidator;
 use App\Infrastructure\Exception\DataModelNotFoundException;
 use App\UseCase\UseCaseInterface;
+use LogicException;
 
 final readonly class CreateTaskUseCase implements UseCaseInterface
 {
@@ -24,6 +26,7 @@ final readonly class CreateTaskUseCase implements UseCaseInterface
         private CreateTaskValidator $validator,
         private CategoryProviderGateway $categoryProviderGateway,
         private TaskProviderGateway $taskProviderGateway,
+        private TodoProviderGateway $todoProviderGateway,
         private TaskPersisterGateway $taskPersisterGateway,
         private TaskOutputFactory $outputFactory,
     ) {
@@ -44,10 +47,19 @@ final readonly class CreateTaskUseCase implements UseCaseInterface
             ? null
             : $this->taskProviderGateway->findOneById($input->parentId);
 
-        $this->validator->validate($currentUser, $input, $category, $parent, $currentUser);
+        // A subtask sits in its parent's TODO, whatever was named; a task in the one named —
+        // whoever's, refused by the validator — or else in the account's default.
+        $todo = match (true) {
+            null !== $parent => $parent->todo,
+            null !== $input->todoId => $this->todoProviderGateway->findOneById($input->todoId),
+            default => $this->todoProviderGateway->findDefaultForOwner($currentUser),
+        };
+
+        $this->validator->validate($currentUser, $input, $category, $parent, $currentUser, $todo);
 
         $task = new TaskDataModel();
         $task->owner = $currentUser;
+        $task->todo = $todo ?? throw new LogicException('The validator lets no task through without its TODO.');
         $task->title = $input->title;
         $task->description = $input->description;
         $task->dueDate = $input->getDueDate();

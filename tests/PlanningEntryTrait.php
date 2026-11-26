@@ -11,11 +11,13 @@ use App\Domain\DTO\DataModel\Planning\HabitPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\Planning\TrainingPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\Training\RoutineDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Planning\PlanningScheduleDataInput;
 use App\Domain\Registry\Habits\HabitSourceRegistry;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
+use App\Domain\Registry\Todo\TodoStatusRegistry;
 use DateTimeImmutable;
 
 /** Planning entries and schedules built by hand, the way a request or Doctrine would hand them over. */
@@ -96,6 +98,12 @@ trait PlanningEntryTrait
         $entry = new TaskPlanningEntryDataModel();
         $entry->id = $id;
         $entry->owner = $owner;
+        $entry->todo = new TodoDataModel();
+        $entry->todo->id = 1;
+        $entry->todo->owner = $owner;
+        $entry->todo->title = 'A faire';
+        $entry->todo->status = TodoStatusRegistry::ACTIVE;
+        $entry->todo->isDefault = true;
         $entry->title = 'Sortir les poubelles';
         $entry->rule = $rule;
         $entry->startDate = new DateTimeImmutable($startDate);
@@ -110,6 +118,7 @@ trait PlanningEntryTrait
         $task = new TaskDataModel();
         $task->id = $id;
         $task->owner = $entry->owner;
+        $task->todo = $entry->todo;
         $task->title = $entry->title;
         $task->planningEntry = $entry;
         $task->plannedDate = new DateTimeImmutable($day);

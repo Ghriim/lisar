@@ -1,4 +1,4 @@
-import { Check, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { Check, Pencil, Plus, RotateCcw, Star, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { ApiError } from '../../api/client'
 import type { Task } from '../../api/types'
@@ -16,7 +16,8 @@ import {
     StateChip,
     Stack,
 } from '../../components'
-import { useCompleteTask, useDeleteTask, useReopenTask, useTask } from './queries'
+import { useTodos } from '../todos/queries'
+import { useCompleteTask, useDeleteTask, useFavoriteTask, useReopenTask, useTask, useUnfavoriteTask } from './queries'
 import { formatDay, isOverdue, priorityDisplay, stateDisplay } from './taskDisplay'
 
 interface TaskDetailProps {
@@ -41,15 +42,19 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
     const complete = useCompleteTask()
     const reopen = useReopenTask()
     const remove = useDeleteTask()
+    const favorite = useFavoriteTask()
+    const unfavorite = useUnfavoriteTask()
+    // Its TODO is named here only: the lists do not say it.
+    const todoTitle = useTodos().data?.find((todo) => todo.id === task.todoId)?.title ?? null
     /** The task a confirmation is pending on: this one, or one of its subtasks. */
     const [confirming, setConfirming] = useState<Task | null>(null)
 
     const state = stateDisplay(task.state)
     const subtaskCount = task.subtasks.length
     const doneSubtaskCount = task.subtasks.filter((subtask) => subtask.state === 'done').length
-    const busy = complete.isPending || reopen.isPending || remove.isPending
+    const busy = complete.isPending || reopen.isPending || remove.isPending || favorite.isPending || unfavorite.isPending
 
-    const failure = [complete.error, reopen.error, remove.error].find((one) => one !== null)
+    const failure = [complete.error, reopen.error, remove.error, favorite.error, unfavorite.error].find((one) => one !== null)
     const error =
         failure instanceof ApiError
             ? humanise(failure.violationsFor('id')[0] ?? failure.code ?? 'action_failed')
@@ -76,6 +81,7 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
                         value: <StateChip colour={state.colour}>{state.label}</StateChip>,
                     },
                     { label: 'Détail', placeholder: 'Aucune description', value: task.description },
+                    { label: 'TODO', placeholder: '—', value: todoTitle },
                     {
                         label: 'Catégorie',
                         placeholder: 'Aucune catégorie',
@@ -130,6 +136,17 @@ export function TaskDetail({ task: opened, onEdit, onAddSubtask, onDeleted }: Ta
                 )}
 
                 <IconButton icon={Pencil} label="Modifier" subject={task.title} onClick={() => onEdit(task)} />
+
+                {task.parentId === null && (
+                    <IconButton
+                        icon={Star}
+                        label={task.isFavorite ? 'Retirer des favoris' : 'Mettre en favori'}
+                        subject={task.title}
+                        pressed={task.isFavorite}
+                        disabled={busy}
+                        onClick={() => (task.isFavorite ? unfavorite.mutate(task.id) : favorite.mutate(task.id))}
+                    />
+                )}
 
                 {task.parentId === null && (
                     <IconButton

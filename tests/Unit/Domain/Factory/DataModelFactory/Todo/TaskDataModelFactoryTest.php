@@ -29,6 +29,7 @@ final class TaskDataModelFactoryTest extends TestCase
         $task = (new TaskDataModelFactory())->buildPlanned($entry, new DateTimeImmutable('2026-11-30', new DateTimeZone('Europe/Paris')));
 
         self::assertSame($entry->owner, $task->owner);
+        self::assertSame($entry->todo, $task->todo);
         self::assertSame(['Sortir les poubelles', 'Jaune le lundi.', TaskPriorityRegistry::DEFAULT], [$task->title, $task->description, $task->priority]);
         self::assertSame($entry->category, $task->category);
         self::assertSame($entry, $task->planningEntry);

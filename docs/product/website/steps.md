@@ -5,8 +5,11 @@ goal, glanced at rather than opened.
 
 ## The widget
 
-A footprint, the count so far (`0 pas`) and the goal under it (`objectif 5000`), a bar of six
-segments, and the button **`Saisir mes pas`**, which opens the window where the number is set.
+On the left, **the card's one button**: the footprints drawn large, with a small plus on its
+corner — « Ajouter », which opens the window where the number is set. Beside it, the count so far
+(`0 pas`), the goal under it (`objectif 5000`) and a bar of six segments.
+
+The **« ⋯ »** in the card's top right corner drops a menu: « Historique » and « Réglages ». Neither leads anywhere yet.
 
 That is all it shows. Like the others, the point of the widget is to be glanceable and to stay out
 of the way of the task list it sits next to.

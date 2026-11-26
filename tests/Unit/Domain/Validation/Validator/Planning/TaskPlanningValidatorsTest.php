@@ -12,10 +12,13 @@ use App\Domain\DTO\Input\Planning\PlanningScheduleDataInput;
 use App\Domain\DTO\Input\Planning\SaveTaskPlanningEntryDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Registry\Planning\PlanningRuleRegistry;
+use App\Domain\Registry\Todo\TodoStatusRegistry;
 use App\Domain\Validation\Constraint\Category\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Planning\PlanningRangeConstraint;
 use App\Domain\Validation\Constraint\Planning\PlanningScheduleConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoUsableConstraint;
 use App\Domain\Validation\Validator\Planning\CreatePlannedTasksValidator;
 use App\Domain\Validation\Validator\Planning\CreateTaskPlanningEntryValidator;
 use App\Domain\Validation\Validator\Planning\DeleteTaskPlanningEntryValidator;
@@ -46,8 +49,8 @@ final class TaskPlanningValidatorsTest extends TestCase
     {
         $this->expectNotToPerformAssertions();
 
-        (new CreateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->input(), null);
-        (new CreateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->input(categoryId: 3), $this->categoryOf(null));
+        (new CreateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->input(), null, $this->todoOf($this->anyCurrentUser()));
+        (new CreateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->input(categoryId: 3), $this->categoryOf(null), $this->todoOf($this->anyCurrentUser()));
     }
 
     public function testCreatingAccumulatesTheTitleTheCategoryAndTheSchedule(): void
@@ -60,8 +63,9 @@ final class TaskPlanningValidatorsTest extends TestCase
                 'title' => ['title_required'],
                 'categoryId' => [CategoryUsableConstraint::CATEGORY_NOT_FOUND],
                 'schedule.monthDays' => [PlanningScheduleConstraint::MONTH_DAYS_REQUIRED],
+                'todoId' => [TodoUsableConstraint::TODO_NOT_FOUND],
             ],
-            fn () => (new CreateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $input, $this->categoryOf($this->currentUser(99))),
+            fn () => (new CreateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $input, $this->categoryOf($this->currentUser(99)), null),
         );
     }
 
@@ -69,7 +73,7 @@ final class TaskPlanningValidatorsTest extends TestCase
     {
         $this->expectNotToPerformAssertions();
 
-        (new UpdateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->taskEntry(1, $this->anyCurrentUser()), $this->input(), null);
+        (new UpdateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->taskEntry(1, $this->anyCurrentUser()), $this->input(), null, $this->todoOf($this->anyCurrentUser()));
     }
 
     /** Someone else's entry: refused on that alone, whatever else the call carries. */
@@ -78,7 +82,7 @@ final class TaskPlanningValidatorsTest extends TestCase
         $this->assertRefused(
             UpdateTaskPlanningEntryValidator::ERROR_CODE,
             ['currentUser' => [IsOwnerConstraint::NOT_ALLOWED]],
-            fn () => (new UpdateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->taskEntry(1, $this->currentUser(99)), new SaveTaskPlanningEntryDataInput(), null),
+            fn () => (new UpdateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->taskEntry(1, $this->currentUser(99)), new SaveTaskPlanningEntryDataInput(), null, null),
         );
     }
 
@@ -87,7 +91,32 @@ final class TaskPlanningValidatorsTest extends TestCase
         $this->assertRefused(
             UpdateTaskPlanningEntryValidator::ERROR_CODE,
             ['categoryId' => [CategoryUsableConstraint::CATEGORY_NOT_FOUND]],
-            fn () => (new UpdateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->taskEntry(1, $this->anyCurrentUser()), $this->input(categoryId: 3), null),
+            fn () => (new UpdateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->taskEntry(1, $this->anyCurrentUser()), $this->input(categoryId: 3), null, $this->todoOf($this->anyCurrentUser())),
+        );
+    }
+
+    /** Its tasks go in one of the caller's active TODOs: an archived one makes nothing. */
+    public function testUpdatingRefusesAnArchivedTodo(): void
+    {
+        $this->assertRefused(
+            UpdateTaskPlanningEntryValidator::ERROR_CODE,
+            ['todoId' => [TodoActiveConstraint::TODO_ARCHIVED]],
+            fn () => (new UpdateTaskPlanningEntryValidator($this->validator))->validate(
+                $this->anyCurrentUser(),
+                $this->taskEntry(1, $this->anyCurrentUser()),
+                $this->input(),
+                null,
+                $this->todoOf($this->anyCurrentUser(), status: TodoStatusRegistry::ARCHIVED),
+            ),
+        );
+    }
+
+    public function testCreatingRefusesSomeoneElsesTodo(): void
+    {
+        $this->assertRefused(
+            CreateTaskPlanningEntryValidator::ERROR_CODE,
+            ['todoId' => [TodoUsableConstraint::TODO_NOT_FOUND]],
+            fn () => (new CreateTaskPlanningEntryValidator($this->validator))->validate($this->anyCurrentUser(), $this->input(), null, $this->todoOf($this->currentUser(99))),
         );
     }
 

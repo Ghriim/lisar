@@ -174,7 +174,7 @@ export function WorkoutExercisesCard({ workout, restTimer }: { workout: Workout;
                 {error !== null && <Alert>{error}</Alert>}
             </SystemPanel>
             {panel?.kind === 'add-block' && (
-                <Modal title="Ajouter un exercice" onClose={close}>
+                <Modal title="Ajouter un exercice" tall onClose={close}>
                     <MovementPicker
                         max={MAX_MOVEMENTS_PER_BLOCK}
                         pending={addBlock.isPending}
@@ -187,7 +187,7 @@ export function WorkoutExercisesCard({ workout, restTimer }: { workout: Workout;
             )}
 
             {panel?.kind === 'add-exercise' && (
-                <Modal title="Ajouter au bloc" onClose={close}>
+                <Modal title="Ajouter au bloc" tall onClose={close}>
                     <MovementPicker
                         max={1}
                         pending={addExercise.isPending}

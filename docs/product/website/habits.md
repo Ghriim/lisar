@@ -14,6 +14,19 @@ The person does not create habits yet — they **subscribe** to the ones they wa
 window opened off the panel, and unsubscribe from the ones they drop. The window groups them
 **under their category** (flat while none has one).
 
+The window is tall and fixed: **a search** sits on top — by name or category, accents and case
+aside — and only the list under it scrolls. Each habit says how it is kept — **« Manuel »** or
+**« Automatique »** — and, once kept, **the days it counts** (« Lun, mer, ven »). Taking it on is
+the **plus** (« Suivre »), dropping it the **minus**, red (« Retirer »).
+
+**That window is also the one place a habit's planning is managed.** « Suivre » takes the habit on
+and unfolds, under its line, the form of the « tous les jours » it starts with: the person says
+there and then which days it counts — or keeps every day and leaves. A kept habit carries
+**« Planifier »** (a calendar), which unfolds the same under its line: its entries one per line,
+each to change (the pencil) or delete (the bin — absent on the last one: a kept habit always has a
+planning), and « Ajouter » for another. The form is the planning page's, the habit already
+chosen.
+
 Unsubscribing **keeps the history**: it stops the habit appearing in the list and stops its run
 counting, but the days already kept are not erased — the day habits earn experience, a dropped-then-resumed
 habit must not have had its past wiped.
@@ -35,7 +48,7 @@ The section is titled `[ HABITUDES ]`, outside its card, with **« Gérer les ha
 right, which opens the catalogue.
 
 One box per subscribed habit, in two parts: on top, the name with what it counts under it on the
-left and its buttons on the right; below, across the full width, **its last seven days**.
+left and its tick on the right; below, across the full width, **its last seven days**.
 
 - **its name**, with its category's **small icon** just before it on the same line — the category's
   label is not shown, the icon names it on hover; a habit without a category has none;
@@ -53,10 +66,6 @@ left and its buttons on the right; below, across the full width, **its last seve
   | today, planned, still to do | an accent circle, 2px, with a glow |
   | not planned | a short dash |
 
-- **« Planifier »** (a calendar), on every habit, opening the habit's planning in a window: its
-  entries one per line, each to change (the pencil) or delete (the bin — absent on the last one: a
-  kept habit always has a planning), and « Ajouter » for another. The form is the planning page's,
-  the habit already chosen;
 - **« Valider aujourd'hui »**, and only when the habit is **manual**: a box, outlined in the accent,
   filled with a dark check once today is kept. The same box unticks it. Ticking it fills today's dot.
 

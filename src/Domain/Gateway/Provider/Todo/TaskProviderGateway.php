@@ -7,6 +7,7 @@ namespace App\Domain\Gateway\Provider\Todo;
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Planning\TaskPlanningEntryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use DateTimeImmutable;
 
@@ -16,12 +17,21 @@ interface TaskProviderGateway
     public function findOneById(int $id): ?TaskDataModel;
 
     /**
-     * The account's own list: root tasks only, subtasks nested underneath, sorted by category
+     * One TODO of the account's: root tasks only, subtasks nested underneath, sorted by category
      * then by priority, most pressing first.
      *
      * @return list<TaskDataModel>
      */
-    public function findAllForOwnerList(UserDataModel $owner, bool $isDone): array;
+    public function findAllForOwnerList(UserDataModel $owner, TodoDataModel $todo, bool $isDone): array;
+
+    /**
+     * What the account has on now, across its active TODOs: the root tasks due by `$today` — late
+     * ones included — or favourite, open, or done between `$from` and `$to`, today's instants.
+     * Sorted as a list is.
+     *
+     * @return list<TaskDataModel>
+     */
+    public function findOverviewForOwner(UserDataModel $owner, DateTimeImmutable $today, DateTimeImmutable $from, DateTimeImmutable $to): array;
 
     /** Whether a category may still be deleted. */
     public function countForCategory(CategoryDataModel $category): int;

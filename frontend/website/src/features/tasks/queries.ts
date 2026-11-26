@@ -11,10 +11,20 @@ const PLANNING = ['planning'] as const
 /** The status' key, likewise: ticking a task off is what will earn experience. */
 const STATUS = ['status'] as const
 
-export function useTasks(isDone: boolean) {
+/** One TODO's tasks, open or done. Off until the TODO is known. */
+export function useTasks(isDone: boolean, todoId: number | null, enabled = true) {
     return useQuery({
-        queryKey: [...TASKS, isDone],
-        queryFn: () => api.fetchTasks(isDone),
+        queryKey: [...TASKS, 'todo', todoId, isDone],
+        queryFn: () => api.fetchTasks(isDone, todoId),
+        enabled,
+    })
+}
+
+/** What the dashboard shows, across the TODOs: the API says which tasks those are. */
+export function useTaskOverview() {
+    return useQuery({
+        queryKey: [...TASKS, 'overview'],
+        queryFn: api.fetchTaskOverview,
     })
 }
 
@@ -69,4 +79,12 @@ export function useReopenTask() {
 
 export function useDeleteTask() {
     return useTaskMutation((id: number) => api.deleteTask(id))
+}
+
+export function useFavoriteTask() {
+    return useTaskMutation((id: number) => api.favoriteTask(id))
+}
+
+export function useUnfavoriteTask() {
+    return useTaskMutation((id: number) => api.unfavoriteTask(id))
 }

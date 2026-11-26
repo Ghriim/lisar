@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\UseCase\User;
 
+use App\Domain\DTO\Event\User\UserCreatedEvent;
 use App\Domain\DTO\Input\User\RegisterUserDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Gateway\Provider\User\UserProviderGateway;
@@ -14,12 +15,14 @@ use App\Domain\Validation\Constraint\User\EmailAvailableConstraint;
 use App\Domain\Validation\Constraint\User\UsernameAvailableConstraint;
 use App\Domain\Validation\Validator\User\RegisterUserValidator;
 use App\Tests\Integration\QueryCountTrait;
+use App\Tests\Integration\RecordedEventsTrait;
 use App\UseCase\User\RegisterUserUseCase;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class RegisterUserUseCaseTest extends KernelTestCase
 {
     use QueryCountTrait;
+    use RecordedEventsTrait;
 
     private RegisterUserUseCase $useCase;
     private UserProviderGateway $userProviderGateway;
@@ -40,6 +43,14 @@ final class RegisterUserUseCaseTest extends KernelTestCase
             fn () => null,
             fn () => $this->useCase->execute($this->buildInput()),
         );
+    }
+
+    /** What every account starts with follows from its creation: its « A faire » (CreateDefaultTodoEventHandler). */
+    public function testItSaysTheAccountWasCreated(): void
+    {
+        $output = $this->useCase->execute($this->buildInput());
+
+        self::assertSame($output->id, $this->assertEventRaised(UserCreatedEvent::class)->user->id);
     }
 
     public function testItCreatesAnAccount(): void

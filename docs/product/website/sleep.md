@@ -23,8 +23,12 @@ So the widget holds one of two things:
 - « Non notée »;
 - the night's **duration** and the **face** that was picked, if one was.
 
-Under it, the night it is: `nuit de mercredi`, named by the day one wakes on. At the bottom, the
-card's main button, **`Noter ma nuit`**, opens the window.
+Under it, the night it is: `nuit de mercredi`, named by the day one wakes on. Under that, the
+**average of the last seven nights**: « Moy. 7 j  7 h 10 » — « — » until the API answers it
+(`features/sleep/sleepWeekAverage.ts`).
+
+On the left, **the card's one button**: the bed drawn large, with a small pencil on its corner —
+« Noter », which opens the window. The **« ⋯ »** in the card's top right corner drops a menu: « Historique » and « Réglages ». Neither leads anywhere yet.
 
 ## The window
 

@@ -6,12 +6,16 @@ namespace App\Tests\Unit\Domain\Validation\Validator\Todo;
 
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Registry\Todo\TaskPriorityRegistry;
+use App\Domain\Registry\Todo\TodoStatusRegistry;
 use App\Domain\Validation\Constraint\Category\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\ParentTaskUsableConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoUsableConstraint;
 use App\Domain\Validation\Validator\Todo\CreateTaskValidator;
 use App\Tests\CurrentUserTrait;
 use PHPUnit\Framework\TestCase;
@@ -38,7 +42,7 @@ final class CreateTaskValidatorTest extends TestCase
 
     public function testItAcceptsATaskWithNothingButATitle(): void
     {
-        $this->validator->validate($this->anyCurrentUser(), new CreateTaskDataInput('Buy milk'), null, null, $this->owner);
+        $this->validator->validate($this->anyCurrentUser(), new CreateTaskDataInput('Buy milk'), null, null, $this->owner, $this->todoOf($this->owner));
 
         $this->expectNotToPerformAssertions();
     }
@@ -82,6 +86,7 @@ final class CreateTaskValidatorTest extends TestCase
                 $category,
                 null,
                 $this->owner,
+                $this->todoOf($this->owner),
             );
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
@@ -102,6 +107,7 @@ final class CreateTaskValidatorTest extends TestCase
                 null,
                 $parent,
                 $this->owner,
+                $this->todoOf($this->owner),
             );
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
@@ -123,6 +129,7 @@ final class CreateTaskValidatorTest extends TestCase
             $category,
             null,
             $this->owner,
+            $this->todoOf($this->owner),
         );
 
         $this->expectNotToPerformAssertions();
@@ -137,6 +144,7 @@ final class CreateTaskValidatorTest extends TestCase
                 null,
                 null,
                 $this->owner,
+                $this->todoOf($this->owner),
             );
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
@@ -149,6 +157,32 @@ final class CreateTaskValidatorTest extends TestCase
         }
     }
 
+    public function testItRejectsATodoThatWasNotFound(): void
+    {
+        $this->assertTodoRefused(null, TodoUsableConstraint::TODO_NOT_FOUND);
+    }
+
+    public function testItRejectsSomeoneElsesTodo(): void
+    {
+        $this->assertTodoRefused($this->todoOf($this->currentUser(2)), TodoUsableConstraint::TODO_NOT_FOUND);
+    }
+
+    public function testItRejectsAnArchivedTodo(): void
+    {
+        $this->assertTodoRefused($this->todoOf($this->owner, status: TodoStatusRegistry::ARCHIVED), TodoActiveConstraint::TODO_ARCHIVED);
+    }
+
+    /** A parent refused says it all: its TODO is not reported on top. */
+    public function testItSaysNothingOfTheTodoWhenTheParentIsRefused(): void
+    {
+        try {
+            $this->validator->validate($this->anyCurrentUser(), new CreateTaskDataInput('Buy milk', parentId: 9), null, null, $this->owner, null);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['parentId' => [ParentTaskUsableConstraint::PARENT_TASK_NOT_FOUND]], $exception->violations);
+        }
+    }
+
     public function testItReadsTheDueDateAsADay(): void
     {
         $input = new CreateTaskDataInput('Buy milk', dueDate: '2026-09-30');
@@ -156,10 +190,20 @@ final class CreateTaskValidatorTest extends TestCase
         self::assertSame('2026-09-30 00:00:00', $input->getDueDate()?->format('Y-m-d H:i:s'));
     }
 
+    private function assertTodoRefused(?TodoDataModel $todo, string $errorCode): void
+    {
+        try {
+            $this->validator->validate($this->anyCurrentUser(), new CreateTaskDataInput('Buy milk', todoId: 7), null, null, $this->owner, $todo);
+            self::fail('Expected ValidationException');
+        } catch (ValidationException $exception) {
+            self::assertSame(['todoId' => [$errorCode]], $exception->violations);
+        }
+    }
+
     private function assertViolatesOn(CreateTaskDataInput $input, string $propertyPath, string $errorCode): void
     {
         try {
-            $this->validator->validate($this->anyCurrentUser(), $input, null, null, $this->owner);
+            $this->validator->validate($this->anyCurrentUser(), $input, null, null, $this->owner, $this->todoOf($this->owner));
             self::fail('Expected ValidationException');
         } catch (ValidationException $exception) {
             self::assertSame(CreateTaskValidator::ERROR_CODE, $exception->errorCode);

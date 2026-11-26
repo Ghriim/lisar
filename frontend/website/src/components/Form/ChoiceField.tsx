@@ -29,6 +29,7 @@ interface ChoiceFieldProps<TValue extends string | number> extends FieldProps {
 export function ChoiceField<TValue extends string | number>({
     label,
     isMandatory = false,
+    hideLabel = false,
     errors,
     disabled,
     choices,
@@ -54,7 +55,7 @@ export function ChoiceField<TValue extends string | number>({
     )
 
     return (
-        <FieldFrame label={label} isMandatory={isMandatory} errors={errors} group>
+        <FieldFrame label={label} isMandatory={isMandatory} hideLabel={hideLabel} errors={errors} group>
             {choices.length === 0
                 ? empty
                 : isGrouped(choices)

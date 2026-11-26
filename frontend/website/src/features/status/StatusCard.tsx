@@ -31,7 +31,7 @@ export function StatusCard() {
 
                 <div className="status-card-progress">
                     <div className="status-card-identity">
-                        <span className="status-card-name">{user?.username}</span>
+                        <span className="status-card-name">{capitalised(user?.username ?? '')}</span>
                         <span className="status-card-title">Titre : {title ?? '—'}</span>
                     </div>
                     <SegmentedBar
@@ -60,4 +60,9 @@ export function StatusCard() {
             </ul>
         </SystemPanel>
     )
+}
+
+/** « ghriim » shown « Ghriim »: the pseudo as it was typed, its first letter raised. */
+function capitalised(name: string): string {
+    return name.charAt(0).toLocaleUpperCase('fr-FR') + name.slice(1)
 }

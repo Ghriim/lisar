@@ -25,8 +25,8 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * What the task planning tests share: Alice takes the bins out on Mondays and Thursdays, Bob
- * plans nothing. The fixture runs with the handlers off, so no task is made yet; dates are read
- * against the real today.
+ * plans nothing. No task is made yet — whatever today's weekday; dates are read against the real
+ * today.
  */
 trait TaskPlanningTestTrait
 {
@@ -39,6 +39,14 @@ trait TaskPlanningTestTrait
     private function loadPlanningFixtures(): void
     {
         $this->loadFixtures(TaskPlanningEntryFixtures::class);
+
+        // The fixtures run with the handlers on: on a Monday or a Thursday, the bins entry has
+        // made today's task already. Taken back, so every test starts with no task made.
+        self::getContainer()->get(EntityManagerInterface::class)->createQueryBuilder()
+            ->delete(TaskDataModel::class, 'task')
+            ->andWhere('task.planningEntry IS NOT NULL')
+            ->getQuery()
+            ->execute();
 
         $this->aliceId = $this->getReference(UserFixtures::ALICE, UserDataModel::class)->id ?? 0;
         $this->bobId = $this->getReference(UserFixtures::BOB_DEACTIVATED, UserDataModel::class)->id ?? 0;

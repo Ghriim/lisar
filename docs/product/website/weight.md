@@ -10,8 +10,12 @@ The **last known weight and the day it was recorded** — not today's, the last 
 skipped three days still sees where they stand; showing nothing until they step on the scale
 would tell them the least on the day they most want to know.
 
-It reads `72,40 kg`, with `le 22/11` under it — `aujourd’hui à 07:45` when it is today's. At
-the bottom, the button **`Nouvelle pesée`** opens the window where the number is written.
+It reads `72,40 kg`, with `le 22/11` under it — `aujourd’hui à 07:45` when it is today's. Under
+that, **how far it moved in seven days**, signed and in the accent: « 7 j  −0,3 kg » — « — » until
+the API answers it (`features/weight/weightWeekTrend.ts`).
+
+On the left, **the card's one button**: the scale drawn large, with a small pencil on its corner —
+« Noter », which opens the window where the number is written. The **« ⋯ »** in the card's top right corner drops a menu: « Historique » and « Réglages ». Neither leads anywhere yet.
 
 ## The window
 

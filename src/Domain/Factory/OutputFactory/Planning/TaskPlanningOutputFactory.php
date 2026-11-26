@@ -49,6 +49,7 @@ final readonly class TaskPlanningOutputFactory
         $output->title = $entry->title;
         $output->description = $entry->description;
         $output->category = null === $entry->category ? null : $this->categoryOutputFactory->buildOne($entry->category);
+        $output->todoId = (int) $entry->todo->id;
         $output->schedule = $this->scheduleOutputFactory->buildOne($entry);
 
         return $output;

@@ -18,6 +18,7 @@ import {
 import { useHabits } from '../habits/queries'
 import { useRoutines } from '../routines/queries'
 import { useCategories } from '../categories/queries'
+import { useActiveTodos } from '../todos/queries'
 import { failureOf } from '../workouts/workoutFormat'
 import { DAILY, MONTH_WEEKS, RULES, ruleChoiceOf, scheduleRuleOf, WEEKDAYS } from './planningFormat'
 import type { KindedEntry, PlanningKind } from './planningKinds'
@@ -60,6 +61,7 @@ export function PlanningEntryForm({ kind, editing, today, kindPicker, habitId, o
     const routines = useRoutines()
     const habits = useHabits()
     const categories = useCategories()
+    const todos = useActiveTodos()
     const createTraining = useCreateTrainingPlanningEntry()
     const updateTraining = useUpdateTrainingPlanningEntry()
     const createTask = useCreateTaskPlanningEntry()
@@ -89,6 +91,10 @@ export function PlanningEntryForm({ kind, editing, today, kindPicker, habitId, o
     const [title, setTitle] = useState(editing?.kind === 'task' ? editing.entry.title : '')
     const [description, setDescription] = useState(editing?.kind === 'task' ? (editing.entry.description ?? '') : '')
     const [categoryId, setCategoryId] = useState(editing?.kind === 'task' && editing.entry.category !== null ? `${editing.entry.category.id}` : '')
+    // Its TODO: « A faire » until another is chosen — a task always sits in one, and it is the one
+    // a person means when they name none (the exception frontend-conventions.md §4 notes).
+    const [chosenTodoId, setTodoId] = useState<string | null>(editing?.kind === 'task' ? `${editing.entry.todoId}` : null)
+    const todoId = chosenTodoId ?? `${todos.data?.find((todo) => todo.isDefault)?.id ?? ''}`
     // « Tous les jours » is offered first and chosen from the start: it is what most plans are.
     const [rule, setRule] = useState(initial === undefined ? DAILY : ruleChoiceOf(initial))
     const [startDate, setStartDate] = useState(initial?.startDate ?? today)
@@ -119,6 +125,7 @@ export function PlanningEntryForm({ kind, editing, today, kindPicker, habitId, o
                     title,
                     description: description.trim() === '' ? null : description,
                     categoryId: categoryId === '' ? null : Number(categoryId),
+                    todoId: todoId === '' ? null : Number(todoId),
                     schedule,
                 }
                 await (editing === null ? createTask.mutateAsync(payload) : updateTask.mutateAsync({ id: editing.entry.id, payload }))
@@ -161,6 +168,15 @@ export function PlanningEntryForm({ kind, editing, today, kindPicker, habitId, o
                         placeholder="Ce qu'il y a à faire"
                     />
                     <TextAreaField label="Détail" errors={violations.for('description')} value={description} onChange={setDescription} />
+                    <SelectField
+                        label="TODO"
+                        isMandatory
+                        errors={violations.for('todoId')}
+                        value={todoId}
+                        onChange={setTodoId}
+                        placeholder="Choisir une TODO"
+                        options={(todos.data ?? []).map((todo) => ({ value: `${todo.id}`, label: todo.title }))}
+                    />
                     <SelectField
                         label="Catégorie"
                         errors={violations.for('categoryId')}

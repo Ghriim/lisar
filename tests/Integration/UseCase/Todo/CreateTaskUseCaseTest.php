@@ -6,6 +6,7 @@ namespace App\Tests\Integration\UseCase\Todo;
 
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\Exception\ValidationException;
@@ -14,8 +15,11 @@ use App\Domain\Registry\Todo\TaskPriorityRegistry;
 use App\Domain\Registry\Todo\TaskStateRegistry;
 use App\Domain\Validation\Constraint\Category\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\ParentTaskUsableConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoUsableConstraint;
 use App\Fixtures\Category\CategoryFixtures;
 use App\Fixtures\Todo\TaskFixtures;
+use App\Fixtures\Todo\TodoFixtures;
 use App\Fixtures\User\UserFixtures;
 use App\Tests\Integration\LoadFixturesTrait;
 use App\Tests\Integration\QueryCountTrait;
@@ -203,6 +207,53 @@ final class CreateTaskUseCaseTest extends KernelTestCase
                 parentId: $parentId,
             )),
         );
+    }
+
+    /** With no TODO named, a task goes in the account's « A faire ». */
+    public function testItCreatesTheTaskInTheDefaultTodoWhenNoneIsNamed(): void
+    {
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput('Call the dentist'));
+
+        self::assertSame($this->todoIdOf(TodoFixtures::ALICE_DEFAULT), $output->todoId);
+        self::assertSame($this->todoIdOf(TodoFixtures::ALICE_DEFAULT), $this->taskProviderGateway->findOneById($output->id)?->todo->id);
+    }
+
+    public function testItCreatesTheTaskInTheTodoNamed(): void
+    {
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput('Fix the shelf', todoId: $this->todoIdOf(TodoFixtures::ALICE_HOME)));
+
+        self::assertSame($this->todoIdOf(TodoFixtures::ALICE_HOME), $output->todoId);
+    }
+
+    /** A subtask sits in its parent's TODO, whatever was named. */
+    public function testASubtaskGoesInItsParentsTodo(): void
+    {
+        $parent = $this->getReference(TaskFixtures::ALICE_WITH_SUBTASKS, TaskDataModel::class);
+
+        $output = $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput(
+            'Label the boxes',
+            parentId: $parent->id,
+            todoId: $this->todoIdOf(TodoFixtures::ALICE_DEFAULT),
+        ));
+
+        self::assertSame($this->todoIdOf(TodoFixtures::ALICE_HOME), $output->todoId);
+    }
+
+    public function testItRefusesAnArchivedTodoOrSomeoneElses(): void
+    {
+        foreach ([[TodoFixtures::ALICE_ARCHIVED, TodoActiveConstraint::TODO_ARCHIVED], [TodoFixtures::ADMIN_DEFAULT, TodoUsableConstraint::TODO_NOT_FOUND]] as [$todo, $error]) {
+            try {
+                $this->useCase->execute($this->currentUser($this->aliceId()), new CreateTaskDataInput('Learn the ukulele', todoId: $this->todoIdOf($todo)));
+                self::fail('Expected ValidationException');
+            } catch (ValidationException $exception) {
+                self::assertSame(['todoId' => [$error]], $exception->violations);
+            }
+        }
+    }
+
+    private function todoIdOf(string $reference): int
+    {
+        return $this->getReference($reference, TodoDataModel::class)->id ?? 0;
     }
 
     private function aliceId(): int

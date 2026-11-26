@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { Workout } from '../../api/types'
 import { Alert, DefinitionList, LinkChip, Row, SystemPanel, type Definition } from '../../components'
 import { feelingFor } from './workoutFeelings'
+import { useNow } from './useNow'
 import { formatElapsed, formatHour, formatLongDay, workoutName } from './workoutFormat'
 
 interface WorkoutOverviewCardProps {
@@ -76,21 +77,4 @@ function routineLink(routineId: number | null): Definition[] {
     }
 
     return [{ label: 'Routine', placeholder: '—', value: <LinkChip to={`/routines/${routineId}`}>Ouvrir la routine</LinkChip> }]
-}
-
-/** The time now, ticking every half minute while a workout runs, so its duration keeps up. */
-function useNow(ticking: boolean): Date {
-    const [now, setNow] = useState(() => new Date())
-
-    useEffect(() => {
-        if (!ticking) {
-            return undefined
-        }
-
-        const timer = setInterval(() => setNow(new Date()), 30 * 1000)
-
-        return () => clearInterval(timer)
-    }, [ticking])
-
-    return now
 }

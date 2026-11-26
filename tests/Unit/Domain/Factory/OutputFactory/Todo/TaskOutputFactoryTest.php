@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Domain\Factory\OutputFactory\Todo;
 
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Factory\OutputFactory\Category\CategoryOutputFactory;
 use App\Domain\Factory\OutputFactory\Todo\TaskOutputFactory;
@@ -49,6 +50,16 @@ final class TaskOutputFactoryTest extends TestCase
         self::assertSame(TaskStateRegistry::TO_DO, $output->state);
         self::assertNull($output->parentId);
         self::assertSame([], $output->subtasks);
+        self::assertSame(4, $output->todoId);
+        self::assertFalse($output->isFavorite);
+    }
+
+    public function testItCarriesTheStar(): void
+    {
+        $task = $this->buildTask('Buy a present');
+        $task->isFavorite = true;
+
+        self::assertTrue($this->factory->buildOne($task)->isFavorite);
     }
 
     public function testItCarriesThePriorityAndNestsTheCategory(): void
@@ -133,6 +144,9 @@ final class TaskOutputFactoryTest extends TestCase
         $task->id = $id;
         $task->title = $title;
         $task->owner = $owner;
+        $task->todo = new TodoDataModel();
+        $task->todo->id = 4;
+        $task->todo->owner = $owner;
 
         return $task;
     }

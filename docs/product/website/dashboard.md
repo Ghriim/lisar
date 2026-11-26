@@ -7,11 +7,12 @@
 - at the top, full width, the **status card**;
 - in a row below it, the tracker widgets — [hydration](hydration.md), [steps](steps.md),
   [sleep](sleep.md), [weight](weight.md);
-- below them, the [task list](tasks.md), two thirds of the width, and beside it a column with
+- below them, the [task list](todos.md), two thirds of the width, and beside it a column with
   the training of the day, then the [habits](habits.md) panel.
 
-The task list here is the same one as on `/todo`, with every window it opens: « Aujourd'hui »
-first, then the categories ([tasks](tasks.md)).
+The task list here is the same one as on `/todos`, with every window it opens, but across every
+active TODO and without tabs: « Aujourd'hui » first — due today or late — then the favourite tasks
+by category ([TODOs](todos.md#what-the-page-shows)).
 
 ## The status card
 
@@ -39,6 +40,12 @@ name with `{duration} · {n} exercices` under it, and on the right **Démarrer**
 which starts a workout from the routine and opens it — not offered while another workout is in
 progress. A session done today is dimmed, and a round check takes the button's place. No sport
 icon, no muscles, no list of exercises.
+
+**A workout under way comes first, in green** — lit border, green time, a pulsing dot: the hour it
+started, its name, « En cours · 33 min » (counted on, every half minute), and **Reprendre** (a play
+button, green) which opens it. Started from a session planned today, it stands in that session's
+place rather than beside it: the session is never listed twice. A workout under way also hides
+« Jour de repos » and « Aucune séance prévue » — something is going on, whatever the plan said.
 
 Nothing today:
 

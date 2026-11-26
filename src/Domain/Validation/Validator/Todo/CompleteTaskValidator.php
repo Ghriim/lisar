@@ -9,6 +9,7 @@ use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Common\IsOwnerConstraint;
 use App\Domain\Validation\Constraint\Todo\TaskClosableConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoActiveConstraint;
 
 final readonly class CompleteTaskValidator
 {
@@ -25,6 +26,7 @@ final readonly class CompleteTaskValidator
         }
 
         $violations = [];
+        $violations = TodoActiveConstraint::validate($task->todo, 'id', $violations);
         $violations = TaskClosableConstraint::validate($task, $violations);
 
         if (false === empty($violations)) {

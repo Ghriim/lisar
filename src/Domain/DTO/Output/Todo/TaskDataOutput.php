@@ -27,6 +27,13 @@ final class TaskDataOutput
     /** One of TaskPriorityRegistry. */
     public ?string $priority = null;
 
+    /** A root task only; it stays favourite once done. */
+    public bool $isFavorite = false;
+
+    /** The TODO it sits in — a subtask, in its parent's. */
+    #[Map(if: false)]
+    public int $todoId;
+
     #[Map(if: false)]
     public ?CategoryDataOutput $category = null;
 

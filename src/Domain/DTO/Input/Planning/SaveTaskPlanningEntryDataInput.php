@@ -9,8 +9,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * A task entry, whole: the model its tasks are made from, and when. Creating and changing one
- * send the same, and a change replaces it all. The category must be one the caller may use: that
- * needs the database, and is the validator's.
+ * send the same, and a change replaces it all. The category must be one the caller may use, and
+ * the TODO one of the caller's active ones: that needs the database, and is the validator's.
  */
 final readonly class SaveTaskPlanningEntryDataInput implements DataInputInterface
 {
@@ -28,6 +28,10 @@ final readonly class SaveTaskPlanningEntryDataInput implements DataInputInterfac
 
         #[Assert\Valid]
         public PlanningScheduleDataInput $schedule = new PlanningScheduleDataInput(),
+
+        // The TODO its tasks are made in; the account's default when none is named.
+        #[Assert\Positive(message: 'todo_invalid')]
+        public ?int $todoId = null,
     ) {
     }
 }

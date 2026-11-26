@@ -6,11 +6,13 @@ namespace App\Domain\Validation\Validator\Todo;
 
 use App\Domain\DTO\DataModel\Category\CategoryDataModel;
 use App\Domain\DTO\DataModel\Todo\TaskDataModel;
+use App\Domain\DTO\DataModel\Todo\TodoDataModel;
 use App\Domain\DTO\DataModel\User\UserDataModel;
 use App\Domain\DTO\Input\Todo\CreateTaskDataInput;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Validation\Constraint\Category\CategoryUsableConstraint;
 use App\Domain\Validation\Constraint\Todo\ParentTaskUsableConstraint;
+use App\Domain\Validation\Constraint\Todo\TodoUsableConstraint;
 use App\Domain\Validation\Validator\AbstractBaseValidator;
 
 /**
@@ -23,6 +25,7 @@ final readonly class CreateTaskValidator extends AbstractBaseValidator
     /**
      * @param CategoryDataModel|null $category the category the caller asked for, already loaded
      * @param TaskDataModel|null     $parent   the parent task the caller asked for, already loaded
+     * @param TodoDataModel|null     $todo     the TODO it goes in — its parent's, the one named, or the default
      *
      * @throws ValidationException
      */
@@ -32,10 +35,15 @@ final readonly class CreateTaskValidator extends AbstractBaseValidator
         ?CategoryDataModel $category,
         ?TaskDataModel $parent,
         UserDataModel $owner,
+        ?TodoDataModel $todo,
     ): void {
         $violations = $this->getViolations($input);
         $violations = CategoryUsableConstraint::validate($input->categoryId, $category, $owner, $violations);
         $violations = ParentTaskUsableConstraint::validate($input->parentId, $parent, $currentUser, $violations);
+        // A parent refused says it all: its TODO, someone else's or none, would only say it twice.
+        if (false === isset($violations['parentId'])) {
+            $violations = TodoUsableConstraint::validate($todo, $currentUser, $violations);
+        }
 
         if (false === empty($violations)) {
             throw new ValidationException(self::ERROR_CODE, $violations);

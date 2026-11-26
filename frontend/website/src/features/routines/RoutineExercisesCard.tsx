@@ -152,7 +152,7 @@ export function RoutineExercisesCard({ routine }: { routine: Routine }) {
             </SystemPanel>
 
             {panel?.kind === 'add-block' && (
-                <Modal title="Ajouter un exercice" onClose={close}>
+                <Modal title="Ajouter un exercice" tall onClose={close}>
                     <MovementPicker
                         max={MAX_MOVEMENTS_PER_BLOCK}
                         accepts={isPrescribable}
@@ -166,7 +166,7 @@ export function RoutineExercisesCard({ routine }: { routine: Routine }) {
             )}
 
             {panel?.kind === 'add-exercise' && (
-                <Modal title="Ajouter au bloc" onClose={close}>
+                <Modal title="Ajouter au bloc" tall onClose={close}>
                     <MovementPicker
                         max={1}
                         accepts={isPrescribable}
